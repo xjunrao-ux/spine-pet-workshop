@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>阿米娅桌宠</title>
+  </head>
+  <body>
+    <main id="app">
+      <section id="stage" aria-label="阿米娅 Spine 桌宠"></section>
+      <div id="speech-bubble" class="hidden" role="status"></div>
+      <div id="loading-status">正在载入阿米娅…</div>
+      <div id="size-dialog" class="hidden" role="dialog" aria-modal="true" aria-label="自定义桌宠大小">
+        <div class="size-card">
+          <strong>自定义大小</strong>
+          <div class="size-value"><span id="size-value">60</span>%</div>
+          <input id="size-range" type="range" min="30" max="120" step="1" value="60" aria-label="桌宠大小百分比" />
+          <div class="size-actions">
+            <button id="size-cancel" type="button">取消</button>
+            <button id="size-apply" class="primary" type="button">应用</button>
+          </div>
+        </div>
+      </div>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,79 @@
+{
+  "name": "amiya-desktop-pet",
+  "version": "2.1.0",
+  "private": true,
+  "description": "A packaged Windows desktop pet featuring Amiya's Spine base animation.",
+  "author": "Amiya Desktop Pet Project",
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "electron/main.mjs",
+  "scripts": {
+    "dev": "concurrently -k -s first \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron .\"",
+    "build": "tsc --noEmit && vite build",
+    "start": "electron .",
+    "preview": "vite preview --host 127.0.0.1",
+    "package:win": "pnpm build && electron-builder --win nsis portable --x64"
+  },
+  "dependencies": {
+    "@pixi-spine/all-3.8": "4.0.6",
+    "pixi.js": "7.4.3"
+  },
+  "devDependencies": {
+    "concurrently": "9.2.1",
+    "cross-env": "10.1.0",
+    "electron": "44.4.3",
+    "electron-builder": "^26.15.3",
+    "typescript": "5.9.3",
+    "vite": "8.3.0",
+    "wait-on": "9.0.3"
+  },
+  "packageManager": "pnpm@11.19.0",
+  "build": {
+    "appId": "local.amiya.desktop.pet",
+    "productName": "阿米娅桌宠",
+    "executableName": "AmiyaDesktopPet",
+    "artifactName": "Amiya-Desktop-Pet-v${version}-${arch}.${ext}",
+    "asar": true,
+    "asarUnpack": [
+      "electron/window-monitor.ps1",
+      "dist/models/**/*",
+      "dist/voicepacks/**/*"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "artifactName": "Amiya-Desktop-Pet-Setup-v${version}-${arch}.${ext}",
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "阿米娅桌宠",
+      "deleteAppDataOnUninstall": false
+    },
+    "portable": {
+      "artifactName": "Amiya-Desktop-Pet-Portable-v${version}-${arch}.${ext}"
+    }
+  }
+}

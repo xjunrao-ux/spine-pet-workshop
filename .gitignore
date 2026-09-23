@@ -1,0 +1,17 @@
+node_modules/
+.pnpm-store/
+dist/
+release/
+artifacts/
+*.log
+.DS_Store
+.env
+.env.*
+!.env.example
+
+# Local third-party test assets. Keep source notes in public/README.md.
+/public/models/amiya/
+/public/voicepacks/amiya-base/
+
+# Local release upload staging.
+/.release-assets/
