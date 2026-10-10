@@ -26,6 +26,12 @@ GitHub 自动生成的 `Source code.zip` 是开发源码，不是可运行的安
 
 ![角色管理器](docs/images/character-library.png)
 
+## 导入角色文件
+
+将小人骨骼文件和角色语音文件导入角色管理窗口。
+
+![角色管理器](docs/images/import-character.png)
+
 ## 功能
 
 - 透明无边框窗口、托盘和右键菜单。
