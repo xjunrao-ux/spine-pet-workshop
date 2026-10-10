@@ -1,8 +1,8 @@
 {
-  "name": "amiya-desktop-pet",
-  "version": "2.1.1",
+  "name": "spine-pet-workshop",
+  "version": "2.2.4",
   "private": true,
-  "description": "A packaged Windows desktop pet featuring Amiya's Spine base animation.",
+  "description": "A Windows Spine 3.8 desktop-pet workshop with local character and voice import.",
   "author": "Amiya Desktop Pet Project",
   "license": "UNLICENSED",
   "type": "module",
@@ -12,7 +12,7 @@
     "build": "tsc --noEmit && vite build",
     "start": "electron .",
     "preview": "vite preview --host 127.0.0.1",
-    "package:win": "pnpm build && electron-builder --win nsis portable --x64"
+    "package:win": "pnpm build && electron-builder --win nsis portable --x64 --publish never"
   },
   "dependencies": {
     "@pixi-spine/all-3.8": "4.0.6",
@@ -29,10 +29,10 @@
   },
   "packageManager": "pnpm@11.19.0",
   "build": {
-    "appId": "local.amiya.desktop.pet",
-    "productName": "阿米娅桌宠",
-    "executableName": "AmiyaDesktopPet",
-    "artifactName": "Amiya-Desktop-Pet-v${version}-${arch}.${ext}",
+    "appId": "local.spine.desktop.pet.workshop",
+    "productName": "Spine桌宠工坊",
+    "executableName": "SpinePetWorkshop",
+    "artifactName": "Spine-Pet-Workshop-v${version}-${arch}.${ext}",
     "asar": true,
     "asarUnpack": [
       "electron/window-monitor.ps1",
@@ -66,18 +66,18 @@
       ]
     },
     "nsis": {
-      "artifactName": "Amiya-Desktop-Pet-Setup-v${version}-${arch}.${ext}",
+      "artifactName": "Spine-Pet-Workshop-Setup-v${version}-${arch}.${ext}",
       "installerIcon": "assets/amiya-app-icon.ico",
       "uninstallerIcon": "assets/amiya-app-icon.ico",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "阿米娅桌宠",
+      "shortcutName": "Spine桌宠工坊",
       "deleteAppDataOnUninstall": false
     },
     "portable": {
-      "artifactName": "Amiya-Desktop-Pet-Portable-v${version}-${arch}.${ext}"
+      "artifactName": "Spine-Pet-Workshop-Portable-v${version}-${arch}.${ext}"
     }
   }
 }

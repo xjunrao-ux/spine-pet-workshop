@@ -1,47 +1,70 @@
 # 正式发布流程
 
-公共仓库只保存正式发行快照。v3 等研究内容继续留在原开发目录、私人仓库或本地分支。
+公共 main 和正式标签只保存验收后的版本。日常测试提交留在本地 dev/v3。
 
-## 版本来源
+## 发布准备
 
-- `main`：最近一个正式版本。
-- `vX.Y.Z` 标签：不可变的正式发行点。
-- 本地或私人开发分支：测试版、候选版和研究版。
+1. 在 dev/v3 完成验证并提交修改。
+2. 确定正式版本号，例如 3.0.0。
+3. 确认功能范围、使用说明、素材来源、安装版和便携版的运行结果。
+4. 检查没有把依赖、缓存、用户数据、密钥或内部研究文件纳入正式源码。
 
-不要把整个 `X:\桌宠` 复制到公共仓库。只从已冻结的版本目录同步源码、配置和文档，排除 `node_modules`、`dist`、`release`、测试截图、用户数据和第三方素材。
+## 整理正式提交
 
-## 发布门槛
-
-1. 冻结版本范围并更新 `package.json`。
-2. 更新该版本的用户说明、`CHANGELOG.md`、`ROADMAP.md` 和 README 版本表。
-3. 从干净依赖执行 `corepack pnpm install --frozen-lockfile`。
-4. 执行 `corepack pnpm build` 和 `corepack pnpm package:win`。
-5. 实机测试安装版、便携版、首次启动、托盘、退出和卸载。
-6. 确认公开包内没有无权分发的角色、语音、密钥或用户数据。
-7. 为安装包生成 `SHA256SUMS.txt`。
-8. 用 `git status --short` 和 `git ls-files` 复查上传范围。
-
-## 正式提交和标签
-
-开发历史保留在本地或私人仓库，公共仓库通过 squash 得到一个正式提交：
+以下为将来发布 v3 的示例，当前不执行：
 
 ```powershell
 git switch main
-git merge --squash dev/v2.2
-git commit -m "release: v2.2.0"
-git tag -a v2.2.0 -m "Spine Pet Workshop v2.2.0"
-git push public main
-git push public v2.2.0
+git merge --squash dev/v3
 ```
 
-在 GitHub Release 中上传安装版、便携版、`SHA256SUMS.txt`，并粘贴 `CHANGELOG.md` 对应版本内容。不要上传内部测试包或 `release/win-unpacked`。
+squash 会带入开发分支的最终文件内容，仍需检查是否含实验目录。把已经成熟的功能放入 electron/src/scripts，未完成探针不要进入正式提交；v3 目录的研究原件继续保留在开发分支或本地备份。
 
-## 本地同步原则
+更新 package.json、README、CHANGELOG、ROADMAP、版本使用说明和 RELEASE 文档，然后构建和检查：
 
-稳定发布工作区只接受冻结版本；日常开发继续在 `X:\桌宠` 原有位置进行。同步新版本时先在临时分支检查差异，不能直接覆盖 `main` 后立即推送。
+```powershell
+pnpm install --frozen-lockfile
+pnpm build
+pnpm package:win
+git diff --cached
+git status --short
+```
 
-仓库使用 `.githooks/pre-push` 保护名为 `public` 的远程：开发分支会被拒绝，`main` 只有在提交点存在 `vX.Y.Z` 标签时才能推送。首次克隆后运行：
+选定正式文件并提交：
+
+```powershell
+git add electron src assets public docs scripts .github .githooks
+git add package.json pnpm-lock.yaml pnpm-workspace.yaml README.md CHANGELOG.md ROADMAP.md
+git commit -m "release: v3.0.0"
+```
+
+发布前应保证 main 工作区干净。不要使用普通合并把所有内部测试提交带入公共历史。
+
+## 上传源码和 Release
+
+登录 GitHub CLI 后，在 main 调用发布脚本：
+
+```powershell
+gh auth status
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Publish-Release.ps1 -Version 3.0.0
+```
+
+脚本检查当前分支、package 版本、工作区、研究文件和安装包，创建正式标签，推送 main 与这个标签，再上传 EXE、SHA-256 和版本说明。构建脚本使用 --publish never，打包本身不会自动发布。
+
+已存在的 Release 或版本标签不会被覆盖。修复已发布软件时使用新的修订号。
+
+## 推送保护
+
+仓库使用 .githooks/pre-push。初始化已配置：
 
 ```powershell
 git config core.hooksPath .githooks
 ```
+
+新克隆的维护者也需要运行这条命令。钩子只允许向 public 推送 main 和 vX.Y.Z 正式标签，并拒绝包含 v3 研究历史的推送。
+
+只推送明确的正式分支和标签；不要使用 --all、--mirror 或 --tags。本地钩子是维护约定，不能替代代码审查。
+
+## 版本对应关系
+
+每次发布固定对应一份源码提交、一个标签、安装包和校验文件。v2.1.0 历史标签保留；固定角色系列发行 v2.1.1，工坊系列发行 v2.2.4。中间测试包不公开。

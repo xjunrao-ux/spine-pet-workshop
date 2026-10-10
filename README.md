@@ -1,79 +1,84 @@
 # Spine 桌宠工坊
 
-Windows 桌面宠物工具：使用 Electron、PixiJS 和 Spine 3.8 实现透明桌宠窗口、动作播放、拖动、重力、任务栏与软件窗口吸附。
+Windows 桌宠工具，支持 Spine 3.8 动画、语音字幕、拖动、重力、窗口吸附，以及本地角色和语音导入。
 
-当前固定角色稳定版为 **v2.1.1**。v2.2 提供自定义角色导入，v3 仍处于研究阶段。
+当前最新正式版：**v2.2.4**。固定阿米娅版：**v2.1.1**。
 
-## 下载正式版
+## 下载与运行
 
-普通用户请直接打开 [Releases 最新版本](../../releases/latest)，根据需要下载：
+普通用户直接下载 Windows x64 软件，无需安装 Node.js、pnpm 或 Electron：
 
-- `Amiya-Desktop-Pet-Setup-v2.1.1-x64.exe`：安装版。
-- `Amiya-Desktop-Pet-Portable-v2.1.1-x64.exe`：免安装便携版。
-- `SHA256SUMS.txt`：文件完整性校验值。
+- [安装版 v2.2.4](https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v2.2.4/Spine-Pet-Workshop-Setup-v2.2.4-x64.exe)：双击安装，从桌面快捷方式启动。
+- [便携版 v2.2.4](https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v2.2.4/Spine-Pet-Workshop-Portable-v2.2.4-x64.exe)：双击直接启动。
+- [全部正式版本](https://github.com/xjunrao-ux/spine-pet-workshop/releases)：历史版本、更新说明、使用说明和校验文件。
 
-请勿下载 GitHub 自动生成的 `Source code.zip` 作为普通用户安装包。源码压缩包用于开发，不包含本地测试素材。
+GitHub 自动生成的 `Source code.zip` 是开发源码，不是可运行的安装包。
 
-## 三步开始
+## 第一次使用
 
-1. 下载安装版或便携版；便携版直接双击即可运行。
-2. 左键拖动桌宠，短按人物触发互动；右键人物打开设置菜单。
-3. 从系统托盘图标重新显示、隐藏或退出桌宠。
+1. 启动程序，首次运行会打开桌宠和角色管理窗口。
+2. 可以直接使用默认阿米娅，也可以在“导入角色”中选择自己的 Spine 3.8 模型文件夹。
+3. 左键拖动人物，短按互动；右键人物或托盘图标打开设置、角色管理器，或退出程序。
 
-完整操作见 [v2.1 使用说明](docs/versions/v2.1.md)。
+角色模型通常由 `.skel/.json + .atlas + 贴图` 组成。语音支持单句音频配字幕，或长音频配时间轴；导入只在本机进行。
 
-## 核心功能
+完整步骤和故障排查见 [v2.2 使用说明](docs/versions/v2.2.md)。固定角色版见 [v2.1 使用说明](docs/versions/v2.1.md)。
 
-- 透明、无边框、始终置顶的 Windows 桌宠窗口。
-- Spine 3.8 动画加载、动作混合和语义动作映射。
-- 拖动、重力、任务栏支撑和普通软件窗口上沿吸附。
-- 自动行走、边缘转向、随机动作和交互反馈。
-- 尺寸调整、语音与字幕开关、托盘菜单。
-- 安装版和便携版 Windows x64 软件包。
+![角色管理器](docs/images/character-library.png)
 
-## 版本状态
+## 功能
 
-| 版本 | 状态 | 定位 |
+- 透明无边框窗口、托盘和右键菜单。
+- 待机、行走、坐下、睡眠、互动及动作混合。
+- 拖动、重力、自动行走、边缘转向和窗口吸附。
+- 大小调节、语音开关、中文字幕。
+- 本地角色库、动作映射、模型与语音导入。
+- 小兔子应用图标、Windows x64 安装版和便携版。
+
+## 版本
+
+| 版本 | 状态 | 内容 |
 | --- | --- | --- |
-| v2.1.1 | 正式版 | 固定角色桌宠、置顶修复、小兔子图标和 Windows 安装包 |
-| v2.2 | 发布验收中 | Spine 桌宠工坊、首次运行管理界面、本地角色与语音导入 |
-| v3 | 研究中 | 新架构与更完整的扩展能力，不进入当前正式发行线 |
+| v1 | 本地测试，不公开发布 | 角色和基础动作 |
+| v2.1.1 | 正式版 | 包装好的阿米娅桌宠，动作、语音、字幕和置顶修复 |
+| v2.2.4 | 最新正式版 | 导入 Spine 角色、自定义语音、长音频分句和角色管理 |
+| v3 | 本地开发中 | 音乐控制、通知等扩展；不属于当前发行版 |
+| v4 | 规划中 | 评估 AI 对话和行为能力 |
 
-详见 [更新日志](CHANGELOG.md) 与 [版本前瞻](ROADMAP.md)。路线图不代表发布日期承诺。
+详见 [更新日志](CHANGELOG.md)、[版本前瞻](ROADMAP.md)。
 
-## 从源码开发
+## 开发
 
-```powershell
-corepack pnpm install --frozen-lockfile
-corepack pnpm dev
-```
-
-构建检查：
+技术栈：Electron、TypeScript、Vite、PixiJS、Spine 3.8、PowerShell / Win32。
 
 ```powershell
-corepack pnpm build
+pnpm install --frozen-lockfile
+pnpm dev
 ```
 
-生成 Windows 安装版与便携版：
+构建与打包：
 
 ```powershell
-corepack pnpm package:win
+pnpm build
+pnpm package:win
 ```
 
-构建产物只进入本地 `release/`，正式文件通过 GitHub Releases 发布，不提交到源码仓库。维护者流程见 [发布说明](docs/RELEASING.md)。
-
-## 项目结构
+首次使用 pnpm 时可按 `package.json` 安装 pnpm 11.19.0。构建产物写入 `release/`，不提交到 Git。第三方角色模型和音频不在公共源码中；从源码运行时请准备本地素材，或通过角色管理器导入自己的角色，详见 [素材说明](public/README.md)。
 
 ```text
-electron/        Electron 主进程、IPC、托盘和窗口物理
-src/             Spine 渲染、交互、动作和字幕
-public/          本地运行素材位置；公共源码不包含第三方角色素材
-docs/            各版本使用说明与发布流程
-package.json     依赖、版本号、构建与打包配置
+electron/   主进程、系统窗口、IPC 和语音配置解析
+src/        动画、交互、字幕及角色管理界面
+public/     运行资源和来源说明
+assets/     软件图标
+docs/       使用、开发与版本发布说明
+scripts/    发布工具
+.github/    GitHub 构建验证
 ```
+
+维护者请看 [本地开发与 Git 使用](docs/DEVELOPMENT.md)、[正式发布流程](docs/RELEASING.md)。
 
 ## 素材与许可
 
-本项目不是《明日方舟》官方项目。角色、模型、动画、语音、台词和美术素材的权利归其各自权利人所有。公共源码仓库不包含第三方角色和语音素材；公开发布任何带素材的软件包前，发布者必须确认拥有相应分发权。
+本项目不是《明日方舟》官方项目。角色、模型、动画、语音、台词和美术内容的权利归各自权利人所有。素材来源保留在对应的 `SOURCE.md` 中，使用和分发素材需遵守其来源条款。
 
-当前代码没有附带开源许可证，默认不授予复制、修改或再分发许可。准备开放源码复用时，应先单独确定代码许可证，并将第三方素材明确排除在许可证范围之外。
+代码目前没有授予开源复用许可，`package.json` 标记为 `UNLICENSED`。Spine Runtime 有独立许可；代码与第三方素材的许可范围应分别处理。

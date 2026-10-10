@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Spine 桌宠工坊</title>
+  </head>
+  <body>
+    <main id="settings-app">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">SPINE PET WORKSHOP · v2.2.4</p>
+          <h1>把喜欢的角色<br />放到桌面上。</h1>
+          <p class="intro">导入本地 Spine 3.8 模型与语音，保存后立即切换桌宠。所有素材只保存在你的电脑中。</p>
+        </div>
+        <div class="hero-badge" aria-hidden="true"><span>3.8</span><small>RUNTIME</small></div>
+      </header>
+
+      <nav class="tabs" aria-label="功能导航">
+        <button class="tab active" data-page="characters">角色库</button>
+        <button class="tab" data-page="import">导入角色</button>
+        <button class="tab" data-page="help">素材与格式</button>
+      </nav>
+
+      <section id="page-characters" class="page active">
+        <div class="section-heading">
+          <div><p class="kicker">CHARACTER LIBRARY</p><h2>我的桌宠</h2></div>
+          <button id="refresh-characters" class="ghost-button">刷新</button>
+        </div>
+        <div id="character-list" class="character-grid"></div>
+      </section>
+
+      <section id="page-import" class="page">
+        <div class="section-heading">
+          <div><p class="kicker">NEW CHARACTER</p><h2>导入新角色</h2></div>
+          <span class="step-pill">本机导入 · 不上传网络</span>
+        </div>
+
+        <form id="import-form">
+          <article class="form-card">
+            <div class="step-number">01</div>
+            <div class="form-content">
+              <h3>角色信息</h3>
+              <label>角色名称<input id="character-name" maxlength="40" placeholder="例如：能天使" required /></label>
+            </div>
+          </article>
+
+          <article class="form-card">
+            <div class="step-number">02</div>
+            <div class="form-content">
+              <h3>Spine 模型文件夹</h3>
+              <p class="hint">选择同时包含骨骼、图集和贴图的文件夹。支持 `.skel` / `.json`、`.atlas`、PNG/JPG/WebP。</p>
+              <button id="choose-model-folder" class="select-button" type="button">选择模型文件夹</button>
+              <div id="model-summary" class="selection-summary empty">尚未选择</div>
+              <label id="model-file-label" class="hidden">主骨骼文件<select id="model-file"></select></label>
+              <label id="atlas-file-label" class="hidden">图集文件<select id="atlas-file"></select></label>
+            </div>
+          </article>
+
+          <article class="form-card">
+            <div class="step-number">03</div>
+            <div class="form-content">
+              <h3>动作映射</h3>
+              <p class="hint">不知道名称可以先留空，程序会尝试识别 Relax、Move、Sit 等常见名称。</p>
+              <div class="mapping-grid">
+                <label>待机<input id="anim-idle" placeholder="Relax / Idle" /></label>
+                <label>行走<input id="anim-walk" placeholder="Move / Walk" /></label>
+                <label>坐下<input id="anim-sit" placeholder="Sit" /></label>
+                <label>躺下<input id="anim-sleep" placeholder="Sleep / Lie" /></label>
+                <label>点击<input id="anim-touch" placeholder="Interact / Touch" /></label>
+                <label>特殊<input id="anim-special" placeholder="Special" /></label>
+              </div>
+            </div>
+          </article>
+
+          <article class="form-card">
+            <div class="step-number">04</div>
+            <div class="form-content">
+              <h3>语音与字幕 <span class="optional">可选</span></h3>
+              <p class="voice-intro">选择一种导入方式即可。两种方式地位相同，可以按手头素材决定。</p>
+              <div class="voice-options">
+                <section class="voice-option">
+                  <div class="voice-option-heading"><span class="method-label">方案 A</span><h4>单句音频</h4></div>
+                  <p>适合已经切分好的 MP3、WAV 或 OGG。每条音频可以单独填写字幕。</p>
+                  <button id="choose-audio-files" class="select-button secondary" type="button">添加单句音频</button>
+                </section>
+                <section class="voice-option recommended">
+                  <div class="voice-option-heading"><span class="method-label">方案 B</span><h4>明日方舟长音频</h4><span class="recommend-tag">推荐</span></div>
+                  <p>只需选择一个角色长音频。时间轴与简中台词已内置，程序会自动分句并显示中文字幕。</p>
+                  <div class="long-voice-picker">
+                    <button id="choose-long-voice" class="select-button secondary" type="button">选择长音频</button>
+                    <span id="bundle-audio-summary">尚未选择文件</span>
+                  </div>
+                  <div class="bundle-options">
+                    <label>角色 ID<input id="bundle-character-id" placeholder="通常会从文件名自动识别" /></label>
+                    <label>音频语种<select id="bundle-language"><option value="JP">日语 JP</option><option value="CN">普通话 CN</option><option value="EN">英语 EN</option><option value="KR">韩语 KR</option></select></label>
+                  </div>
+                  <p class="built-in-note">默认使用内置配置；普通导入无需另外下载 JSON。</p>
+                  <details class="custom-data">
+                    <summary>更新或覆盖内置配置 <span>可选</span></summary>
+                    <p>遇到新角色或新版数据时，可以只替换其中一项，也可以两项都替换。</p>
+                    <div class="config-file-row">
+                      <button class="config-file-button" data-config-kind="metadata" type="button">选择 voice_data.json</button>
+                      <span id="config-metadata-summary">使用内置时间轴</span>
+                    </div>
+                    <div class="config-file-row">
+                      <button class="config-file-button" data-config-kind="subtitles" type="button">选择 charword_table.json</button>
+                      <span id="config-subtitles-summary">使用内置简中台词</span>
+                    </div>
+                  </details>
+                </section>
+              </div>
+              <div id="audio-list" class="audio-list"></div>
+            </div>
+          </article>
+
+          <div class="submit-bar">
+            <div id="import-status" role="status">准备就绪</div>
+            <button id="import-submit" class="primary-button" type="submit">导入并设为当前桌宠</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="page-help" class="page">
+        <div class="section-heading"><div><p class="kicker">GUIDE</p><h2>素材与导入格式</h2></div></div>
+        <div class="help-grid">
+          <article class="help-card accent">
+            <span class="help-index">A</span><h3>Spine 模型</h3>
+            <p>一套完整模型通常由骨骼数据、图集描述和一张或多张贴图组成。明日方舟基建小人需要 Spine Runtime 3.8。</p>
+            <code>character.skel + character.atlas + character.png</code>
+            <button class="link-button" data-url="https://github.com/isHarryh/Ark-Models">打开 Ark-Models</button>
+          </article>
+          <article class="help-card">
+            <span class="help-index">B</span><h3>角色语音与字幕</h3>
+            <p>从 Ark-Voice 下载角色整合 OGG 即可。时间轴与简中台词表已经内置，不需要手工下载 JSON 或使用 FFmpeg。</p>
+            <div class="help-links">
+              <button class="link-button" data-url="https://github.com/isHarryh/Ark-Voice">下载角色语音</button>
+              <button class="link-button subtle" data-url="https://github.com/Kengxxiao/ArknightsGameData">字幕数据来源</button>
+            </div>
+          </article>
+          <article class="help-card">
+            <span class="help-index">C</span><h3>兼容与版权</h3>
+            <p>模型导出版本必须与 3.8 Runtime 兼容。只导入你有权使用的素材；游戏角色资源不得用于商业用途或损害权利人利益。</p>
+            <button class="link-button" data-url="https://esotericsoftware.com/spine-runtimes">查看 Spine Runtime 说明</button>
+          </article>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="/src/settings.ts"></script>
+  </body>
+</html>

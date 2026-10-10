@@ -2,6 +2,7 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("desktopPet", {
   isElectron: true,
+  getCharacterConfig: () => ipcRenderer.invoke("pet:get-character-config"),
   showContextMenu: () => ipcRenderer.send("pet:show-context-menu"),
   beginDrag: () => ipcRenderer.send("pet:drag-start"),
   endDrag: () => ipcRenderer.send("pet:drag-end"),

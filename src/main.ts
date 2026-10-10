@@ -1,5 +1,5 @@
 import { Application, Assets, Container, FederatedPointerEvent, Point, Rectangle } from "pixi.js";
-import { Spine } from "@pixi-spine/all-3.8";
+import { AtlasAttachmentLoader, SkeletonBinary, SkeletonJson, Spine, TextureAtlas } from "@pixi-spine/all-3.8";
 import "@pixi-spine/all-3.8";
 import "./style.css";
 
@@ -9,6 +9,9 @@ interface VoiceLine {
   id: string;
   audio: string;
   subtitle: string;
+  title?: string;
+  start?: number;
+  end?: number;
 }
 
 interface VoicePackManifest {
@@ -18,9 +21,17 @@ interface VoicePackManifest {
   lines: VoiceLine[];
 }
 
-const MODEL_URL = "./models/amiya/build_char_002_amiya.skel";
-const VOICE_PACK_URL = "./voicepacks/amiya-base/ja-JP/manifest.json";
+const FALLBACK_CHARACTER: PetCharacterConfig = {
+  id: "builtin-amiya",
+  name: "阿米娅",
+  builtin: true,
+  modelUrl: "./models/amiya/build_char_002_amiya.skel",
+  voiceManifestUrl: "./voicepacks/amiya-base/ja-JP/manifest.json",
+  animations: {}
+};
 const CLICK_VOICE_IDS = new Set(["assistant", "talk-1", "talk-2", "trust-talk-2", "idle"]);
+const ARK_CLICK_VOICE_IDS = new Set(["CN_001", "CN_002", "CN_003", "CN_008", "CN_010", "CN_034", "CN_036"]);
+const SIT_SUPPORT_BONE_NAMES = ["F_Hip", "Hip", "Hips", "Pelvis", "Waist", "Body_Hip"];
 const ACTION_CANDIDATES: Record<SemanticAction, string[]> = {
   idle: ["Relax", "Idle", "Default"],
   walk: ["Move", "Walk"],
@@ -77,19 +88,52 @@ const hipPosition = new Point();
 let voiceLines: VoiceLine[] = [];
 let voiceTimer: number | undefined;
 let activeVoice: HTMLAudioElement | undefined;
+let activeVoiceStopTimer: number | undefined;
 let lastVoiceId: string | undefined;
 let voiceEnabled = true;
 let voiceSubtitleVisible = false;
+let characterConfig = FALLBACK_CHARACTER;
+
+async function loadCustomSpineData(config: PetCharacterConfig) {
+  if (!config.atlasText || !config.textureUrls) throw new Error("自定义角色缺少 atlas 运行时数据");
+
+  const atlas = await new Promise<TextureAtlas>((resolve, reject) => {
+    new TextureAtlas(
+      config.atlasText,
+      (pageName, loaded) => {
+        const textureUrl = config.textureUrls?.[pageName];
+        if (!textureUrl) {
+          reject(new Error(`没有找到 atlas 贴图映射：${pageName}`));
+          return;
+        }
+        void Assets.load(textureUrl)
+          .then((texture) => loaded(texture.baseTexture))
+          .catch((error) => reject(new Error(`贴图加载失败：${pageName}；${String(error)}`)));
+      },
+      resolve
+    );
+  });
+
+  const attachmentLoader = new AtlasAttachmentLoader(atlas);
+  const response = await fetch(config.modelUrl);
+  if (!response.ok) throw new Error(`骨骼文件读取失败：${response.status}`);
+  if (new URL(config.modelUrl).pathname.toLowerCase().endsWith(".json")) {
+    return new SkeletonJson(attachmentLoader).readSkeletonData(await response.json());
+  }
+  return new SkeletonBinary(attachmentLoader).readSkeletonData(new Uint8Array(await response.arrayBuffer()));
+}
 
 function findAnimation(action: SemanticAction): string | undefined {
   const lowerCaseMap = new Map(availableAnimations.map((name) => [name.toLowerCase(), name]));
-  for (const candidate of ACTION_CANDIDATES[action]) {
+  const configuredName = characterConfig.animations?.[action];
+  const candidates = configuredName ? [configuredName, ...ACTION_CANDIDATES[action]] : ACTION_CANDIDATES[action];
+  for (const candidate of candidates) {
     const exactMatch = lowerCaseMap.get(candidate.toLowerCase());
     if (exactMatch) return exactMatch;
   }
 
   return availableAnimations.find((name) =>
-    ACTION_CANDIDATES[action].some((candidate) => name.toLowerCase().includes(candidate.toLowerCase()))
+    candidates.some((candidate) => name.toLowerCase().includes(candidate.toLowerCase()))
   );
 }
 
@@ -135,10 +179,12 @@ function scheduleVoiceRotation(delay = 50_000 + Math.random() * 40_000) {
 
 function playRandomVoice(fromClick = false) {
   if (!voiceEnabled || voiceLines.length === 0) return;
-  const pool = fromClick ? voiceLines.filter((line) => CLICK_VOICE_IDS.has(line.id)) : voiceLines;
+  if (activeVoice && !fromClick) return;
+  const clickPool = voiceLines.filter((line) => CLICK_VOICE_IDS.has(line.id) || ARK_CLICK_VOICE_IDS.has(line.id));
+  const pool = fromClick && clickPool.length > 0 ? clickPool : voiceLines;
   const candidates = pool.filter((line) => line.id !== lastVoiceId);
   const line = candidates[Math.floor(Math.random() * candidates.length)] ?? pool[0];
-  if (line) void playVoiceLine(line);
+  if (line) void playVoiceLine(line, fromClick);
 }
 
 function setVoiceEnabled(enabled: boolean) {
@@ -146,6 +192,7 @@ function setVoiceEnabled(enabled: boolean) {
   window.clearTimeout(voiceTimer);
   if (!enabled) {
     activeVoice?.pause();
+    window.clearTimeout(activeVoiceStopTimer);
     activeVoice = undefined;
     if (voiceSubtitleVisible) {
       voiceSubtitleVisible = false;
@@ -157,11 +204,14 @@ function setVoiceEnabled(enabled: boolean) {
   if (voiceLines.length > 0) scheduleVoiceRotation(1_200);
 }
 
-async function playVoiceLine(line: VoiceLine) {
+async function playVoiceLine(line: VoiceLine, allowInterrupt = false) {
   if (!voiceEnabled) return;
+  if (activeVoice && !allowInterrupt) return;
   window.clearTimeout(voiceTimer);
   activeVoice?.pause();
-  const manifestUrl = new URL(VOICE_PACK_URL, window.location.href);
+  window.clearTimeout(activeVoiceStopTimer);
+  if (!characterConfig.voiceManifestUrl) return;
+  const manifestUrl = new URL(characterConfig.voiceManifestUrl, window.location.href);
   const audio = new Audio(new URL(line.audio, manifestUrl).href);
   activeVoice = audio;
   lastVoiceId = line.id;
@@ -169,12 +219,43 @@ async function playVoiceLine(line: VoiceLine) {
 
   const finish = () => {
     if (activeVoice !== audio) return;
+    window.clearTimeout(activeVoiceStopTimer);
     activeVoice = undefined;
     hideVoiceSubtitleSoon();
     if (voiceEnabled) scheduleVoiceRotation();
   };
   audio.addEventListener("ended", finish, { once: true });
   audio.addEventListener("error", finish, { once: true });
+
+  const hasSegment = Number.isFinite(line.start) && Number.isFinite(line.end) && Number(line.end) > Number(line.start);
+  if (hasSegment) {
+    await new Promise<void>((resolve) => {
+      if (audio.readyState >= HTMLMediaElement.HAVE_METADATA) resolve();
+      else {
+        audio.addEventListener("loadedmetadata", () => resolve(), { once: true });
+        audio.addEventListener("error", () => resolve(), { once: true });
+        audio.load();
+      }
+    });
+    if (activeVoice !== audio) return;
+    audio.currentTime = Number(line.start);
+    const stopAtBoundary = () => {
+      if (activeVoice !== audio) return;
+      audio.pause();
+      finish();
+    };
+    const armBoundaryTimer = () => {
+      window.clearTimeout(activeVoiceStopTimer);
+      const remainingMilliseconds = (Number(line.end) - 0.012 - audio.currentTime) * 1000;
+      if (remainingMilliseconds <= 0) stopAtBoundary();
+      else activeVoiceStopTimer = window.setTimeout(stopAtBoundary, remainingMilliseconds);
+    };
+    const disarmBoundaryTimer = () => window.clearTimeout(activeVoiceStopTimer);
+    audio.addEventListener("playing", armBoundaryTimer);
+    audio.addEventListener("waiting", disarmBoundaryTimer);
+    audio.addEventListener("seeking", disarmBoundaryTimer);
+    audio.addEventListener("seeked", () => { if (!audio.paused) armBoundaryTimer(); });
+  }
 
   showVoiceSubtitle(line.subtitle);
   try {
@@ -186,15 +267,16 @@ async function playVoiceLine(line: VoiceLine) {
 }
 
 async function initializeVoiceRotation() {
+  if (!characterConfig.voiceManifestUrl) return;
   try {
-    const response = await fetch(VOICE_PACK_URL);
+    const response = await fetch(characterConfig.voiceManifestUrl);
     if (!response.ok) throw new Error(`语言包载入失败：${response.status}`);
     const manifest = (await response.json()) as VoicePackManifest;
     voiceLines = manifest.lines.filter((line) => Boolean(line.audio && line.subtitle));
     if (voiceLines.length === 0) throw new Error("语言包中没有可播放的语音");
     scheduleVoiceRotation(4_500);
   } catch (error) {
-    console.warn("日语语言包不可用，将继续使用文字气泡。", error);
+    console.warn("角色语言包不可用，将继续使用文字气泡。", error);
   }
 }
 
@@ -230,7 +312,14 @@ function updateSitSupportPoint() {
   if (now - lastSupportUpdate < 80) return;
   lastSupportUpdate = now;
 
-  const hipBone = spine.skeleton.findBone("F_Hip");
+  const bones = spine.skeleton.bones;
+  let hipBone = SIT_SUPPORT_BONE_NAMES
+    .map((name) => spine?.skeleton.findBone(name))
+    .find(Boolean);
+  if (!hipBone) {
+    hipBone = bones.find((bone) => /(^|[_\-.])(hip|hips|pelvis|waist)([_\-.]|$)/i.test(bone.data.name))
+      ?? bones.find((bone) => /(hip|pelvis|waist)/i.test(bone.data.name));
+  }
   if (!hipBone) return;
   hipPosition.set(hipBone.worldX, hipBone.worldY);
   spine.toGlobal(hipPosition, hipPosition);
@@ -351,6 +440,15 @@ function handlePointerUp() {
 }
 
 async function initialize() {
+  try {
+    characterConfig = await window.desktopPet?.getCharacterConfig() ?? FALLBACK_CHARACTER;
+  } catch (error) {
+    console.warn("无法读取当前角色配置，使用内置阿米娅。", error);
+    characterConfig = FALLBACK_CHARACTER;
+  }
+  document.title = `${characterConfig.name}桌宠`;
+  loadingStatus.textContent = `正在载入${characterConfig.name}…`;
+
   const application = new Application({
     resizeTo: stageElement,
     backgroundAlpha: 0,
@@ -365,10 +463,12 @@ async function initialize() {
   application.stage.hitArea = new Rectangle(0, 0, application.screen.width, application.screen.height);
 
   try {
-    const resource = await Assets.load(MODEL_URL);
-    if (!resource?.spineData) throw new Error("Spine loader did not return spineData");
+    const spineData = characterConfig.builtin
+      ? (await Assets.load(characterConfig.modelUrl))?.spineData
+      : await loadCustomSpineData(characterConfig);
+    if (!spineData) throw new Error("Spine loader did not return spineData");
 
-    spine = new Spine(resource.spineData);
+    spine = new Spine(spineData);
     spine.autoUpdate = true;
     spine.eventMode = "static";
     spine.cursor = "grab";
@@ -413,7 +513,7 @@ async function initialize() {
     });
     resizeObserver.observe(stageElement);
 
-    showSpeech("idle", "左键拖动我，右键可以打开菜单。 ");
+    showSpeech("idle", `已载入${characterConfig.name}。左键拖动，右键打开菜单。`);
     scheduleNextBehavior("idle");
     await initializeVoiceRotation();
   } catch (error) {
@@ -428,6 +528,7 @@ window.addEventListener("blur", () => {
 });
 window.addEventListener("beforeunload", () => {
   window.clearTimeout(voiceTimer);
+  window.clearTimeout(activeVoiceStopTimer);
   activeVoice?.pause();
 });
 document.addEventListener("contextmenu", (event) => event.preventDefault());
