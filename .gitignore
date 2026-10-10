@@ -2,16 +2,24 @@ node_modules/
 .pnpm-store/
 dist/
 release/
+releases/
 artifacts/
+.local/
 *.log
 .DS_Store
+Thumbs.db
 .env
 .env.*
 !.env.example
 
-# Local third-party test assets. Keep source notes in public/README.md.
-/public/models/amiya/
-/public/voicepacks/amiya-base/
+# Original inputs and upstream copies remain local.
+/pet-source/
+/vendor/
+/public-repos/
+/amiya_codex_pet/
+/public/models/
+/public/voicepacks/
+/amiya-preview.png
 
-# Local release upload staging.
-/.release-assets/
+# Generated protocol reference files are not development source.
+/v3/**/codex-app-server-schema/

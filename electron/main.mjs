@@ -5,6 +5,12 @@ import path from "node:path";
 import readline from "node:readline";
 
 const rootDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const resourceRoot = app.isPackaged
+  ? path.join(process.resourcesPath, "app.asar.unpacked")
+  : rootDirectory;
+const APP_ID = "local.amiya.desktop.pet";
+const APP_ICON_PATH = path.join(rootDirectory, "assets", "amiya-app-icon.png");
+const ALWAYS_ON_TOP_LEVEL = process.platform === "win32" ? "screen-saver" : "floating";
 const BASE_WIDTH = 420;
 const BASE_HEIGHT = 500;
 const GRAVITY = 1850;
@@ -55,7 +61,16 @@ function applyPetBounds(x, y) {
   mainWindow.setBounds({ x: Math.round(x), y: Math.round(y), width, height }, false);
 }
 
+function applyAlwaysOnTop() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  mainWindow.setAlwaysOnTop(alwaysOnTop, ALWAYS_ON_TOP_LEVEL);
+  if (alwaysOnTop && mainWindow.isVisible()) mainWindow.moveTop();
+}
+
 function createTrayIcon() {
+  const appIcon = nativeImage.createFromPath(APP_ICON_PATH);
+  if (!appIcon.isEmpty()) return appIcon.resize({ width: 32, height: 32 });
+
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
       <rect width="32" height="32" rx="9" fill="#202638"/>
@@ -162,7 +177,7 @@ function buildMenu() {
       checked: alwaysOnTop,
       click: (item) => {
         alwaysOnTop = item.checked;
-        mainWindow?.setAlwaysOnTop(alwaysOnTop, "floating");
+        applyAlwaysOnTop();
       }
     },
     { type: "separator" },
@@ -176,9 +191,6 @@ function showPetMenu() {
 
 function startWindowMonitor() {
   if (process.platform !== "win32") return;
-  const resourceRoot = app.isPackaged
-    ? path.join(process.resourcesPath, "app.asar.unpacked")
-    : rootDirectory;
   const scriptPath = path.join(resourceRoot, "electron", "window-monitor.ps1");
   monitorProcess = spawn(
     "powershell.exe",
@@ -379,6 +391,7 @@ function createWindow() {
     skipTaskbar: true,
     hasShadow: false,
     title: "阿米娅桌宠",
+    icon: APP_ICON_PATH,
     webPreferences: {
       preload: path.join(rootDirectory, "electron", "preload.cjs"),
       contextIsolation: true,
@@ -388,7 +401,7 @@ function createWindow() {
   });
 
   floatingPosition = { x: mainWindow.getBounds().x, y: mainWindow.getBounds().y };
-  mainWindow.setAlwaysOnTop(alwaysOnTop, "floating");
+  applyAlwaysOnTop();
 
   const developmentUrl = process.env.VITE_DEV_SERVER_URL;
   if (developmentUrl) void mainWindow.loadURL(developmentUrl);
@@ -397,7 +410,10 @@ function createWindow() {
   mainWindow.on("show", () => {
     const bounds = mainWindow.getBounds();
     floatingPosition = { x: bounds.x, y: bounds.y };
+    applyAlwaysOnTop();
   });
+
+  mainWindow.on("restore", applyAlwaysOnTop);
 
   mainWindow.webContents.once("did-finish-load", () => {
     if (!process.env.PET_CAPTURE_PATH && !process.env.PET_CAPTURE_SERIES_DIR) return;
@@ -446,7 +462,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  app.setAppUserModelId("local.amiya.desktop.pet");
+  app.setAppUserModelId(APP_ID);
   ipcMain.on("pet:show-context-menu", showPetMenu);
   ipcMain.on("pet:drag-start", startDragging);
   ipcMain.on("pet:drag-end", stopDragging);

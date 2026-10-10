@@ -1,6 +1,6 @@
 {
   "name": "amiya-desktop-pet",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "private": true,
   "description": "A packaged Windows desktop pet featuring Amiya's Spine base animation.",
   "author": "Amiya Desktop Pet Project",
@@ -43,11 +43,13 @@
       "output": "release"
     },
     "files": [
+      "assets/**/*",
       "dist/**/*",
       "electron/**/*",
       "package.json"
     ],
     "win": {
+      "icon": "assets/amiya-app-icon.ico",
       "target": [
         {
           "target": "nsis",
@@ -65,6 +67,8 @@
     },
     "nsis": {
       "artifactName": "Amiya-Desktop-Pet-Setup-v${version}-${arch}.${ext}",
+      "installerIcon": "assets/amiya-app-icon.ico",
+      "uninstallerIcon": "assets/amiya-app-icon.ico",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,

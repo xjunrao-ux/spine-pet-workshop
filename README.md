@@ -2,14 +2,14 @@
 
 Windows 桌面宠物工具：使用 Electron、PixiJS 和 Spine 3.8 实现透明桌宠窗口、动作播放、拖动、重力、任务栏与软件窗口吸附。
 
-当前公开稳定版为 **v2.1.0**。v2.2 正在进行发布验收，v3 仍处于研究阶段。
+当前固定角色稳定版为 **v2.1.1**。v2.2 提供自定义角色导入，v3 仍处于研究阶段。
 
 ## 下载正式版
 
 普通用户请直接打开 [Releases 最新版本](../../releases/latest)，根据需要下载：
 
-- `Amiya-Desktop-Pet-Setup-v2.1.0-x64.exe`：安装版。
-- `Amiya-Desktop-Pet-Portable-v2.1.0-x64.exe`：免安装便携版。
+- `Amiya-Desktop-Pet-Setup-v2.1.1-x64.exe`：安装版。
+- `Amiya-Desktop-Pet-Portable-v2.1.1-x64.exe`：免安装便携版。
 - `SHA256SUMS.txt`：文件完整性校验值。
 
 请勿下载 GitHub 自动生成的 `Source code.zip` 作为普通用户安装包。源码压缩包用于开发，不包含本地测试素材。
@@ -35,7 +35,7 @@ Windows 桌面宠物工具：使用 Electron、PixiJS 和 Spine 3.8 实现透明
 
 | 版本 | 状态 | 定位 |
 | --- | --- | --- |
-| v2.1.0 | 正式版 | 固定角色桌宠、物理吸附、语音字幕和 Windows 安装包 |
+| v2.1.1 | 正式版 | 固定角色桌宠、置顶修复、小兔子图标和 Windows 安装包 |
 | v2.2 | 发布验收中 | Spine 桌宠工坊、首次运行管理界面、本地角色与语音导入 |
 | v3 | 研究中 | 新架构与更完整的扩展能力，不进入当前正式发行线 |
 
