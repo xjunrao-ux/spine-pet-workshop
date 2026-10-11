@@ -43,7 +43,7 @@ body,
   left: 50%;
   width: max-content;
   max-width: min(290px, calc(100% - 32px));
-  padding: 10px 14px;
+  padding: 6px 10px;
   color: #252938;
   font-size: 13px;
   line-height: 1.5;
@@ -52,7 +52,7 @@ body,
   transform: translateX(-50%);
   border: 1px solid rgba(31, 36, 52, 0.08);
   border-radius: 15px 15px 15px 4px;
-  background: rgba(255, 255, 255, 0.76);
+  background: rgba(255, 255, 255, var(--bubble-alpha, 0.76));
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
   transition: top 180ms ease, opacity 220ms ease, transform 220ms ease;
 }

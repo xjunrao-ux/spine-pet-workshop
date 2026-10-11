@@ -1,0 +1,5 @@
+:root { color-scheme: light dark; --ink: #242a35; --muted: #657080; --accent: #657c9c;
+  --surface-opacity: .80; --surface-rgb: 248,249,252; --glass: rgba(var(--surface-rgb),var(--surface-opacity));
+  --stroke: rgba(120,130,150,.17); --hover: rgba(125,137,158,.10); --enter-duration: 160ms; --exit-duration: 220ms; }
+@media (prefers-color-scheme: dark) { :root { --ink: #edf0f6; --muted: #b1bbc9; --accent: #a1b9dd;
+  --surface-rgb: 36,41,51; --stroke: rgba(210,222,242,.13); --hover: rgba(190,205,230,.12); } }

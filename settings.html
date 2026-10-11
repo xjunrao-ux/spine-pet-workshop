@@ -9,7 +9,7 @@
     <main id="settings-app">
       <header class="hero">
         <div>
-          <p class="eyebrow">SPINE PET WORKSHOP · v2.2.4</p>
+          <p class="eyebrow">SPINE PET WORKSHOP · v3.1.2</p>
           <h1>把喜欢的角色<br />放到桌面上。</h1>
           <p class="intro">导入本地 Spine 3.8 模型与语音，保存后立即切换桌宠。所有素材只保存在你的电脑中。</p>
         </div>
@@ -18,8 +18,10 @@
 
       <nav class="tabs" aria-label="功能导航">
         <button class="tab active" data-page="characters">角色库</button>
-        <button class="tab" data-page="import">导入角色</button>
         <button class="tab" data-page="help">素材与格式</button>
+        <button class="tab" data-page="import">导入角色</button>
+        <button class="tab" data-page="features">功能</button>
+        <button class="tab" data-page="extensions">扩展</button>
       </nav>
 
       <section id="page-characters" class="page active">
@@ -28,8 +30,46 @@
           <button id="refresh-characters" class="ghost-button">刷新</button>
         </div>
         <div id="character-list" class="character-grid"></div>
+        <article id="character-settings" class="settings-panel hidden">
+          <div class="section-heading"><h3 id="character-settings-title">角色设置</h3><button id="close-character-settings" class="ghost-button" type="button">关闭</button></div>
+          <div class="preview-settings-grid">
+            <div class="preview-column"><div id="library-preview"></div><div id="library-history"></div></div>
+            <div><div id="library-parameters"></div><div id="library-voice-controls" class="audition-controls"></div></div>
+          </div>
+          <div class="settings-footer"><span id="parameters-status" role="status">调整后点击保存；仅修改此角色</span><button id="reset-character-parameters" class="ghost-button" type="button">恢复默认</button><button id="save-character-parameters" class="primary-button" type="button">保存设置</button></div>
+        </article>
       </section>
 
+      <section id="page-features" class="page">
+        <div class="section-heading"><div><p class="kicker">QUIET COMPANION</p><h2>按需出现，轻轻提醒。</h2></div><span id="feature-save-status" role="status" class="hint">设置自动保存</span></div>
+        <div id="feature-modules" class="feature-modules"></div>
+        <article class="feature-options" id="feature-compatibility">
+          <h3>兼容性说明</h3>
+          <p class="hint"><strong>网易云音乐</strong> · 请在网易云的设置中开启 SMTC（系统媒体控制），才能读取播放器并控制音乐。当前不支持读取网易云的时长与播放进度，时间显示为 --:--。</p>
+          <p class="hint"><strong>微信与企业微信</strong> · 已验证当前客户端不走 Windows 系统通知，暂不支持聊天提醒；等待官方开放可用接口后再评估接入。</p>
+        </article>
+        <article class="feature-options">
+          <h3>应用启动</h3>
+          <label class="feature-setting"><span><strong>开机启动</strong><small>登录 Windows 后自动启动桌宠。默认关闭；移动便携版文件后，请重新关闭并开启此选项。</small></span><input id="startup-enabled" type="checkbox" disabled aria-label="开机启动" /></label>
+          <p id="startup-status" class="hint" role="status">正在读取启动设置…</p>
+        </article>
+        <article class="feature-options">
+          <h3>提醒与交互</h3>
+          <label class="feature-setting"><span><strong>显示模式（消息摘要）</strong><small>开启后新消息弹出简要内容；关闭为隐私模式，只提示来源和新消息数量。查看过的桌宠提醒不再显示，不修改系统或聊天已读状态。</small></span><input type="checkbox" data-feature-setting="details" /></label>
+          <label class="feature-setting"><span><strong>角色字幕提醒</strong><small>新通知和 Codex 任务结束时，显示约 4 秒的轻提示。</small></span><input type="checkbox" data-feature-setting="subtitles" /></label>
+          <label class="feature-setting"><span><strong>专注模式</strong><small>继续接收信息，暂停弹出字幕。</small></span><input type="checkbox" data-feature-setting="quiet" /></label>
+          <label class="feature-setting"><span><strong>减少动画</strong><small>关闭淡入动画和滚动过渡。</small></span><input type="checkbox" data-feature-setting="reducedMotion" /></label>
+          <label class="feature-setting"><span><strong>悬停展开延迟</strong><small>鼠标滚轮可横向浏览胶囊，点击图标打开详情。</small></span><select id="feature-hover-delay"><option value="150">150 毫秒</option><option value="300">300 毫秒</option><option value="600">600 毫秒</option><option value="1000">1 秒</option></select></label>
+          <div class="feature-buttons"><button id="notification-permission" class="ghost-button">请求通知访问</button><button id="feature-preview" class="ghost-button">预览字幕</button></div>
+        </article>
+        <article class="feature-options"><h3>应用通知</h3><p class="hint">只接收真正进入 Windows 通知中心的消息。已验证当前微信与企业微信不走系统通知，暂不支持其聊天提醒；待官方提供可用接口后再评估。启动前的 ChatGPT 历史通知不再展示，只提示新消息。</p><div id="notification-channels"></div><div id="feature-apps"></div></article>
+      </section>
+      <section id="page-extensions" class="page">
+        <div class="section-heading"><div><p class="kicker">BUILT-IN MODULES</p><h2>扩展能力</h2></div><span class="step-pill">接口 v1 · 内置模块</span></div>
+        <p class="hint">音乐、通知和 Codex 都通过统一模块接口接入。第三方插件安装将在后续版本开放。</p>
+        <div id="extension-registry" class="feature-modules"></div>
+        <article class="feature-options"><h3>开发接口预留</h3><p class="hint">模块声明身份、权限、状态、事件和固定操作。胶囊布局、字幕队列、隐私设置与生命周期由桌宠统一管理。</p><div class="module-protocol">start(context) → getState() → execute(action) → stop()</div></article>
+      </section>
       <section id="page-import" class="page">
         <div class="section-heading">
           <div><p class="kicker">NEW CHARACTER</p><h2>导入新角色</h2></div>
@@ -114,6 +154,20 @@
             </div>
           </article>
 
+          <article class="form-card">
+            <div class="step-number">05</div>
+            <div class="form-content">
+              <h3>角色预览与参数</h3>
+              <p class="hint">选择模型后即可预览动画；导入前可以校准音频和气泡高度，导入后仍可在角色库中修改。</p>
+              <div class="preview-settings-grid">
+                <div class="preview-column"><div id="import-preview"></div><div id="import-history"></div></div>
+                <div><div id="import-parameters"></div>
+                  <button id="prepare-voice-preview" class="select-button secondary" type="button">读取长音频分句以试听</button>
+                  <div id="import-voice-controls" class="audition-controls"></div>
+                </div>
+              </div>
+            </div>
+          </article>
           <div class="submit-bar">
             <div id="import-status" role="status">准备就绪</div>
             <button id="import-submit" class="primary-button" type="submit">导入并设为当前桌宠</button>

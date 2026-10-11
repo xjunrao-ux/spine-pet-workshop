@@ -1,10 +1,12 @@
 type PetActionName = "idle" | "walk" | "sit" | "sleep" | "touch" | "special";
+type PetParameters = import("../electron/character-parameters.mjs").CharacterParameters;
 
 type PetCommand =
   | { type: "action"; action: PetActionName }
   | { type: "scale"; value: number }
   | { type: "open-size-dialog"; current: number }
-  | { type: "voice-enabled"; enabled: boolean };
+  | { type: "voice-enabled"; enabled: boolean }
+  | { type: "parameters"; parameters: PetParameters };
 
 interface DesktopPetBridge {
   isElectron: boolean;
@@ -29,6 +31,7 @@ interface PetVoiceLine {
 }
 
 interface PetCharacterConfig {
+  parameters?: PetParameters;
   id: string;
   name: string;
   builtin: boolean;
@@ -78,6 +81,7 @@ interface SingleFileSelection {
 }
 
 interface CharacterImportPayload {
+  parameters?: PetParameters;
   name: string;
   modelFolder: string;
   modelFile: string;
@@ -94,6 +98,10 @@ interface CharacterImportPayload {
 }
 
 interface PetSettingsBridge {
+  getCharacterConfig(id: string): Promise<PetCharacterConfig>;
+  saveParameters(id: string, parameters: PetParameters): Promise<{ok: boolean; parameters?: PetParameters; error?: string}>;
+  previewModel(payload: {modelFolder: string; modelFile: string; atlasFile: string}): Promise<PetCharacterConfig>;
+  previewVoice(payload: NonNullable<CharacterImportPayload["voiceBundle"]>): Promise<{lines: PetVoiceLine[]; audioUrl: string}>;
   listCharacters(): Promise<CharacterListItem[]>;
   chooseModelFolder(): Promise<ModelFolderSelection>;
   chooseAudioFiles(): Promise<AudioFileSelection>;
@@ -106,6 +114,7 @@ interface PetSettingsBridge {
 }
 
 interface Window {
+  petFeatures?: import("./features/types").FeatureBridge;
   desktopPet?: DesktopPetBridge;
   petSettings?: PetSettingsBridge;
 }

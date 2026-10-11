@@ -1,4 +1,8 @@
 import "./settings.css";
+import { initializeFeatureSettings } from "./features/settings";
+import { createParameterEditor } from "./parameter-editor";
+import { CharacterPreview, VoiceAudition } from "./character-preview";
+import { normalizeParameters } from "../electron/character-parameters.mjs";
 
 type ActionName = "idle" | "walk" | "sit" | "sleep" | "touch" | "special";
 
@@ -18,6 +22,121 @@ if (previewPage) {
 
 if (!window.petSettings) throw new Error("角色管理器只能在桌宠应用中运行");
 const api = window.petSettings;
+const audition = new VoiceAudition();
+const importPreview = new CharacterPreview(document.querySelector<HTMLElement>("#import-preview")!);
+const libraryPreview = new CharacterPreview(document.querySelector<HTMLElement>("#library-preview")!);
+const importParameters = createParameterEditor(document.querySelector<HTMLElement>("#import-parameters")!, undefined, value => {
+  importPreview.setParameters(value); audition.stop();
+}, document.querySelector<HTMLElement>('#import-history')!);
+const libraryParameters = createParameterEditor(document.querySelector<HTMLElement>("#library-parameters")!, undefined, value => {
+  libraryPreview.setParameters(value); audition.stop();
+  document.querySelector<HTMLElement>("#parameters-status")!.textContent = "有未保存的修改；试听和预览使用当前参数";
+}, document.querySelector<HTMLElement>('#library-history')!);
+let editingCharacterId: string | undefined;
+let settingsGeneration = 0;
+let modelPreviewGeneration = 0;
+let voicePreviewGeneration = 0;
+
+function renderVoiceControls(host: HTMLElement, lines: PetVoiceLine[], audioUrl: (line: PetVoiceLine) => string, getParameters: () => PetParameters) {
+  host.replaceChildren(); audition.stop();
+  const status = document.createElement("p"); status.setAttribute("role", "status");
+  if (!lines.length) { status.textContent = "此角色没有可试听的语音"; host.append(status); return; }
+  const select = document.createElement("select"); select.setAttribute("aria-label", "试听语音分句");
+  lines.forEach((line, index) => select.add(new Option(`${line.title ?? line.id} · ${line.subtitle.slice(0, 35)}`, String(index))));
+  const play = document.createElement("button"); play.type = "button"; play.className = "ghost-button"; play.textContent = "试听当前分句";
+  play.addEventListener("click", () => {
+    const line = lines[Number(select.value)]; void audition.play(line, audioUrl(line), getParameters(), status);
+  });
+  const stop = document.createElement("button"); stop.type = "button"; stop.className = "ghost-button"; stop.textContent = "停止";
+  stop.addEventListener("click", () => { audition.stop(); status.textContent = "已停止"; });
+  select.addEventListener("change", () => audition.stop());
+  status.textContent = "选择分句试听，调整偏移后再次试听确认";
+  host.append(select, play, stop, status);
+}
+
+async function openCharacterSettings(id: string) {
+  const generation = ++settingsGeneration;
+  editingCharacterId = id; audition.stop(); libraryPreview.clear();
+  const panel = document.querySelector<HTMLElement>("#character-settings")!;
+  const status = document.querySelector<HTMLElement>("#parameters-status")!;
+  const save = document.querySelector<HTMLButtonElement>("#save-character-parameters")!;
+  const controls = document.querySelector<HTMLElement>("#library-voice-controls")!;
+  controls.replaceChildren(); panel.classList.remove("hidden"); save.disabled = true;
+  status.textContent = "正在读取角色设置…";
+  panel.scrollIntoView({behavior: "smooth", block: "start"});
+  try {
+    const config = await api.getCharacterConfig(id);
+    if (generation !== settingsGeneration) return;
+    document.querySelector<HTMLElement>("#character-settings-title")!.textContent = `${config.name} · 角色设置`;
+    libraryParameters.set(config.parameters, true);
+    status.textContent = "调整后点击保存；仅修改此角色"; save.disabled = false;
+    void libraryPreview.load(config);
+    if (config.voiceManifestUrl) {
+      const url = new URL(config.voiceManifestUrl, window.location.href);
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("语音配置读取失败");
+      const manifest = await response.json() as {lines: PetVoiceLine[]};
+      if (generation !== settingsGeneration) return;
+      renderVoiceControls(controls, manifest.lines, line => new URL(line.audio, url).href, libraryParameters.get);
+    } else renderVoiceControls(controls, [], () => "", libraryParameters.get);
+  } catch (error) {
+    if (generation === settingsGeneration) status.textContent = `读取失败：${String(error)}`;
+  }
+}
+
+document.querySelector("#close-character-settings")!.addEventListener("click", () => {
+  settingsGeneration++; editingCharacterId = undefined; audition.stop(); libraryPreview.clear();
+  document.querySelector("#character-settings")!.classList.add("hidden");
+});
+document.querySelector("#reset-character-parameters")!.addEventListener("click", () => {
+  libraryParameters.set({ ...libraryParameters.get(), ...normalizeParameters() });
+});
+document.querySelector<HTMLButtonElement>("#save-character-parameters")!.addEventListener("click", async (event) => {
+  if (!editingCharacterId) return;
+  const generation = settingsGeneration;
+  const button = event.currentTarget as HTMLButtonElement; button.disabled = true;
+  const snapshot = libraryParameters.get();
+  const result = await api.saveParameters(editingCharacterId, snapshot);
+  if (generation !== settingsGeneration) return;
+  const changedWhileSaving = libraryParameters.get() !== snapshot;
+  if (result.ok && !changedWhileSaving) libraryParameters.set(result.parameters);
+  document.querySelector<HTMLElement>("#parameters-status")!.textContent = result.ok
+    ? changedWhileSaving ? "本次设置已保存；后续修改尚未保存" : "已保存，当前角色立即生效（音频从下一次播放应用）"
+    : `保存失败：${result.error}`;
+  button.disabled = false;
+});
+
+async function updateImportPreview() {
+  const generation = ++modelPreviewGeneration;
+  importPreview.clear();
+  if (!selectedModelFolder || !modelFile.value || !atlasFile.value) return;
+  try {
+    const config = await api.previewModel({modelFolder: selectedModelFolder, modelFile: modelFile.value, atlasFile: atlasFile.value});
+    if (generation !== modelPreviewGeneration) return;
+    config.parameters = importParameters.get();
+    config.animations = {idle: document.querySelector<HTMLInputElement>("#anim-idle")!.value.trim()};
+    await importPreview.load(config);
+  } catch (error) { if (generation === modelPreviewGeneration) importPreview.showError(String(error)); }
+}
+
+function invalidateVoicePreview() {
+  voicePreviewGeneration++; audition.stop();
+  document.querySelector("#import-voice-controls")!.replaceChildren();
+}
+
+document.querySelector<HTMLButtonElement>("#prepare-voice-preview")!.addEventListener("click", async (event) => {
+  const button = event.currentTarget as HTMLButtonElement;
+  const host = document.querySelector<HTMLElement>("#import-voice-controls")!;
+  const generation = ++voicePreviewGeneration;
+  if (!longVoiceFile || !bundleCharacterId.value.trim()) { host.textContent = "请先选择长音频并填写角色 ID"; return; }
+  button.disabled = true; host.textContent = "正在读取分句…";
+  try {
+    const result = await api.previewVoice({audioPath: longVoiceFile.path, characterId: bundleCharacterId.value.trim(), language: bundleLanguage.value,
+      metadataPath: customVoiceConfig.metadata?.path, subtitlePath: customVoiceConfig.subtitles?.path});
+    if (generation === voicePreviewGeneration) renderVoiceControls(host, result.lines, () => result.audioUrl, importParameters.get);
+  } catch (error) { if (generation === voicePreviewGeneration) host.textContent = `试听准备失败：${String(error)}`; }
+  finally { button.disabled = false; }
+});
 
 const tabs = [...document.querySelectorAll<HTMLButtonElement>(".tab")];
 const pages = [...document.querySelectorAll<HTMLElement>(".page")];
@@ -49,8 +168,11 @@ const customVoiceConfig: Record<VoiceConfigKind, { path: string; name: string } 
 };
 
 function switchPage(name: string) {
+  document.body.classList.toggle('utility-page', name === 'features' || name === 'extensions');
+  audition.stop();
   tabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.page === name));
   pages.forEach((page) => page.classList.toggle("active", page.id === `page-${name}`));
+  window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
 tabs.forEach((tab) => tab.addEventListener("click", () => switchPage(tab.dataset.page ?? "characters")));
@@ -73,11 +195,15 @@ async function loadCharacters() {
           <p>${character.builtin ? "内置示例角色" : escapeHtml(character.modelFile)} · ${character.voiceCount} 条语音</p>
         </div>
         <div class="character-actions">
+          <button data-settings="${character.id}">设置</button>
           ${character.active ? "" : `<button data-activate="${character.id}">应用</button>`}
           ${character.builtin ? "" : `<button class="danger" data-delete="${character.id}" data-name="${escapeHtml(character.name)}">删除</button>`}
         </div>
       </article>
     `).join("");
+    characterList.querySelectorAll<HTMLButtonElement>("[data-settings]").forEach(button => {
+      button.addEventListener("click", () => void openCharacterSettings(button.dataset.settings!));
+    });
 
     characterList.querySelectorAll<HTMLButtonElement>("[data-activate]").forEach((button) => {
       button.addEventListener("click", async () => {
@@ -92,6 +218,7 @@ async function loadCharacters() {
         if (!window.confirm(`确定删除角色“${button.dataset.name}”及其已导入素材吗？`)) return;
         const result = await api.deleteCharacter(button.dataset.delete!);
         if (!result.ok) window.alert(result.error ?? "删除失败");
+        if (result.ok && editingCharacterId === button.dataset.delete) document.querySelector<HTMLButtonElement>("#close-character-settings")!.click();
         await loadCharacters();
       });
     });
@@ -107,6 +234,7 @@ modelButton.addEventListener("click", async () => {
     modelSummary.textContent = result.error ?? "没有找到骨骼文件";
     modelSummary.className = "selection-summary error";
     selectedModelFolder = "";
+    modelPreviewGeneration++; importPreview.clear();
     return;
   }
   selectedModelFolder = result.folderPath;
@@ -118,6 +246,7 @@ modelButton.addEventListener("click", async () => {
   if (matchingAtlas) atlasFile.value = matchingAtlas;
   modelFileLabel.classList.remove("hidden");
   atlasFileLabel.classList.remove("hidden");
+  void updateImportPreview();
 });
 
 modelFile.addEventListener("change", () => {
@@ -125,7 +254,12 @@ modelFile.addEventListener("change", () => {
     option.value.replace(/\.atlas$/i, "") === modelFile.value.replace(/\.(skel|json)$/i, "")
   );
   if (matchingAtlas) atlasFile.value = matchingAtlas.value;
+  void updateImportPreview();
 });
+atlasFile.addEventListener("change", () => void updateImportPreview());
+document.querySelector("#anim-idle")!.addEventListener("change", () => void updateImportPreview());
+bundleCharacterId.addEventListener("input", invalidateVoicePreview);
+bundleLanguage.addEventListener("change", invalidateVoicePreview);
 
 function renderAudioRows() {
   audioList.innerHTML = audioRows.map((row, index) => `
@@ -161,6 +295,7 @@ longVoiceButton.addEventListener("click", async () => {
   const result = await api.chooseLongVoiceFile();
   if (result.canceled || !result.path || !result.name) return;
   longVoiceFile = { path: result.path, name: result.name };
+  invalidateVoicePreview();
   if (!bundleCharacterId.value.trim()) {
     const inferredId = result.name.match(/char_\d+_[a-z0-9]+/i)?.[0];
     if (inferredId) bundleCharacterId.value = inferredId;
@@ -176,6 +311,7 @@ document.querySelectorAll<HTMLButtonElement>("[data-config-kind]").forEach((butt
     const result = await api.chooseVoiceConfigFile(kind);
     if (result.canceled || !result.path || !result.name) return;
     customVoiceConfig[kind] = { path: result.path, name: result.name };
+    invalidateVoicePreview();
     const summary = document.querySelector<HTMLElement>(`#config-${kind}-summary`)!;
     summary.textContent = result.name;
     summary.title = result.path;
@@ -202,6 +338,7 @@ form.addEventListener("submit", async (event) => {
   const hasVoiceBundle = Boolean(longVoiceFile) || Boolean(bundleCharacterId.value.trim());
 
   const result = await api.importCharacter({
+    parameters: importParameters.get(),
     name: characterName.value.trim(),
     modelFolder: selectedModelFolder,
     modelFile: modelFile.value,
@@ -223,6 +360,7 @@ form.addEventListener("submit", async (event) => {
   }
   importStatus.textContent = "导入完成，桌宠已切换。";
   form.reset();
+  modelPreviewGeneration++; importPreview.clear(); importParameters.set(undefined, true); invalidateVoicePreview();
   selectedModelFolder = "";
   audioRows = [];
   longVoiceFile = undefined;
@@ -252,3 +390,5 @@ document.querySelectorAll<HTMLButtonElement>("[data-url]").forEach((button) => {
 refreshButton.addEventListener("click", () => void loadCharacters());
 
 void loadCharacters();
+initializeFeatureSettings();
+window.addEventListener("beforeunload", () => audition.stop());

@@ -1,15 +1,17 @@
 # Spine 桌宠工坊
 
+当前版本为 **v3.1.2**：滚轮胶囊、音乐、系统通知与 Codex 信息面板，修复开机启动判定，通知已读后仅消除红点、入口常驻。日常开发保持在本地 **dev/v3**，正式快照整理到 main；见 [v3.1 使用说明](docs/versions/v3.1.md)。
+
 Windows 桌宠工具，支持 Spine 3.8 动画、语音字幕、拖动、重力、窗口吸附，以及本地角色和语音导入。
 
-当前最新正式版：**v2.2.4**。固定阿米娅版：**v2.1.1**。
+当前最新版本：**v3.1.2**。固定阿米娅版：**v2.1.1**。
 
 ## 下载与运行
 
 普通用户直接下载 Windows x64 软件，无需安装 Node.js、pnpm 或 Electron：
 
-- [安装版 v2.2.4](https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v2.2.4/Spine-Pet-Workshop-Setup-v2.2.4-x64.exe)：双击安装，从桌面快捷方式启动。
-- [便携版 v2.2.4](https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v2.2.4/Spine-Pet-Workshop-Portable-v2.2.4-x64.exe)：双击直接启动。
+- [安装版 v3.1.2](https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v3.1.2/Spine-Pet-Workshop-Setup-v3.1.2-x64.exe)：双击安装，从桌面快捷方式启动。
+- [便携版 v3.1.2](https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v3.1.2/Spine-Pet-Workshop-Portable-v3.1.2-x64.exe)：双击直接启动。
 - [全部正式版本](https://github.com/xjunrao-ux/spine-pet-workshop/releases)：历史版本、更新说明、使用说明和校验文件。
 
 GitHub 自动生成的 `Source code.zip` 是开发源码，不是可运行的安装包。
@@ -22,7 +24,7 @@ GitHub 自动生成的 `Source code.zip` 是开发源码，不是可运行的安
 
 角色模型通常由 `.skel/.json + .atlas + 贴图` 组成。语音支持单句音频配字幕，或长音频配时间轴；导入只在本机进行。
 
-完整步骤和故障排查见 [v2.2 使用说明](docs/versions/v2.2.md)。固定角色版见 [v2.1 使用说明](docs/versions/v2.1.md)。
+完整步骤和故障排查见 [v3.1 使用说明](docs/versions/v3.1.md)。固定角色版见 [v2.1 使用说明](docs/versions/v2.1.md)。
 
 ![角色管理器](docs/images/character-library.png)
 
@@ -47,8 +49,10 @@ GitHub 自动生成的 `Source code.zip` 是开发源码，不是可运行的安
 | --- | --- | --- |
 | v1 | 本地测试，不公开发布 | 角色和基础动作 |
 | v2.1.1 | 正式版 | 包装好的阿米娅桌宠，动作、语音、字幕和置顶修复 |
-| v2.2.4 | 最新正式版 | 导入 Spine 角色、自定义语音、长音频分句和角色管理 |
-| v3 | 本地开发中 | 音乐控制、通知等扩展；不属于当前发行版 |
+| v2.2.4 | 历史正式版 | 导入 Spine 角色、自定义语音、长音频分句和角色管理 |
+| v2.3.1 | 本地开发，未发行 | 音频手动校准、气泡高度、左右随机行走、角色预览与逐角色参数 |
+| v3.1.1 | 本地开发预览 | 滚轮胶囊、音乐控制、系统通知、Codex 信息与功能开关；未公开发布 |
+| v3.1.2 | 当前发行版本 | 平滑吸附分页、预览撤销重做、开机启动修复、通知常驻入口与兼容说明 |
 | v4 | 规划中 | 评估 AI 对话和行为能力 |
 
 详见 [更新日志](CHANGELOG.md)、[版本前瞻](ROADMAP.md)。
@@ -69,7 +73,7 @@ pnpm build
 pnpm package:win
 ```
 
-首次使用 pnpm 时可按 `package.json` 安装 pnpm 11.19.0。构建产物写入 `release/`，不提交到 Git。第三方角色模型和音频不在公共源码中；从源码运行时请准备本地素材，或通过角色管理器导入自己的角色，详见 [素材说明](public/README.md)。
+首次使用 pnpm 时可按 `package.json` 安装 pnpm 11.19.0。构建产物按版本写入 `release/v3.1.2/`，不提交到 Git。第三方角色模型和音频不在公共源码中；从源码运行时请准备本地素材，或通过角色管理器导入自己的角色，详见 [素材说明](public/README.md)。
 
 ```text
 electron/   主进程、系统窗口、IPC 和语音配置解析
@@ -82,6 +86,8 @@ scripts/    发布工具
 ```
 
 维护者请看 [本地开发与 Git 使用](docs/DEVELOPMENT.md)、[正式发布流程](docs/RELEASING.md)。
+
+v2.3.1 本地开发说明见 [使用说明](docs/versions/v2.3.1.md) 和 [角色参数扩展接口](docs/CHARACTER_PARAMETERS.md)。稳定线修复通过 `scripts/Sync-StableToV3.ps1` 单向同步到本地 v3，开发分支不推送。
 
 ## 素材与许可
 

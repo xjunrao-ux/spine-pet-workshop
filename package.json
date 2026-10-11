@@ -1,6 +1,6 @@
 {
   "name": "spine-pet-workshop",
-  "version": "2.2.4",
+  "version": "3.1.2",
   "private": true,
   "description": "A Windows Spine 3.8 desktop-pet workshop with local character and voice import.",
   "author": "Amiya Desktop Pet Project",
@@ -36,11 +36,12 @@
     "asar": true,
     "asarUnpack": [
       "electron/window-monitor.ps1",
+      "electron/extensions/*.ps1",
       "dist/models/**/*",
       "dist/voicepacks/**/*"
     ],
     "directories": {
-      "output": "release"
+      "output": "release/v${version}"
     },
     "files": [
       "assets/**/*",

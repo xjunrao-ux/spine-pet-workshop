@@ -3,7 +3,7 @@ param(
     [Parameter(Mandatory = $true)]
     [ValidatePattern('^\d+\.\d+\.\d+$')]
     [string]$Version,
-    [string]$ArtifactDirectory = 'release'
+    [string]$ArtifactDirectory = "release/v$Version"
 )
 
 $ErrorActionPreference = 'Stop'
@@ -61,7 +61,7 @@ try {
     }
     [System.IO.File]::WriteAllLines($checksumPath, [string[]]$checksumLines, [System.Text.UTF8Encoding]::new($false))
 
-    $usageArtifact = Join-Path $artifactRoot ([string]::Concat([char]0x4F7F, [char]0x7528, [char]0x8BF4, [char]0x660E, '.md'))
+    $usageArtifact = Join-Path $artifactRoot "USAGE-$tag.md"
     Copy-Item -LiteralPath $usage -Destination $usageArtifact -Force
 
     git push --atomic --set-upstream public main "refs/tags/$tag"

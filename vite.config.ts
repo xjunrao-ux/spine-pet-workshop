@@ -8,6 +8,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         pet: resolve(import.meta.dirname, "index.html"),
+        extensions: resolve(import.meta.dirname, "extensions.html"),
         settings: resolve(import.meta.dirname, "settings.html")
       }
     }

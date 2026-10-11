@@ -6,8 +6,13 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import path from "node:path";
 import readline from "node:readline";
 import { parseArkVoiceBundle } from "./voice-bundle.mjs";
+import { ExtensionService } from "./extensions/extension-service.mjs";
+import { createExtensionOverlay } from "./extensions/overlay.mjs";
+import { normalizeParameters, mergeParameters } from "./character-parameters.mjs";
+import { createStartupSettings } from "./startup.mjs";
 
 const rootDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+if (process.env.PET_TEST_PROFILE) app.setPath("userData", path.resolve(process.env.PET_TEST_PROFILE));
 const APP_ICON_PATH = path.join(rootDirectory, "assets", "amiya-app-icon.png");
 const BASE_WIDTH = 420;
 const BASE_HEIGHT = 500;
@@ -20,6 +25,7 @@ const SIT_SURFACE_LIFT_RATIO = 0.02;
 
 app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 protocol.registerSchemesAsPrivileged([
+  { scheme: "pet-preview", privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
   {
     scheme: "pet-asset",
     privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true }
@@ -44,11 +50,104 @@ let edgeSnapEnabled = true;
 let alwaysOnTop = true;
 let voiceEnabled = true;
 let petScale = 0.6;
+let activeCharacterParameters = normalizeParameters();
 let supportRatio = 1;
 let groundedWindow;
 let lastPhysicsTime = performance.now();
 let monitorSampleLogged = false;
 let activeCharacterName = "阿米娅";
+let extensionService;
+let extensionOverlay;
+let featureInteraction = false;
+const previewAssets = new Map();
+const selectedPreviewFolders = new Set();
+const selectedPreviewFiles = new Set();
+
+function grantPreviewAssets(kind, files) {
+  for (const [token, grant] of previewAssets) if (grant.kind === kind) previewAssets.delete(token);
+  const token = randomUUID();
+  previewAssets.set(token, { kind, files });
+  return (index) => `pet-preview://${token}/${index}${path.extname(files[index]).toLowerCase()}`;
+}
+
+function requireSettingsSender(event) {
+  if (!settingsWindow || settingsWindow.isDestroyed() || event.sender !== settingsWindow.webContents) throw new Error("无效的设置窗口请求");
+}
+
+async function previewModel(payload) {
+  const root = path.resolve(String(payload?.modelFolder ?? ""));
+  if (!selectedPreviewFolders.has(root)) throw new Error("请先选择模型文件夹");
+  const files = await walkFiles(root);
+  const model = String(payload.modelFile).split("/").join(path.sep);
+  const atlas = String(payload.atlasFile).split("/").join(path.sep);
+  if (!files.includes(model) || !SKELETON_EXTENSIONS.has(path.extname(model).toLowerCase()) ||
+      !files.includes(atlas) || path.extname(atlas).toLowerCase() !== ".atlas") throw new Error("请选择有效的骨骼和图集文件");
+  const atlasText = await readFile(path.join(root, atlas), "utf8");
+  const textures = files.filter(file => TEXTURE_EXTENSIONS.has(path.extname(file).toLowerCase()));
+  const paths = [path.join(root, model)];
+  const mapping = {};
+  for (const page of atlasPageNames(atlasText)) {
+    const texture = resolveAtlasTexture(atlas, page, textures);
+    if (!texture) throw new Error(`无法唯一匹配贴图：${page}`);
+    mapping[page] = paths.push(path.join(root, texture)) - 1;
+  }
+  if (!selectedPreviewFolders.has(root) || !settingsWindow) throw new Error("模型预览已取消");
+  const url = grantPreviewAssets("model", paths);
+  return { id: "preview", name: "导入预览", builtin: false, modelUrl: `${url(0)}?format=${path.extname(model).slice(1).toLowerCase()}`, atlasText,
+    textureUrls: Object.fromEntries(Object.entries(mapping).map(([page, index]) => [page, url(index)])) };
+}
+
+async function previewVoice(payload) {
+  const audioPath = path.resolve(String(payload?.audioPath ?? ""));
+  if (!selectedPreviewFiles.has(audioPath) || !AUDIO_EXTENSIONS.has(path.extname(audioPath).toLowerCase())) throw new Error("请先选择长音频");
+  const dataFile = (file, fallback) => {
+    if (!file) return bundledArkDataPath(fallback);
+    const resolved = path.resolve(String(file));
+    if (!selectedPreviewFiles.has(resolved)) throw new Error("请先选择配置文件");
+    return resolved;
+  };
+  const voiceData = await readJson(dataFile(payload.metadataPath, "voice_data.json"), undefined);
+  const subtitles = await readJson(dataFile(payload.subtitlePath, "charword_table.json"), undefined);
+  const lines = parseArkVoiceBundle(voiceData, subtitles, payload.characterId, payload.language, "audio");
+  if (!selectedPreviewFiles.has(audioPath) || !settingsWindow) throw new Error("语音预览已取消");
+  const audioUrl = grantPreviewAssets("voice", [audioPath])(0);
+  return { lines, audioUrl };
+}
+
+async function saveCharacterParameters(id, patch) {
+  if (!patch || typeof patch !== "object" || Array.isArray(patch)) throw new Error("参数格式不正确");
+  if (JSON.stringify(patch).length > 16384) throw new Error("参数数据过大");
+  const preferences = await readPreferences();
+  let parameters;
+  if (id === BUILTIN_CHARACTER.id) {
+    parameters = mergeParameters(preferences.characterParameters?.[id], patch);
+    await writeFile(preferencesPath(), JSON.stringify({ ...preferences,
+      characterParameters: { ...preferences.characterParameters, [id]: parameters } }, null, 2), "utf8");
+  } else {
+    const profile = await readCustomCharacter(id);
+    if (!profile) throw new Error("没有找到该角色");
+    parameters = mergeParameters(profile.parameters, patch);
+    await writeFile(path.join(charactersDirectory(), id, "character.json"), JSON.stringify({ ...profile, parameters }, null, 2), "utf8");
+  }
+  if (preferences.activeCharacterId === id && mainWindow && !mainWindow.isDestroyed()) {
+    applyCharacterParameters(parameters);
+  }
+  return parameters;
+}
+
+function applyCharacterParameters(value) {
+  activeCharacterParameters = normalizeParameters(value);
+  const nextScale = activeCharacterParameters.modelScalePercent / 100;
+  if (nextScale !== petScale) setPetScale(nextScale);
+  sendCommand({ type: "parameters", parameters: activeCharacterParameters });
+}
+
+async function setCharacterScale(nextScale) {
+  try {
+    const preferences = await readPreferences();
+    await saveCharacterParameters(preferences.activeCharacterId, {modelScalePercent: Math.round(nextScale * 100)});
+  } catch (error) { dialog.showErrorBox("角色大小保存失败", String(error.message ?? error)); }
+}
 
 const BUILTIN_CHARACTER = {
   id: "builtin-amiya",
@@ -93,7 +192,7 @@ async function readPreferences() {
 }
 
 async function writePreferences(activeCharacterId) {
-  await writeFile(preferencesPath(), JSON.stringify({ activeCharacterId }, null, 2), "utf8");
+  await writeFile(preferencesPath(), JSON.stringify({ ...await readPreferences(), activeCharacterId }, null, 2), "utf8");
 }
 
 async function walkFiles(root, relativeDirectory = "") {
@@ -183,7 +282,10 @@ async function readCustomCharacter(characterId) {
 }
 
 async function getCharacterRuntimeConfig(characterId) {
-  if (!characterId || characterId === BUILTIN_CHARACTER.id) return BUILTIN_CHARACTER;
+  if (!characterId || characterId === BUILTIN_CHARACTER.id) {
+    const preferences = await readPreferences();
+    return { ...BUILTIN_CHARACTER, parameters: normalizeParameters(preferences.characterParameters?.[BUILTIN_CHARACTER.id]) };
+  }
   const profile = await readCustomCharacter(characterId);
   if (!profile) return BUILTIN_CHARACTER;
   const atlasBundle = await getCustomAtlasBundle(profile);
@@ -196,7 +298,8 @@ async function getCharacterRuntimeConfig(characterId) {
     atlasText: atlasBundle.atlasText,
     textureUrls: atlasBundle.textureUrls,
     voiceManifestUrl: profile.voiceCount > 0 ? petAssetUrl(profile.id, path.join("voice", "manifest.json")) : undefined,
-    animations: profile.animations ?? {}
+    animations: profile.animations ?? {},
+    parameters: normalizeParameters(profile.parameters)
   };
 }
 
@@ -345,6 +448,7 @@ async function importCharacter(payload) {
       if (ACTION_NAMES.has(action) && animationName) animations[action] = animationName;
     }
     const profile = {
+      parameters: normalizeParameters(payload.parameters),
       version: 1,
       id,
       name,
@@ -357,6 +461,7 @@ async function importCharacter(payload) {
     await writeFile(path.join(characterRoot, "character.json"), JSON.stringify(profile, null, 2), "utf8");
     await writePreferences(id);
     activeCharacterName = name;
+    applyCharacterParameters(profile.parameters);
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.reload();
     return id;
   } catch (error) {
@@ -370,6 +475,7 @@ async function activateCharacter(characterId) {
   if (config.id !== characterId) throw new Error("没有找到该角色");
   await writePreferences(characterId);
   activeCharacterName = config.name;
+  applyCharacterParameters(config.parameters);
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.reload();
 }
 
@@ -381,6 +487,7 @@ async function deleteCharacter(characterId) {
   if (preferences.activeCharacterId === characterId) {
     await writePreferences(BUILTIN_CHARACTER.id);
     activeCharacterName = BUILTIN_CHARACTER.name;
+    applyCharacterParameters((await getCharacterRuntimeConfig(BUILTIN_CHARACTER.id)).parameters);
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.reload();
   }
   await rm(path.join(charactersDirectory(), characterId), { recursive: true, force: true });
@@ -388,11 +495,14 @@ async function deleteCharacter(characterId) {
 
 function createSettingsWindow() {
   if (settingsWindow && !settingsWindow.isDestroyed()) {
+    if (settingsWindow.isMinimized()) settingsWindow.restore();
     settingsWindow.show();
+    settingsWindow.moveTop();
     settingsWindow.focus();
     return;
   }
   settingsWindow = new BrowserWindow({
+    show: false,
     width: 980,
     height: 760,
     minWidth: 760,
@@ -408,6 +518,14 @@ function createSettingsWindow() {
       sandbox: true
     }
   });
+  const openedSettingsWindow = settingsWindow;
+  openedSettingsWindow.once("ready-to-show", () => {
+    if (!openedSettingsWindow.isDestroyed()) {
+      openedSettingsWindow.show();
+      openedSettingsWindow.moveTop();
+      openedSettingsWindow.focus();
+    }
+  });
   settingsWindow.webContents.once("did-finish-load", () => {
     if (!process.env.SETTINGS_CAPTURE_PATH) return;
     setTimeout(async () => {
@@ -420,7 +538,11 @@ function createSettingsWindow() {
   const developmentUrl = process.env.VITE_DEV_SERVER_URL;
   if (developmentUrl) void settingsWindow.loadURL(`${developmentUrl}/settings.html`);
   else void settingsWindow.loadFile(path.join(rootDirectory, "dist", "settings.html"));
-  settingsWindow.on("closed", () => { settingsWindow = undefined; });
+  settingsWindow.on("closed", () => {
+    if (settingsWindow === openedSettingsWindow) {
+      settingsWindow = undefined; previewAssets.clear(); selectedPreviewFolders.clear(); selectedPreviewFiles.clear();
+    }
+  });
 }
 
 function sendCommand(command) {
@@ -518,7 +640,7 @@ function buildMenu() {
           label,
           type: "radio",
           checked: petScale === scale,
-          click: () => setPetScale(scale)
+          click: () => void setCharacterScale(scale)
         };
       })
     },
@@ -662,7 +784,7 @@ function updatePhysics() {
     if (walking && direction > 0 && centerX >= groundedWindow.X + groundedWindow.Width - edgeMargin) reverseDirection();
   }
 
-  const targetHorizontalVelocity = walking ? WALK_SPEED * direction : 0;
+  const targetHorizontalVelocity = walking && !featureInteraction ? WALK_SPEED * direction : 0;
   const velocityBlend = Math.min(1, WALK_ACCELERATION * deltaTime);
   horizontalVelocity += (targetHorizontalVelocity - horizontalVelocity) * velocityBlend;
   if (!walking && Math.abs(horizontalVelocity) < 0.35) horizontalVelocity = 0;
@@ -846,6 +968,8 @@ app.whenReady().then(async () => {
   if (firstRun) await writePreferences(BUILTIN_CHARACTER.id);
   const activeConfig = await getActiveCharacterConfig();
   activeCharacterName = activeConfig.name;
+  activeCharacterParameters = normalizeParameters(activeConfig.parameters);
+  petScale = activeCharacterParameters.modelScalePercent / 100;
 
   protocol.handle("pet-asset", async (request) => {
     try {
@@ -864,6 +988,29 @@ app.whenReady().then(async () => {
     }
   });
 
+  protocol.handle("pet-preview", (request) => {
+    try {
+      const url = new URL(request.url);
+      const grant = previewAssets.get(url.hostname);
+      const match = url.pathname.match(/^\/(0|[1-9][0-9]*)(\.[a-z0-9]+)$/);
+      const file = match && grant?.files[Number(match[1])];
+      if (!file || path.extname(file).toLowerCase() !== match[2]) return new Response("Not found", { status: 404 });
+      return net.fetch(pathToFileURL(file).toString());
+    } catch { return new Response("Not found", { status: 404 }); }
+  });
+  ipcMain.handle("settings:get-character-config", async (event, id) => {
+    requireSettingsSender(event);
+    const config = await getCharacterRuntimeConfig(String(id));
+    if (config.id !== id) throw new Error("没有找到该角色");
+    return config;
+  });
+  ipcMain.handle("settings:save-parameters", async (event, id, parameters) => {
+    requireSettingsSender(event);
+    try { return { ok: true, parameters: await saveCharacterParameters(String(id), parameters) }; }
+    catch (error) { return { ok: false, error: error.message }; }
+  });
+  ipcMain.handle("settings:preview-model", (event, payload) => { requireSettingsSender(event); return previewModel(payload); });
+  ipcMain.handle("settings:preview-voice", (event, payload) => { requireSettingsSender(event); return previewVoice(payload); });
   ipcMain.handle("pet:get-character-config", getActiveCharacterConfig);
   ipcMain.on("pet:show-context-menu", showPetMenu);
   ipcMain.on("pet:drag-start", startDragging);
@@ -883,7 +1030,7 @@ app.whenReady().then(async () => {
   });
   ipcMain.on("pet:set-custom-scale", (_event, nextScale) => {
     const normalized = Math.max(0.3, Math.min(1.2, Number(nextScale) || petScale));
-    setPetScale(Math.round(normalized * 100) / 100);
+    void setCharacterScale(Math.round(normalized * 100) / 100);
   });
 
   ipcMain.handle("settings:list-characters", listCharacters);
@@ -894,6 +1041,8 @@ app.whenReady().then(async () => {
     });
     if (result.canceled || result.filePaths.length === 0) return { canceled: true };
     const folderPath = result.filePaths[0];
+    selectedPreviewFolders.clear();
+    selectedPreviewFolders.add(path.resolve(folderPath));
     try {
       const files = await walkFiles(folderPath);
       const modelFiles = files.filter((file) => SKELETON_EXTENSIONS.has(path.extname(file).toLowerCase()));
@@ -932,6 +1081,7 @@ app.whenReady().then(async () => {
       filters: [{ name: "角色长音频", extensions: ["ogg", "mp3", "wav", "m4a", "aac", "flac"] }]
     });
     const filePath = result.filePaths[0];
+    if (filePath) selectedPreviewFiles.add(path.resolve(filePath));
     return { canceled: result.canceled || !filePath, path: filePath, name: filePath ? path.basename(filePath) : undefined };
   });
   ipcMain.handle("settings:choose-voice-config-file", async (_event, kind) => {
@@ -941,6 +1091,7 @@ app.whenReady().then(async () => {
       filters: [{ name: "JSON 数据", extensions: ["json"] }]
     });
     const filePath = result.filePaths[0];
+    if (filePath) selectedPreviewFiles.add(path.resolve(filePath));
     return { canceled: result.canceled || !filePath, path: filePath, name: filePath ? path.basename(filePath) : undefined };
   });
   ipcMain.handle("settings:import-character", async (_event, payload) => {
@@ -982,7 +1133,49 @@ app.whenReady().then(async () => {
     return true;
   });
   createWindow();
-  if (firstRun && !process.env.PET_CAPTURE_PATH && !process.env.PET_CAPTURE_SERIES_DIR) createSettingsWindow();
+  extensionService = new ExtensionService({
+    directory: path.join(app.isPackaged ? path.join(process.resourcesPath, "app.asar.unpacked") : rootDirectory, "electron", "extensions"),
+    userData: app.getPath("userData"),
+    onUpdate: snapshot => {
+      extensionOverlay?.update(snapshot);
+      if (settingsWindow && !settingsWindow.isDestroyed()) settingsWindow.webContents.send("features:state", snapshot);
+    },
+    onEvent: event => extensionOverlay?.event(event)
+  });
+  extensionOverlay = createExtensionOverlay({ root: rootDirectory, service: extensionService,
+    getPet: () => mainWindow, getDragging: () => dragging,
+    setInteraction: value => { featureInteraction = value; }, openSettings: createSettingsWindow,
+    testing: !app.isPackaged && Boolean(process.env.V311_SMOKE_DIR) });
+  const settingsSender = event => settingsWindow && event.sender === settingsWindow.webContents;
+  const startupSettings = createStartupSettings(app);
+  ipcMain.handle("settings:startup-get", event => {
+    if (!settingsSender(event)) throw new Error("Invalid sender");
+    return startupSettings.get();
+  });
+  ipcMain.handle("settings:startup-set", (event, enabled) => {
+    if (!settingsSender(event)) throw new Error("Invalid sender");
+    return startupSettings.set(enabled);
+  });
+  ipcMain.handle("features:get", event => { if (!settingsSender(event)) throw new Error("Invalid sender"); return extensionService.snapshot(); });
+  ipcMain.handle("features:set", async (event, settings) => {
+    if (!settingsSender(event)) throw new Error("Invalid sender");
+    try { return { ok: true, snapshot: await extensionService.setSettings(settings) }; }
+    catch { return { ok: false, error: "设置保存失败，请稍后重试" }; }
+  });
+  ipcMain.handle("features:permission", async event => {
+    if (!settingsSender(event)) throw new Error("Invalid sender");
+    try { return { ok: true, permission: await extensionService.request("permission", {}) }; }
+    catch { return { ok: false, error: "无法请求通知权限，请在 Windows 设置中检查通知访问" }; }
+  });
+  ipcMain.on("features:preview", event => {
+    if (settingsSender(event)) extensionOverlay.event({ id: "preview", module: "notifications", text: "桌宠工坊 · 新消息会在这里轻轻提醒", createdAt: new Date().toISOString() });
+  });
+  await extensionService.start();
+  if (!app.isPackaged && process.env.V311_SMOKE_DIR) {
+    const { runSmoke } = await import("../scripts/smoke-v311.mjs");
+    void runSmoke({ app, mainWindow, overlay: extensionOverlay, service: extensionService, createSettingsWindow, getSettingsWindow: () => settingsWindow });
+  }
+  if (firstRun && !process.argv.includes('--autostart') && !process.env.PET_CAPTURE_PATH && !process.env.PET_CAPTURE_SERIES_DIR) createSettingsWindow();
   startWindowMonitor();
   physicsTimer = setInterval(updatePhysics, 16);
 
@@ -1002,6 +1195,8 @@ app.whenReady().then(async () => {
 });
 
 app.on("before-quit", () => {
+  extensionService?.stop();
+  extensionOverlay?.stop();
   clearInterval(physicsTimer);
   clearInterval(dragTimer);
   monitorProcess?.kill();

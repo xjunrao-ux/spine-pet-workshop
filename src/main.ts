@@ -1,7 +1,9 @@
-import { Application, Assets, Container, FederatedPointerEvent, Point, Rectangle } from "pixi.js";
-import { AtlasAttachmentLoader, SkeletonBinary, SkeletonJson, Spine, TextureAtlas } from "@pixi-spine/all-3.8";
+import { Application, Container, FederatedPointerEvent, Point, Rectangle } from "pixi.js";
+import { Spine } from "@pixi-spine/all-3.8";
+import { loadCharacterSpine } from "./spine-loader";
 import "@pixi-spine/all-3.8";
 import "./style.css";
+import { normalizeParameters, chooseWalkDirection, calibratedSegment, speechMetrics, modelLayout, bubbleTop } from "../electron/character-parameters.mjs";
 
 type SemanticAction = "idle" | "walk" | "sit" | "sleep" | "touch" | "special";
 
@@ -93,35 +95,18 @@ let lastVoiceId: string | undefined;
 let voiceEnabled = true;
 let voiceSubtitleVisible = false;
 let characterConfig = FALLBACK_CHARACTER;
+let characterParameters = normalizeParameters();
 
-async function loadCustomSpineData(config: PetCharacterConfig) {
-  if (!config.atlasText || !config.textureUrls) throw new Error("自定义角色缺少 atlas 运行时数据");
-
-  const atlas = await new Promise<TextureAtlas>((resolve, reject) => {
-    new TextureAtlas(
-      config.atlasText,
-      (pageName, loaded) => {
-        const textureUrl = config.textureUrls?.[pageName];
-        if (!textureUrl) {
-          reject(new Error(`没有找到 atlas 贴图映射：${pageName}`));
-          return;
-        }
-        void Assets.load(textureUrl)
-          .then((texture) => loaded(texture.baseTexture))
-          .catch((error) => reject(new Error(`贴图加载失败：${pageName}；${String(error)}`)));
-      },
-      resolve
-    );
-  });
-
-  const attachmentLoader = new AtlasAttachmentLoader(atlas);
-  const response = await fetch(config.modelUrl);
-  if (!response.ok) throw new Error(`骨骼文件读取失败：${response.status}`);
-  if (new URL(config.modelUrl).pathname.toLowerCase().endsWith(".json")) {
-    return new SkeletonJson(attachmentLoader).readSkeletonData(await response.json());
-  }
-  return new SkeletonBinary(attachmentLoader).readSkeletonData(new Uint8Array(await response.arrayBuffer()));
+function positionSpeechBubble() {
+  const metrics = speechMetrics(characterParameters, window.innerHeight / 500, speechBubble.classList.contains("long"));
+  speechBubble.style.fontSize = `${metrics.fontSize}px`;
+  speechBubble.style.padding = `${metrics.paddingY}px ${metrics.paddingX}px`;
+  speechBubble.style.setProperty("--bubble-alpha", String(metrics.backgroundAlpha));
+  speechBubble.style.top = `${bubbleTop(characterParameters, window.innerHeight, speechBubble.offsetHeight,
+    spine && modelContainer ? spine.getBounds().y : undefined, speechBubble.classList.contains("long"))}px`;
 }
+new ResizeObserver(positionSpeechBubble).observe(speechBubble);
+window.addEventListener("resize", positionSpeechBubble);
 
 function findAnimation(action: SemanticAction): string | undefined {
   const lowerCaseMap = new Map(availableAnimations.map((name) => [name.toLowerCase(), name]));
@@ -143,6 +128,7 @@ function showSpeech(action: SemanticAction, customText?: string) {
   speechBubble.textContent = customText ?? lines[Math.floor(Math.random() * lines.length)];
   speechBubble.classList.remove("long");
   speechBubble.classList.remove("hidden");
+  positionSpeechBubble();
   window.clearTimeout(bubbleTimer);
   bubbleTimer = window.setTimeout(() => speechBubble.classList.add("hidden"), 3200);
 }
@@ -153,6 +139,7 @@ function showVoiceSubtitle(text: string) {
   speechBubble.textContent = text;
   speechBubble.classList.toggle("long", text.length >= 38);
   speechBubble.classList.remove("hidden");
+  positionSpeechBubble();
 }
 
 function hideVoiceSubtitleSoon() {
@@ -238,20 +225,24 @@ async function playVoiceLine(line: VoiceLine, allowInterrupt = false) {
       }
     });
     if (activeVoice !== audio) return;
-    audio.currentTime = Number(line.start);
+    const segment = calibratedSegment(line, characterParameters, audio.duration)!;
+    if (!segment.playable) { finish(); return; }
+    audio.currentTime = segment.start;
     const stopAtBoundary = () => {
       if (activeVoice !== audio) return;
       audio.pause();
       finish();
     };
     const armBoundaryTimer = () => {
+      if (activeVoice !== audio) return;
       window.clearTimeout(activeVoiceStopTimer);
-      const remainingMilliseconds = (Number(line.end) - 0.012 - audio.currentTime) * 1000;
+      const remainingMilliseconds = (segment.end - 0.012 - audio.currentTime) * 1000;
       if (remainingMilliseconds <= 0) stopAtBoundary();
       else activeVoiceStopTimer = window.setTimeout(stopAtBoundary, remainingMilliseconds);
     };
-    const disarmBoundaryTimer = () => window.clearTimeout(activeVoiceStopTimer);
+    const disarmBoundaryTimer = () => { if (activeVoice === audio) window.clearTimeout(activeVoiceStopTimer); };
     audio.addEventListener("playing", armBoundaryTimer);
+    audio.addEventListener("timeupdate", () => { if (audio.currentTime >= segment.end) stopAtBoundary(); });
     audio.addEventListener("waiting", disarmBoundaryTimer);
     audio.addEventListener("seeking", disarmBoundaryTimer);
     audio.addEventListener("seeked", () => { if (!audio.paused) armBoundaryTimer(); });
@@ -370,7 +361,7 @@ function playAction(
   schedulePoseAlignment();
 
   if (action === "walk") {
-    if (!options.autonomous) setFacingDirection(Math.random() > 0.5 ? 1 : -1);
+    setFacingDirection(chooseWalkDirection(characterParameters));
     window.desktopPet?.setWalking(true, facingDirection);
   } else {
     window.desktopPet?.setWalking(false, facingDirection);
@@ -396,9 +387,7 @@ function fitModel(application: Application) {
   if (!spine || !modelContainer || !referenceBounds) return;
 
   const bounds = referenceBounds;
-  const usableWidth = application.screen.width * 0.72;
-  const usableHeight = application.screen.height * 0.72;
-  const scale = Math.min(usableWidth / Math.max(bounds.width, 1), usableHeight / Math.max(bounds.height, 1));
+  const {scale} = modelLayout(bounds, application.screen.width, application.screen.height);
 
   modelScale = scale;
   spine.scale.set(scale);
@@ -447,6 +436,8 @@ async function initialize() {
     characterConfig = FALLBACK_CHARACTER;
   }
   document.title = `${characterConfig.name}桌宠`;
+  characterParameters = normalizeParameters(characterConfig.parameters);
+  positionSpeechBubble();
   loadingStatus.textContent = `正在载入${characterConfig.name}…`;
 
   const application = new Application({
@@ -463,9 +454,7 @@ async function initialize() {
   application.stage.hitArea = new Rectangle(0, 0, application.screen.width, application.screen.height);
 
   try {
-    const spineData = characterConfig.builtin
-      ? (await Assets.load(characterConfig.modelUrl))?.spineData
-      : await loadCustomSpineData(characterConfig);
+    const spineData = await loadCharacterSpine(characterConfig);
     if (!spineData) throw new Error("Spine loader did not return spineData");
 
     spine = new Spine(spineData);
@@ -510,6 +499,7 @@ async function initialize() {
       application.stage.hitArea = new Rectangle(0, 0, application.screen.width, application.screen.height);
       fitModel(application);
       schedulePoseAlignment();
+      positionSpeechBubble();
     });
     resizeObserver.observe(stageElement);
 
@@ -548,6 +538,10 @@ window.addEventListener("keydown", (event) => {
 });
 
 window.desktopPet?.onCommand((command) => {
+  if (command.type === "parameters") {
+    characterParameters = normalizeParameters(command.parameters);
+    positionSpeechBubble();
+  }
   if (command.type === "action") playAction(command.action, { speak: true, schedule: true });
   if (command.type === "scale") {
     window.setTimeout(() => {

@@ -5,6 +5,7 @@
 维护者工作目录为 `X:\桌宠\spine-pet-workshop`。根目录包含最新正式源码；不要继续编辑旧的 `releases/*/source` 或 `public-repos` 副本。
 
 - `main`：经过验收的正式源码。
+- `dev/v2.3.1`：本地稳定线功能开发与修复，不推送；验收后再整理为正式快照。
 - `dev/v3`：本地开发分支，包含 v3 探针与实验快照，不推送。
 - `vX.Y.Z`：正式版本标签。
 - 远端 `public`：`https://github.com/xjunrao-ux/spine-pet-workshop.git`。
@@ -64,3 +65,20 @@ git bundle create .local/workshop-all-branches.bundle --all
 ## 正式发布
 
 按 [发布流程](RELEASING.md) 把验收后的成果整理到 main。普通 merge 会公开测试提交历史；如需只公开正式快照，使用 squash 并检查最终文件列表。
+
+## 稳定修复同步到后续版本
+
+使用单向合并：`稳定开发线 → dev/v3`，不把未完成的 v3 反向合并到 v2。每次修复先在稳定线上提交、构建并测试，再同步；Git 不会自动把一个分支的修改带到另一个分支。
+
+```powershell
+# 先在 dev/v2.3.1 检查、暂存具体改动并 commit
+node --test scripts/test-character-parameters.mjs
+pnpm build
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Sync-StableToV3.ps1
+```
+
+脚本要求工作区干净，只允许从 main 或 dev/v2.x 分支向本地 dev/v3 合并，成功后构建并停留在 dev/v3，不执行推送。已合并的提交不会重复应用。涉及版本标记、界面或架构的冲突会停下，需保留 v3 的版本号和扩展功能，再完成合并、构建和回归。不要整文件覆盖 v3，避免抹掉新增功能。
+
+也可以在 GitHub Desktop 中先提交稳定线修改，再切到 dev/v3，通过 Branch → Merge into current branch 选择稳定开发线。小而独立的紧急修复可以 `git cherry-pick <提交>`，但长期同步优先 merge，以便保留分支关系和避免重复解决同一个改动。未验证的实验不要每次 commit 自动合并。
+
+正式发布时只把稳定开发分支 squash 到 main；保留 dev/v2.3.1 本地历史，并在发布后把 main 再合到稳定线及 dev/v3，使后续同步有共同基线。开发分支不发布到 GitHub。
