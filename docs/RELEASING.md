@@ -13,11 +13,10 @@
 
 ## 整理正式提交
 
-以下为将来发布 v3 的示例，当前不执行：
+使用 main 的独立工作区整理正式快照，开发目录保持在 dev/v3。可复用已有 main 工作区；不要普通合并公开研究历史：
 
 ```powershell
-git switch main
-git merge --squash dev/v3
+git -C <main工作区> merge --squash dev/v3
 ```
 
 squash 会带入开发分支的最终文件内容，仍需检查是否含实验目录。把已经成熟的功能放入 electron/src/scripts，未完成探针不要进入正式提交；v3 目录的研究原件继续保留在开发分支或本地备份。
@@ -51,7 +50,7 @@ gh auth status
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Publish-Release.ps1 -Version 3.0.0
 ```
 
-脚本检查当前分支、package 版本、工作区、研究文件和安装包，创建正式标签，推送 main 与这个标签，再上传 EXE、SHA-256 和版本说明。构建脚本使用 --publish never，打包本身不会自动发布。
+脚本检查当前分支、package 版本、工作区、研究文件和安装包，创建正式标签，推送 main 与这个标签。先建立 draft 并上传全部 EXE、可选 ZIP、SHA-256 和版本说明，附件齐全后再公开并设为 latest。构建脚本使用 --publish never，打包本身不会自动发布。
 
 已存在的 Release 或版本标签不会被覆盖。修复已发布软件时使用新的修订号。
 
@@ -70,3 +69,18 @@ git config core.hooksPath .githooks
 ## 版本对应关系
 
 每次发布固定对应一份源码提交、一个标签、安装包和校验文件。v2.1.0 历史标签保留；固定角色系列发行 v2.1.1，工坊系列发行 v2.2.4。中间测试包不公开。
+
+## v3.2.2：插件附件与图片检查
+
+发布前运行 pnpm test:release、实际 Electron 沙盒/UI 回归、角色导入测试及 scripts/test-packaged-release.mjs。检查安装版与便携版版本、归档资源及隔离启动。截图只发布隔离演示或不含账号/网络信息的局部；原始资料保留本机。
+
+将两个插件 ZIP 复制到 release/v3.2.2/，在正式工作区调用：
+
+```powershell
+& scripts/Publish-Release.ps1 -Version 3.2.2 -PluginArchives @(
+  "release/v3.2.2/Weather-Plugin-v1.1.0.zip",
+  "release/v3.2.2/Codex-Plugin-v1.1.0.zip"
+)
+```
+
+脚本用 inspectPluginZip 校验每个附件，校验值包括 EXE 与 ZIP。公开后核对 Release 标签/提交、附件名称/体积/摘要、latest 标识和 GitHub Actions 构建。上传失败时先检查已有 draft，不覆盖旧 Release 或同版本产物。

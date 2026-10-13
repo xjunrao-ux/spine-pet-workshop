@@ -10,6 +10,8 @@ import { ExtensionService } from "./extensions/extension-service.mjs";
 import { createExtensionOverlay } from "./extensions/overlay.mjs";
 import { normalizeParameters, mergeParameters } from "./character-parameters.mjs";
 import { createStartupSettings } from "./startup.mjs";
+import { PluginPackages } from "./plugins/packages.mjs";
+import { createSandboxProvider,SANDBOX_SCHEME } from "./plugins/sandbox-runtime.mjs";
 
 const rootDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 if (process.env.PET_TEST_PROFILE) app.setPath("userData", path.resolve(process.env.PET_TEST_PROFILE));
@@ -25,6 +27,7 @@ const SIT_SURFACE_LIFT_RATIO = 0.02;
 
 app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 protocol.registerSchemesAsPrivileged([
+  SANDBOX_SCHEME,
   { scheme: "pet-preview", privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
   {
     scheme: "pet-asset",
@@ -1133,7 +1136,10 @@ app.whenReady().then(async () => {
     return true;
   });
   createWindow();
+  const pluginTestOptions = !app.isPackaged && (process.env.V321_SMOKE_DIR || process.env.V311_SMOKE_DIR || process.env.ZIP_PLUGIN_SMOKE_DIR)
+    ? (await import("../scripts/plugin-fixture.mjs")).createTestOptions({fourth:!process.env.ZIP_PLUGIN_SMOKE_DIR,legacyCodex:!process.env.ZIP_PLUGIN_SMOKE_DIR}) : {};
   extensionService = new ExtensionService({
+    ...pluginTestOptions,
     directory: path.join(app.isPackaged ? path.join(process.resourcesPath, "app.asar.unpacked") : rootDirectory, "electron", "extensions"),
     userData: app.getPath("userData"),
     onUpdate: snapshot => {
@@ -1145,8 +1151,32 @@ app.whenReady().then(async () => {
   extensionOverlay = createExtensionOverlay({ root: rootDirectory, service: extensionService,
     getPet: () => mainWindow, getDragging: () => dragging,
     setInteraction: value => { featureInteraction = value; }, openSettings: createSettingsWindow,
-    testing: !app.isPackaged && Boolean(process.env.V311_SMOKE_DIR) });
+    testing: !app.isPackaged && Boolean(process.env.V311_SMOKE_DIR || process.env.V321_SMOKE_DIR || process.env.ZIP_PLUGIN_SMOKE_DIR) });
   const settingsSender = event => settingsWindow && event.sender === settingsWindow.webContents;
+  const pluginPackages=new PluginPackages({userData:app.getPath("userData"),makeProvider:bundle=>createSandboxProvider({root:rootDirectory,bundle})});
+  try{for(const definition of await pluginPackages.load({builtinIds:[...extensionService.records.keys()]}))extensionService.addDefinition(definition);}
+  catch{extensionService.packageError="外部插件安装记录无法加载，原文件已保留；内置功能不受影响。请检查插件记录或重新导入。";}
+  ipcMain.handle("features:install-plugin",async event=>{
+    if(!settingsSender(event)||event.senderFrame!==settingsWindow.webContents.mainFrame)throw new Error("Invalid sender");
+    try{
+      const chosen=await dialog.showOpenDialog(settingsWindow,{title:"导入插件 ZIP",properties:["openFile"],filters:[{name:"桌宠插件",extensions:["zip"]}]});
+      if(chosen.canceled)return {ok:false,cancelled:true};const bundle=await pluginPackages.inspect(chosen.filePaths[0]),replacing=pluginPackages.installed.some(entry=>entry.id===bundle.manifest.id);
+      if(extensionService.records.get(bundle.manifest.id)?.origin==='builtin')throw new Error('该插件已内置，无需导入；请在管理器启用或禁用');
+      const labels={"codex.read":"读取本机 Codex 额度和任务状态（含任务名称；不读取凭据、不修改任务）","weather.read":"受控天气查询（向 Open-Meteo 发送城市或坐标，不提供任意联网）","storage.own":"保存本插件的数据（独立空间，512 KB 配额）","ui.reminders":"角色字幕提醒（遵循隐私与专注设置）"};
+      const confirmation=await dialog.showMessageBox(settingsWindow,{type:"question",title:"确认插件权限",message:(replacing?"替换并启用：":"安装并启用：")+bundle.manifest.name,
+        detail:"ID："+bundle.manifest.id+"\n版本："+bundle.manifest.version+"\n\n请求权限：\n"+bundle.manifest.permissions.map(p=>labels[p]??p).join("\n")+"\n\n来源：本机 ZIP，未验证发布者签名。只导入可信来源。插件在受限环境运行，不开放任意网络、Node.js、系统文件或其他插件数据；天气查询仅在声明并授权时通过固定服务接口完成。"+(replacing?"\n替换会保留原有数据与配置。":""),buttons:["安装并启用","取消"],defaultId:1,cancelId:1,noLink:true});
+      if(confirmation.response!==0)return {ok:false,cancelled:true};const snapshot=await pluginPackages.install(bundle,extensionService);return {ok:true,snapshot};
+    }catch(error){return {ok:false,error:typeof error.message==="string"?error.message.slice(0,250):"插件导入失败"};}
+  });
+  ipcMain.handle("features:uninstall-plugin",async(event,id)=>{
+    if(!settingsSender(event)||event.senderFrame!==settingsWindow.webContents.mainFrame)throw new Error("Invalid sender");
+    try{
+      if(!pluginPackages.installed.some(entry=>entry.id===id))throw new Error("只能卸载通过 ZIP 导入的插件");
+      const name=extensionService.records.get(id)?.manifest.name??id;
+      const confirmation=await dialog.showMessageBox(settingsWindow,{type:"question",title:"卸载插件",message:"卸载 "+name+"？",detail:"停止插件并从菜单移除，保留独立数据与包缓存。重新导入相同 ID 可继续使用。",buttons:["卸载并保留数据","取消"],defaultId:1,cancelId:1,noLink:true});
+      if(confirmation.response!==0)return {ok:false,cancelled:true};return {ok:true,snapshot:await pluginPackages.uninstall(id,extensionService)};
+    }catch(error){return {ok:false,error:typeof error.message==="string"?error.message.slice(0,250):"插件卸载失败"};}
+  });
   const startupSettings = createStartupSettings(app);
   ipcMain.handle("settings:startup-get", event => {
     if (!settingsSender(event)) throw new Error("Invalid sender");
@@ -1162,17 +1192,23 @@ app.whenReady().then(async () => {
     try { return { ok: true, snapshot: await extensionService.setSettings(settings) }; }
     catch { return { ok: false, error: "设置保存失败，请稍后重试" }; }
   });
-  ipcMain.handle("features:permission", async event => {
+  ipcMain.handle("features:execute", async (event,id,command,payload) => {
     if (!settingsSender(event)) throw new Error("Invalid sender");
-    try { return { ok: true, permission: await extensionService.request("permission", {}) }; }
-    catch { return { ok: false, error: "无法请求通知权限，请在 Windows 设置中检查通知访问" }; }
+    return extensionService.execute(id,command,payload,{source:"manager"});
+  });
+  ipcMain.handle("features:restart", (event,id) => {
+    if (!settingsSender(event)) throw new Error("Invalid sender");
+    return extensionService.restart(id);
   });
   ipcMain.on("features:preview", event => {
-    if (settingsSender(event)) extensionOverlay.event({ id: "preview", module: "notifications", text: "桌宠工坊 · 新消息会在这里轻轻提醒", createdAt: new Date().toISOString() });
+    const source=extensionService.snapshot().plugins.find(p=>p.enabled && p.manifest.permissions.includes("ui.reminders"));
+    if (settingsSender(event) && source) extensionOverlay.event({ id: "preview", pluginId: source.id, text: "桌宠工坊 · 新消息会在这里轻轻提醒", createdAt: new Date().toISOString() });
   });
   await extensionService.start();
-  if (!app.isPackaged && process.env.V311_SMOKE_DIR) {
-    const { runSmoke } = await import("../scripts/smoke-v311.mjs");
+  if(!app.isPackaged&&process.env.ZIP_PLUGIN_SMOKE_DIR){
+    const {runSmoke}=await import("../scripts/smoke-plugin-transition.mjs");void runSmoke({app,mainWindow,overlay:extensionOverlay,service:extensionService,createSettingsWindow,getSettingsWindow:()=>settingsWindow});
+  }else if (!app.isPackaged && (process.env.V311_SMOKE_DIR || process.env.V321_SMOKE_DIR)) {
+    const { runSmoke } = await import("../scripts/smoke-v321.mjs");
     void runSmoke({ app, mainWindow, overlay: extensionOverlay, service: extensionService, createSettingsWindow, getSettingsWindow: () => settingsWindow });
   }
   if (firstRun && !process.argv.includes('--autostart') && !process.env.PET_CAPTURE_PATH && !process.env.PET_CAPTURE_SERIES_DIR) createSettingsWindow();

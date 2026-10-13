@@ -52,16 +52,19 @@ export function createExtensionOverlay({ root, service, getPet, getDragging, set
     if(!trusted(event) || !Number.isFinite(width) || !Number.isFinite(height)) throw new Error('Invalid size');
     resizing=save!==true;
     const size=resize(width,height,/^(?:n|s|e|w|ne|nw|se|sw)$/.test(edge)?edge:'');
-    if(save===true) await service.setSettings({cardWidth:size.width,cardHeight:size.height});
+    if(save===true) await service.setSettings({global:{cardWidth:size.width,cardHeight:size.height}});
     return size;
   });
   ipcMain.on('extensions:close-menu',event=>{if(trusted(event)) reset();});
   ipcMain.handle('extensions:snapshot',event=>{if(!trusted(event)) throw new Error('Invalid sender');return service.snapshot();});
-  ipcMain.handle('extensions:media',async(event,action,id)=>{
-    if(!trusted(event)) return {ok:false};
-    try{return {ok:Boolean(await service.mediaCommand(action,id))};}catch(error){return {ok:false,error:error.message};}
+  ipcMain.handle('extensions:execute',(event,id,command,payload)=>{
+    if(!trusted(event)) return {ok:false,error:{code:'INVALID_SENDER',message:'无效的调用来源'}};
+    return service.execute(id,command,payload);
   });
-  ipcMain.on('extensions:dismiss',(event,id)=>{if(trusted(event)) service.dismiss(String(id));});
+  ipcMain.handle('extensions:acknowledge',(event,id,items)=>{
+    if(!trusted(event)) return {ok:false,error:{code:'INVALID_SENDER',message:'无效的调用来源'}};
+    return service.acknowledge(id,items);
+  });
   ipcMain.on('extensions:settings',event=>{if(trusted(event)){reset(true,true);openSettings();}});
   window.webContents.once('did-finish-load',()=>{ready=true;resize(service.state.settings.cardWidth??282,service.state.settings.cardHeight??285);send('extensions:state',service.snapshot());});
   window.on('blur',()=>{if(pinned) reset();});

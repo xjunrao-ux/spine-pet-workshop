@@ -1,0 +1,45 @@
+import { app,protocol } from 'electron';
+import assert from 'node:assert/strict';
+import { mkdir,mkdtemp,readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { SANDBOX_SCHEME,createSandboxProvider } from '../electron/plugins/sandbox-runtime.mjs';
+import { PluginPackages,inspectPluginZip } from '../electron/plugins/packages.mjs';
+import { createZip } from '../electron/plugins/zip.mjs';
+import { ExtensionService } from '../electron/extensions/extension-service.mjs';
+import { createTestOptions } from './plugin-fixture.mjs';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),directory=path.join(root,'.local','sandbox-tests');await mkdir(directory,{recursive:true});
+const userData=await mkdtemp(path.join(directory,'profile-'));app.setPath('userData',userData);protocol.registerSchemesAsPrivileged([SANDBOX_SCHEME]);
+const runtimeRoot=process.env.PLUGIN_SANDBOX_RUNTIME_ROOT||root;
+app.on('window-all-closed',()=>{});const watchdog=setTimeout(()=>{console.error('Sandbox watchdog expired');app.exit(1);},60000);
+void app.whenReady().then(async()=>{const events=[];let host=new ExtensionService({directory:'.',userData,...createTestOptions({legacyCodex:true}),onUpdate:()=>{},onEvent:event=>events.push(event)});
+const makePackages=()=>new PluginPackages({userData,makeProvider:bundle=>createSandboxProvider({root:runtimeRoot,bundle})});
+let packages=makePackages();
+const manifest={...JSON.parse(await readFile(path.join(root,'plugins','todo','plugin.json'),'utf8')),id:'test.todo'};
+const providerSource=await readFile(path.join(root,'plugins','todo','provider.js'),'utf8');
+const todoBundle=()=>inspectPluginZip(createZip({'plugin.json':JSON.stringify(manifest),'provider.js':providerSource}));
+const checks=[],check=name=>{checks.push(name);console.log('PASS',name);};
+try{
+  await host.start();assert.equal(host.snapshot().plugins.length,3);await packages.install(todoBundle(),host);
+  const todo=()=>host.snapshot().plugins.find(p=>p.id==='test.todo');assert.equal(todo().runtime,'active',JSON.stringify(todo()));check('ZIP provider activates in an actual sandboxed renderer and worker');
+  const result=await host.execute('test.todo','add',{title:'沙盒演示待办',notes:'演示备注',dueAt:''});assert.equal(result.ok,true);assert.equal(todo().pages[0].subtitle,'1 项待完成');check('remote command writes persistent isolated storage and publishes common pages');
+  const state=await host.storage.get('test.todo','state'),id=state.items[0].id;await host.execute('test.todo','complete',{id});assert.equal(todo().pages[1].subtitle,'1 项 · 可以恢复');
+  await host.setSettings({plugins:{'test.todo':{enabled:false}}});assert.equal(todo().runtime,'disabled');await host.setSettings({plugins:{'test.todo':{enabled:true}}});assert.equal(todo().runtime,'active');assert.equal(todo().pages[1].subtitle,'1 项 · 可以恢复');check('disable destroys execution, enabling reloads persisted tasks');
+  const probeManifest={...manifest,id:'test.isolation',name:'隔离验证',permissions:['storage.own'],settingsSchema:[],commands:[{id:'probe',fields:{}}]};
+  const probeCode='export function activate(c){return {getSnapshot:()=>({available:true,status:"ready",pages:[],id:"workshop.codex",origin:"builtin",manifest:{id:"workshop.codex"}}),async execute(){let network=false,file=false,nodeImport=false,pathDenied=false;try{await fetch("https://example.com/plugin-probe")}catch{network=true}try{await fetch("file:///C:/Windows/win.ini")}catch{file=true}try{await import("node:fs")}catch{nodeImport=true}try{await c.storage.get("../outside")}catch{pathDenied=true}return {process:typeof process,require:typeof require,window:typeof window,network,file,nodeImport,pathDenied,own:await c.storage.get("state")}},dispose(){}}}';
+  await packages.install(inspectPluginZip(createZip({'plugin.json':JSON.stringify(probeManifest),'provider.js':probeCode})),host);
+  assert.equal(host.records.get('test.isolation').runtime,'active');const probe=await host.execute('test.isolation','probe',{});assert.equal(probe.ok,true,JSON.stringify(probe));assert.deepEqual(probe.data,{process:'undefined',require:'undefined',window:'undefined',network:true,file:true,nodeImport:true,pathDenied:true,own:null});
+  assert.equal(host.snapshot().plugins.find(p=>p.id==='test.isolation').origin,'external');check('Node, DOM, network, file URL, node import and cross-path storage attempts are blocked');
+  await host.execute('test.todo','reopen',{id});await host.execute('test.todo','save',{id,title:'到期沙盒演示',notes:'',dueAt:new Date(Date.now()-1000).toISOString()});assert.ok(events.some(event=>event.pluginId==='test.todo'));check('due reminders route through host privacy and event queue');
+  await packages.uninstall('test.todo',host);assert.equal(host.records.has('test.todo'),false);await packages.install(todoBundle(),host);assert.equal(todo().pages[0].subtitle,'1 项待完成');check('uninstall removes registration, reinstall restores existing data');
+  await host.stop();host=new ExtensionService({directory:'.',userData,...createTestOptions({legacyCodex:true}),onUpdate:()=>{},onEvent:event=>events.push(event)});packages=makePackages();
+  for(const definition of await packages.load())host.addDefinition(definition);await host.start();assert.equal(todo().runtime,'active');assert.equal(todo().pages[0].subtitle,'1 项待完成');check('a fresh host loads installed ZIP providers and saved tasks without reimport');
+  const cpuManifest={...probeManifest,id:'test.cpu',name:'超时验证',permissions:[],commands:[{id:'loop',fields:{}}]};
+  const cpuCode='export function activate(){return {getSnapshot:()=>({available:true,status:"ready",pages:[]}),execute(){while(true){}},dispose(){}}}';
+  await packages.install(inspectPluginZip(createZip({'plugin.json':JSON.stringify(cpuManifest),'provider.js':cpuCode})),host);const loop=await host.execute('test.cpu','loop',{});assert.equal(loop.ok,false);
+  for(let i=0;i<30&&host.records.get('test.cpu').runtime!=='failed';i++)await new Promise(resolve=>setTimeout(resolve,100));
+  assert.equal(host.records.get('test.cpu').runtime,'failed');assert.equal(host.records.get('workshop.music').runtime,'active');assert.equal(todo().runtime,'active');check('an infinite plugin command is terminated without stopping other plugins');
+  console.log(JSON.stringify({ok:true,checks},null,2));
+}catch(error){console.error('SANDBOX FAIL',error);process.exitCode=1;}
+finally{await host.stop();clearTimeout(watchdog);app.exit(process.exitCode??0);}
+});

@@ -28,7 +28,12 @@ const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const wait = async (probe, label) => {
   console.log('wait:',label);
   const deadline = Date.now() + 20000;
-  while (Date.now() < deadline) { try { if (await probe()) return; } catch {} await pause(150); }
+  while (Date.now() < deadline) {
+    let probeTimer;
+    try { if (await Promise.race([Promise.resolve().then(probe),new Promise((_,reject)=>{probeTimer=setTimeout(()=>reject(new Error('Renderer probe timed out')),1500);})])) return; }
+    catch {} finally { clearTimeout(probeTimer); }
+    await pause(150);
+  }
   throw new Error(`Timed out: ${label}`);
 };
 app.whenReady().then(async () => {
@@ -100,8 +105,10 @@ app.whenReady().then(async () => {
     const imported = await bridge("importCharacter", {name: "校准测试角色", modelFolder: folder.folderPath, modelFile: model, atlasFile: atlas, animations: {},
       parameters: {audioOffsetMs: -120, bubbleOffsetY: 40, walkDirection: "right"}, voices: [{sourcePath: path.join(manifestRoot, voice.audio), subtitle: voice.subtitle}]});
     assert.equal(imported.ok, true);
+    await wait(()=>!pet.webContents.isLoading() && pet.webContents.executeJavaScript('document.querySelector("#loading-status")?.classList.contains("hidden")'), 'imported model ready');
     assert.equal((await bridge("getCharacterConfig", imported.id)).parameters.audioOffsetMs, -120);
     await bridge("activateCharacter", "builtin-amiya");
+    await wait(()=>!pet.webContents.isLoading() && pet.webContents.executeJavaScript('document.querySelector("#loading-status")?.classList.contains("hidden")'), 'builtin reload ready');
     const builtin = await bridge("getCharacterConfig", "builtin-amiya");
     assert.equal(builtin.parameters.audioOffsetMs, 250); assert.equal(builtin.parameters.extensions.future, "preserved");
     const characterPath = path.join(profile, "characters", imported.id, "character.json");
@@ -196,14 +203,19 @@ app.whenReady().then(async () => {
     await wait(() => run('!document.querySelector("#library-preview .preview-status").textContent'), "final preview");
     await writeFile(path.join(output, "character-settings.png"), (await settings.webContents.capturePage()).toPNG());
     await bridge("deleteCharacter", imported.id);
-    console.log(JSON.stringify({ok: true, checks: ["native-size preview", "grouped undo and redo", "Ctrl+Z and Ctrl+Shift+Z / Ctrl+Y in both editors", "reversed bubble slider", "retired direction parameter", "settings sliders", "navigation order", "live bubble", "import preview", "restricted asset access", "per-character persistence", "legacy migration", "future fields", "calibrated audition playback", "manual and autonomous left/right walking", "scaling fonts and opacity", "per-character size persistence"], profile}));
+    const result={ok: true, checks: ["native-size preview", "grouped undo and redo", "Ctrl+Z and Ctrl+Shift+Z / Ctrl+Y in both editors", "reversed bubble slider", "retired direction parameter", "settings sliders", "navigation order", "live bubble", "import preview", "restricted asset access", "per-character persistence", "legacy migration", "future fields", "calibrated audition playback", "manual and autonomous left/right walking", "scaling fonts and opacity", "per-character size persistence"], profile};
+    await writeFile(path.join(output,"results.json"),JSON.stringify(result,null,2));console.log(JSON.stringify(result));
     clearTimeout(watchdog); app.exit(0);
   } catch (error) {
     console.error(error);
     const settings = BrowserWindow.getAllWindows().find(w => w.webContents.getURL().includes("settings.html"));
     if (settings) console.error(await settings.webContents.executeJavaScript('({model: document.querySelector("#model-summary").textContent, preview: document.querySelector("#import-preview .preview-status").textContent, parameters: document.querySelector("#parameters-status").textContent})'));
     const pet = BrowserWindow.getAllWindows().find(w => w.webContents.getURL().includes("index.html"));
-    if (pet) console.error("pet-bounds", pet.getBounds());
+    if (pet) {
+      console.error("pet-bounds", pet.getBounds());
+      const diagnostic=await Promise.race([pet.webContents.executeJavaScript('({url:location.href,ready:document.readyState,loading:document.querySelector("#loading-status")?.textContent,hidden:document.querySelector("#loading-status")?.classList.contains("hidden")})'),pause(1500).then(()=>({probe:'timed out'}))]);
+      console.error('pet-renderer',diagnostic);
+    }
     clearTimeout(watchdog); app.exit(1);
   }
 });

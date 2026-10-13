@@ -23,3 +23,7 @@ Thumbs.db
 
 # Generated protocol reference files are not development source.
 /v3/**/codex-app-server-schema/
+
+# Original screenshots include account/network details; publish cropped examples instead.
+/docs/images/easynet-SMTC.png
+/docs/images/easynet-result.png

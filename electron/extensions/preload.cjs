@@ -5,8 +5,8 @@ const listen = (channel, callback) => {
 };
 contextBridge.exposeInMainWorld('petFeatures', {
   snapshot: () => ipcRenderer.invoke('extensions:snapshot'),
-  media: (action,id) => ipcRenderer.invoke('extensions:media',action,id),
-  dismiss: id => ipcRenderer.send('extensions:dismiss',id),
+  execute: (id,command,payload) => ipcRenderer.invoke('extensions:execute',id,command,payload),
+  acknowledge: (id,items) => ipcRenderer.invoke('extensions:acknowledge',id,items),
   settings: () => ipcRenderer.send('extensions:settings'),
   regions: value => ipcRenderer.send('extensions:regions',value),
   pin: value => ipcRenderer.send('extensions:pinned',value),

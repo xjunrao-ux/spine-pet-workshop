@@ -1,6 +1,6 @@
 {
   "name": "spine-pet-workshop",
-  "version": "3.1.2",
+  "version": "3.2.2",
   "private": true,
   "description": "A Windows Spine 3.8 desktop-pet workshop with local character and voice import.",
   "author": "Amiya Desktop Pet Project",
@@ -10,9 +10,20 @@
   "scripts": {
     "dev": "concurrently -k -s first \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron .\"",
     "build": "tsc --noEmit && vite build",
+    "test:plugins": "node --test scripts/test-plugins.mjs scripts/test-extensions.mjs scripts/test-external-plugins.mjs scripts/test-weather-plugin.mjs scripts/test-plugin-promotion.mjs scripts/test-plugin-documentation.mjs",
+    "test:plugins:ui": "electron scripts/run-smoke-v321.mjs",
+    "test:plugins:zip-ui": "electron scripts/run-smoke-zip-plugin.mjs",
+    "test:plugins:sandbox": "electron scripts/test-plugin-sandbox.mjs",
+    "test:plugins:codex": "electron scripts/test-codex-zip.mjs",
+    "package:codex": "node scripts/package-plugin.mjs examples/codex-plugin release/plugins/Codex-Plugin-v1.1.0.zip",
     "start": "electron .",
     "preview": "vite preview --host 127.0.0.1",
-    "package:win": "pnpm build && electron-builder --win nsis portable --x64 --publish never"
+    "package:win": "pnpm build && electron-builder --win nsis portable --x64 --publish never",
+    "test:weather": "node --test scripts/test-weather-plugin.mjs",
+    "test:weather:sandbox": "electron scripts/test-weather-sandbox.mjs",
+    "package:weather": "node scripts/package-plugin.mjs examples/weather-plugin release/plugins/Weather-Plugin-v1.1.0.zip",
+    "test:release": "node --test scripts/test-character-parameters.mjs scripts/test-startup.mjs scripts/test-extensions.mjs scripts/test-plugins.mjs scripts/test-external-plugins.mjs scripts/test-weather-plugin.mjs scripts/test-plugin-promotion.mjs scripts/test-plugin-documentation.mjs",
+    "test:packaged": "node scripts/test-packaged-release.mjs"
   },
   "dependencies": {
     "@pixi-spine/all-3.8": "4.0.6",
@@ -47,6 +58,7 @@
       "assets/**/*",
       "dist/**/*",
       "electron/**/*",
+      "plugins/todo/**/*",
       "package.json"
     ],
     "win": {

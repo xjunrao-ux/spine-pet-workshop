@@ -9,7 +9,7 @@
     <main id="settings-app">
       <header class="hero">
         <div>
-          <p class="eyebrow">SPINE PET WORKSHOP · v3.1.2</p>
+          <p class="eyebrow">SPINE PET WORKSHOP · v3.2.2</p>
           <h1>把喜欢的角色<br />放到桌面上。</h1>
           <p class="intro">导入本地 Spine 3.8 模型与语音，保存后立即切换桌宠。所有素材只保存在你的电脑中。</p>
         </div>
@@ -45,8 +45,7 @@
         <div id="feature-modules" class="feature-modules"></div>
         <article class="feature-options" id="feature-compatibility">
           <h3>兼容性说明</h3>
-          <p class="hint"><strong>网易云音乐</strong> · 请在网易云的设置中开启 SMTC（系统媒体控制），才能读取播放器并控制音乐。当前不支持读取网易云的时长与播放进度，时间显示为 --:--。</p>
-          <p class="hint"><strong>微信与企业微信</strong> · 已验证当前客户端不走 Windows 系统通知，暂不支持聊天提醒；等待官方开放可用接口后再评估接入。</p>
+          <div id="plugin-compatibility-notes"></div>
         </article>
         <article class="feature-options">
           <h3>应用启动</h3>
@@ -60,15 +59,15 @@
           <label class="feature-setting"><span><strong>专注模式</strong><small>继续接收信息，暂停弹出字幕。</small></span><input type="checkbox" data-feature-setting="quiet" /></label>
           <label class="feature-setting"><span><strong>减少动画</strong><small>关闭淡入动画和滚动过渡。</small></span><input type="checkbox" data-feature-setting="reducedMotion" /></label>
           <label class="feature-setting"><span><strong>悬停展开延迟</strong><small>鼠标滚轮可横向浏览胶囊，点击图标打开详情。</small></span><select id="feature-hover-delay"><option value="150">150 毫秒</option><option value="300">300 毫秒</option><option value="600">600 毫秒</option><option value="1000">1 秒</option></select></label>
-          <div class="feature-buttons"><button id="notification-permission" class="ghost-button">请求通知访问</button><button id="feature-preview" class="ghost-button">预览字幕</button></div>
+          <div class="feature-buttons"><span id="plugin-actions"></span><button id="feature-preview" class="ghost-button">预览字幕</button></div>
         </article>
         <article class="feature-options"><h3>应用通知</h3><p class="hint">只接收真正进入 Windows 通知中心的消息。已验证当前微信与企业微信不走系统通知，暂不支持其聊天提醒；待官方提供可用接口后再评估。启动前的 ChatGPT 历史通知不再展示，只提示新消息。</p><div id="notification-channels"></div><div id="feature-apps"></div></article>
       </section>
       <section id="page-extensions" class="page">
-        <div class="section-heading"><div><p class="kicker">BUILT-IN MODULES</p><h2>扩展能力</h2></div><span class="step-pill">接口 v1 · 内置模块</span></div>
-        <p class="hint">音乐、通知和 Codex 都通过统一模块接口接入。第三方插件安装将在后续版本开放。</p>
+        <div class="section-heading"><div><p class="kicker">INDEPENDENT PLUGINS</p><h2>插件管理</h2></div><button id="plugin-import" class="primary-button">导入插件 ZIP</button></div>
+        <p id="plugin-package-status" class="hint" role="status">接口 v1 · ZIP 导入试用。文件仅在本机读取，不上传网络；请只安装可信来源。</p>
         <div id="extension-registry" class="feature-modules"></div>
-        <article class="feature-options"><h3>开发接口预留</h3><p class="hint">模块声明身份、权限、状态、事件和固定操作。胶囊布局、字幕队列、隐私设置与生命周期由桌宠统一管理。</p><div class="module-protocol">start(context) → getState() → execute(action) → stop()</div></article>
+        <article class="feature-options"><h3>统一接口 · 验证阶段</h3><p class="hint">ZIP 插件在独立沙盒运行环境中提交页面和受控操作。桌宠统一负责显示、隐私、已读与生命周期。开放独立存储、角色提醒及授权的 Codex 只读/天气接口，不开放任意文件、网络或凭据访问。待办已内置，Codex 需导入 ZIP；完整接口见开发手册。</p><div class="module-protocol">ZIP → 权限确认 → activate → 页面 / 命令 / 提醒 → 停止或卸载</div></article>
       </section>
       <section id="page-import" class="page">
         <div class="section-heading">

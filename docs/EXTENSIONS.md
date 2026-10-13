@@ -1,47 +1,29 @@
-# 插件接口草案（尚未开放）
+# 扩展与 ZIP 插件接口状态（v3.2.2）
 
-v3.1.1 仅加载三个内置模块。这里是后续接口方向，不是已可调用的第三方 SDK；不会扫描目录执行外部 JS。
+音乐、系统通知、待办为内置插件，Codex 已改为独立 ZIP，在角色管理器的“扩展”页导入后才运行。各项沿用统一接口与声明式 UI。内容页面通过右下角左右箭头切换，滚轮只滚动当前页；待办右侧显示完成/撤回，项目右键菜单提供编辑/删除。当前是 API v1 验证版本，不是永久冻结的 SDK；外部 JS 只在受限沙盒 Worker 中运行。
 
-## 分层
+独立插件作者请从 [插件开发规范与接入手册](PLUGIN_DEVELOPMENT.md) 开始：包含可运行示例、ZIP 格式、完整字段表、生命周期、组件、命令、设置/存储、提醒/已读、安全限制与发布检查表。本页保留架构状态概览，不代替外部接口规范。
 
-系统或服务适配器 → 统一状态与事件 → 胶囊入口 / 卡片 / 角色字幕。
+## 已落地的结构
 
-插件提供数据和有限命令，宿主统一负责显示、主题、滚动、隐私、专注模式及通知队列。不能直接操控角色窗口、注入 HTML 或任意调用 Electron IPC。未来的时钟、待办、笔记均可复用这条链路。
+- 注册表：`electron/plugins/registry.mjs`。
+- 统一宿主：`electron/plugins/host.mjs`，负责启停、状态校验、命令、提醒、已读、取消和故障处理。
+- 受控能力：`capabilities.mjs` 与 `windows-adapter.mjs`，按订阅共用系统桥接，保留 Codex 只读适配器。
+- 内置 Provider：`electron/plugins/providers/` 的音乐/通知，以及 `plugins/todo/` 的待办；外置 Codex：`examples/codex-plugin/`，不随宿主预装。
+- 前端契约与声明式渲染：`src/plugins/types.ts`、`renderer.ts`。
 
-## 拟定清单
+内置插件统一使用 activate、getSnapshot、publish、execute、emit、onSettingsChanged 和 dispose。菜单与角色管理器按注册表生成；悬停、分页、主题、字幕、隐私、已读与窗口操作属于宿主，不由插件自己实现。
 
-```json
-{
-  "id": "example.notes",
-  "name": "本地笔记",
-  "version": "1.0.0",
-  "apiVersion": 1,
-  "entry": "provider.mjs",
-  "icon": "note",
-  "permissions": ["storage.own"],
-  "activation": "has-content"
-}
-```
+音乐每个播放器一页，通知每条消息一页，Codex 分额度和最近任务页。通知查看后撤红点，入口在启用状态下保留。网易云 SMTC 与微信/企业微信的限制由插件声明，并显示在管理器 UI。
 
-清单需通过固定 schema 校验；图标选择宿主图标或经过验证的静态资源。声明权限与用户实际授权取交集，默认拒绝额外权限。
+## 配置兼容
 
-## 拟定生命周期与数据契约
+`feature-settings.json` 第二版包含全局偏好与各插件配置，旧版迁移前备份。通知已读标识迁移到 `plugin-read-state.json`，不保存聊天正文。未知插件数据保留，不兼容的配置版本不静默覆盖。
 
-| 接口 | 作用 |
-| --- | --- |
-| `activate(context)` | 启动订阅或轮询，返回可释放的服务 |
-| `getSnapshot()` / `publish(snapshot)` | 返回 `available / status / badge / updatedAt` 和声明式卡片数据；`available=false` 隐藏入口 |
-| `execute(commandId, payload)` | 仅执行清单声明的命令，宿主验证参数、权限并设置超时 |
-| `emit(event)` | 提交有 ID、类别、严重度和隐私级别的事件，由宿主决定是否展示 |
-| `dispose()` | 禁用、退出或故障时停止定时器、订阅和进程 |
+## 仍未开放
 
-卡片先提供文本、分组列表、进度条、按钮、时间等宿主组件，避免每个插件自带一套不一致界面。插件存储按 ID 隔离，提供配置迁移；无权限读取其他插件、Codex 凭据或角色素材。
+ZIP 安装、沙盒执行、独立存储与角色提醒已实现。外部新增 codex.read，只提供额度和任务元数据订阅，不开放任务操作与凭据；音乐/通知、Node、任意网络、系统文件仍不开放。weather.read 受控天气查询保留，参见 [天气接口与插件](design/weather-plugin.md)。旧 ZIP 构建不支持新增权限，需使用新版宿主。卸载外部项保留数据，同 ID 重装恢复；待办已内置，不能以 ZIP 覆盖或卸载。仅导入可信来源，目前未验证发布者签名。
 
-## 开放前需要完成
+插件市场、自定义 HTML 和自动更新仍未交付。开发手册已提供，API 仍处于验证期；待办示例与 ZIP 安装验证见 [独立待办插件记录](design/zip-plugin-todo-validation.md)。
 
-1. 将当前内置模块进一步迁移到统一 provider 生命周期，保持现有固定 IPC 与类型契约。
-2. 用内置时钟或待办模块验证无需改胶囊布局即可新增入口。
-3. 在独立进程中运行插件，加入超时、限频、资源配额、故障熔断与卸载清理。
-4. 增加权限确认、版本兼容检查、开发调试页和样例插件，再开放安装入口。
-
-将来 AI 数据库笔记只需新增 provider 和声明式卡片，不应把模型调用、数据库访问逻辑放进桌宠动画渲染进程。
+完整内部设计见 [架构方案](design/v3.2.1-plugin-architecture.md)，首轮结果见 [验证记录](design/v3.2.1-validation.md)。后续接口调整应同步更新开发手册、独立示例与测试。

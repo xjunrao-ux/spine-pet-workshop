@@ -4,7 +4,10 @@ contextBridge.exposeInMainWorld("featureSettings", {
   set: settings => ipcRenderer.invoke("features:set", settings),
   startup: () => ipcRenderer.invoke("settings:startup-get"),
   setStartup: enabled => ipcRenderer.invoke("settings:startup-set", enabled),
-  permission: () => ipcRenderer.invoke("features:permission"),
+  execute: (id,command,payload) => ipcRenderer.invoke("features:execute",id,command,payload),
+  restart: id => ipcRenderer.invoke("features:restart",id),
+  installPlugin: () => ipcRenderer.invoke("features:install-plugin"),
+  uninstallPlugin: id => ipcRenderer.invoke("features:uninstall-plugin",id),
   preview: () => ipcRenderer.send("features:preview"),
   onState: callback => {
     const listener = (_event, state) => callback(state);

@@ -1,0 +1,162 @@
+{
+  "packageType": "spine-pet-plugin",
+  "packageVersion": 1,
+  "id": "example.todo",
+  "name": "待办事项",
+  "menuLabel": "待办",
+  "version": "1.2.0",
+  "apiVersion": 1,
+  "configVersion": 1,
+  "entry": "provider.js",
+  "icon": "checklist",
+  "entryVisibility": "when-enabled",
+  "description": "内置待办：右侧完成或撤回，右键项目编辑、删除，支持截止时间提醒和删除撤销。",
+  "permissions": [
+    "storage.own",
+    "ui.reminders"
+  ],
+  "compatibilityNotes": [
+    "现为内置插件，无需导入。沿用旧 ZIP 插件身份和数据，旧包不再重复安装；禁用后保留任务。",
+    "截止时间跟随本机时区，内部保存为 UTC；按检查间隔提醒，程序退出或插件禁用期间不会弹出，重新启用后检查逾期待办。",
+    "到期字幕遵循全局隐私、专注和字幕开关；任务面板展示自己的条目。最多保留 80 项任务、20 项删除撤销记录。"
+  ],
+  "settingsSchema": [
+    {
+      "key": "reminders",
+      "type": "boolean",
+      "label": "截止时间提醒",
+      "default": true
+    },
+    {
+      "key": "intervalSeconds",
+      "type": "number",
+      "label": "检查间隔（秒）",
+      "description": "5–120 秒，默认 15 秒。",
+      "default": 15,
+      "min": 5,
+      "max": 120
+    }
+  ],
+  "commands": [
+    {
+      "id": "add",
+      "permissions": [
+        "storage.own"
+      ],
+      "fields": {
+        "title": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 1000,
+          "optional": true,
+          "allowEmpty": true
+        },
+        "dueAt": {
+          "type": "string",
+          "maxLength": 50,
+          "optional": true,
+          "allowEmpty": true
+        }
+      }
+    },
+    {
+      "id": "save",
+      "permissions": [
+        "storage.own"
+      ],
+      "fields": {
+        "id": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 1000,
+          "optional": true,
+          "allowEmpty": true
+        },
+        "dueAt": {
+          "type": "string",
+          "maxLength": 50,
+          "optional": true,
+          "allowEmpty": true
+        }
+      }
+    },
+    {
+      "id": "edit",
+      "fields": {
+        "id": {
+          "type": "string",
+          "maxLength": 100
+        }
+      }
+    },
+    {
+      "id": "complete",
+      "permissions": [
+        "storage.own"
+      ],
+      "fields": {
+        "id": {
+          "type": "string",
+          "maxLength": 100
+        }
+      }
+    },
+    {
+      "id": "reopen",
+      "permissions": [
+        "storage.own"
+      ],
+      "fields": {
+        "id": {
+          "type": "string",
+          "maxLength": 100
+        }
+      }
+    },
+    {
+      "id": "delete",
+      "permissions": [
+        "storage.own"
+      ],
+      "fields": {
+        "id": {
+          "type": "string",
+          "maxLength": 100
+        }
+      }
+    },
+    {
+      "id": "snooze",
+      "permissions": [
+        "storage.own"
+      ],
+      "fields": {
+        "id": {
+          "type": "string",
+          "maxLength": 100
+        }
+      }
+    },
+    {
+      "id": "undoDelete",
+      "permissions": [
+        "storage.own"
+      ],
+      "fields": {}
+    },
+    {
+      "id": "cancelEdit",
+      "fields": {}
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "packageType":"spine-pet-plugin","packageVersion":1,"id":"io.spine-workshop.codex","legacyId":"codex",
+  "name":"Codex 信息","menuLabel":"Codex","version":"1.1.0","apiVersion":1,"configVersion":1,
+  "entry":"provider.js","icon":"codex","entryVisibility":"when-available",
+  "description":"外置 ZIP 插件：显示本机 Codex 额度、重置时间与可读取的任务状态。",
+  "permissions":["codex.read","ui.reminders"],"settingsSchema":[],"commands":[],
+  "compatibilityNotes":[
+    "需在角色管理器导入 ZIP 并确认本机 Codex 只读权限；没有导入时不运行、不显示。",
+    "需要可用的本机 CLI 和登录状态。额度和任务可能分别不可读取；未知额度不会显示为 0。",
+    "只读取状态，不调用模型、不启动或修改任务，不开放账号凭据与任意文件。禁用或卸载停止订阅。"
+  ]
+}

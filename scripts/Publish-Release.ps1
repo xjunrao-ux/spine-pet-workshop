@@ -3,7 +3,8 @@ param(
     [Parameter(Mandatory = $true)]
     [ValidatePattern('^\d+\.\d+\.\d+$')]
     [string]$Version,
-    [string]$ArtifactDirectory = "release/v$Version"
+    [string]$ArtifactDirectory = "release/v$Version",
+    [string[]]$PluginArchives = @()
 )
 
 $ErrorActionPreference = 'Stop'
@@ -43,6 +44,16 @@ try {
     foreach ($required in @($setup, $portable, $notes, $usage)) {
         if (-not (Test-Path -LiteralPath $required -PathType Leaf)) { throw "Missing release file: $required" }
     }
+    $plugins = @(foreach ($archive in $PluginArchives) {
+        $full = [System.IO.Path]::GetFullPath((Join-Path $projectRoot $archive))
+        if (-not $full.StartsWith($projectRoot + '\', [System.StringComparison]::OrdinalIgnoreCase) -or [System.IO.Path]::GetExtension($full) -ne '.zip') {
+            throw 'PluginArchives must name ZIP files inside the project.'
+        }
+        if (-not (Test-Path -LiteralPath $full -PathType Leaf)) { throw "Missing plugin: $full" }
+        node scripts/inspect-release-plugin.mjs $full | Write-Host
+        if ($LASTEXITCODE -ne 0) { throw "Invalid plugin ZIP: $full" }
+        $full
+    })
     $existing = gh release list --repo xjunrao-ux/spine-pet-workshop --limit 100 --json tagName | ConvertFrom-Json
     if ($LASTEXITCODE -ne 0) { throw 'Could not read existing releases.' }
     if ($tag -in @($existing | ForEach-Object { $_.tagName })) { throw 'Release already exists; use a new version instead of replacing it.' }
@@ -55,7 +66,7 @@ try {
     }
 
     $checksumPath = Join-Path $artifactRoot 'SHA256SUMS.txt'
-    $checksumLines = foreach ($artifact in @($portable, $setup)) {
+    $checksumLines = foreach ($artifact in (@($portable, $setup) + @($plugins))) {
         $hash = Get-FileHash -Algorithm SHA256 -LiteralPath $artifact
         "$($hash.Hash)  $([System.IO.Path]::GetFileName($artifact))"
     }
@@ -66,8 +77,11 @@ try {
 
     git push --atomic --set-upstream public main "refs/tags/$tag"
     if ($LASTEXITCODE -ne 0) { throw 'Push failed; Release was not created.' }
-    gh release create $tag $setup $portable $checksumPath $usageArtifact --repo xjunrao-ux/spine-pet-workshop --verify-tag --title "Spine Pet Workshop $tag" --notes-file $notes --latest
+    $assets = @($setup, $portable, $checksumPath, $usageArtifact) + @($plugins)
+    gh release create $tag @assets --repo xjunrao-ux/spine-pet-workshop --verify-tag --title "Spine 桌宠工坊 $tag" --notes-file $notes --draft
     if ($LASTEXITCODE -ne 0) { throw 'Release upload failed. Inspect GitHub before retrying.' }
+    gh release edit $tag --repo xjunrao-ux/spine-pet-workshop --draft=false --latest
+    if ($LASTEXITCODE -ne 0) { throw 'Assets uploaded, but publishing the draft failed. Inspect GitHub before retrying.' }
 } finally {
     Pop-Location
 }

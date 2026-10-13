@@ -1,0 +1,106 @@
+{
+  "packageType": "spine-pet-plugin",
+  "packageVersion": 1,
+  "id": "local.spine-weather",
+  "name": "天气与预报",
+  "menuLabel": "天气",
+  "version": "1.1.0",
+  "apiVersion": 1,
+  "configVersion": 1,
+  "entry": "provider.js",
+  "icon": "cloud",
+  "entryVisibility": "when-enabled",
+  "description": "选择城市，查看当前天气、未来 24 小时和 7 天天气预报。数据由 Open-Meteo 提供。",
+  "permissions": [
+    "storage.own",
+    "weather.read"
+  ],
+  "compatibilityNotes": [
+    "支持 v3.2.2。早期宿主缺少受控天气或云朵图标接口时，请先升级宿主。",
+    "只通过宿主查询 Open-Meteo，不提供任意联网或自动定位。免费接口仅用于非商业用途。",
+    "当前天气为模型估算。断网保留缓存并标记过期，卸载保留本机数据。"
+  ],
+  "settingsSchema": [
+    {
+      "key": "autoRefresh",
+      "type": "boolean",
+      "label": "自动刷新",
+      "description": "仅在宿主运行且插件启用时刷新。",
+      "default": true
+    },
+    {
+      "key": "refreshMinutes",
+      "type": "number",
+      "label": "刷新间隔（分钟）",
+      "default": 30,
+      "min": 15,
+      "max": 180
+    },
+    {
+      "key": "unit",
+      "type": "enum",
+      "label": "温度单位",
+      "default": "℃",
+      "options": [
+        "℃",
+        "℉"
+      ]
+    }
+  ],
+  "commands": [
+    {
+      "id": "searchCity",
+      "permissions": [
+        "weather.read"
+      ],
+      "fields": {
+        "name": {
+          "type": "string",
+          "maxLength": 100
+        }
+      }
+    },
+    {
+      "id": "selectCity",
+      "permissions": [
+        "storage.own",
+        "weather.read"
+      ],
+      "fields": {
+        "id": {
+          "type": "string",
+          "maxLength": 100
+        }
+      }
+    },
+    {
+      "id": "setCoordinates",
+      "permissions": [
+        "storage.own",
+        "weather.read"
+      ],
+      "fields": {
+        "name": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "latitude": {
+          "type": "string",
+          "maxLength": 30
+        },
+        "longitude": {
+          "type": "string",
+          "maxLength": 30
+        }
+      }
+    },
+    {
+      "id": "refresh",
+      "permissions": [
+        "storage.own",
+        "weather.read"
+      ],
+      "fields": {}
+    }
+  ]
+}

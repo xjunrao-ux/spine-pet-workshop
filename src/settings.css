@@ -130,11 +130,17 @@ input:focus, select:focus { border-color: #bd6863; box-shadow: 0 0 0 3px rgba(18
 .feature-setting strong, .feature-setting small { display: block; }
 .feature-setting strong { color: #414855; font-size: 12px; font-weight: 600; }
 .feature-setting small { margin-top: 4px; color: #838891; font-size: 11px; line-height: 1.6; }
-.feature-setting input[type=checkbox], .feature-module input[type=checkbox] { flex: 0 0 auto; appearance: none; width: 38px; height: 23px; padding: 0; border: 0; border-radius: 20px; background: #cbd0d5; cursor: pointer; box-shadow: none; position: relative; }
-.feature-setting input[type=checkbox]::before, .feature-module input[type=checkbox]::before { content: ''; position: absolute; width: 17px; height: 17px; top: 3px; left: 3px; border-radius: 50%; background: white; box-shadow: 0 1px 3px #0002; transition: transform .15s; }
-.feature-setting input:checked, .feature-module input:checked { background: #7188a7; }
-.feature-setting input:checked::before, .feature-module input:checked::before { transform: translateX(15px); }
+.feature-setting input[type=checkbox], .feature-module input[type=checkbox], .plugin-registry-heading input[type=checkbox] { flex: 0 0 auto; appearance: none; width: 38px; height: 23px; padding: 0; border: 0; border-radius: 20px; background: #cbd0d5; cursor: pointer; box-shadow: none; position: relative; }
+.feature-setting input[type=checkbox]::before, .feature-module input[type=checkbox]::before, .plugin-registry-heading input[type=checkbox]::before { content: ''; position: absolute; width: 17px; height: 17px; top: 3px; left: 3px; border-radius: 50%; background: white; box-shadow: 0 1px 3px #0002; transition: transform .15s; }
+.feature-setting input:checked, .feature-module input:checked, .plugin-registry-heading input:checked { background: #7188a7; }
+.feature-setting input:checked::before, .feature-module input:checked::before, .plugin-registry-heading input:checked::before { transform: translateX(15px); }
 .feature-setting select { width: 132px; font-size: 12px; }
+.plugin-registry-heading { display: flex; align-items: center; gap: 14px; }
+.plugin-registry-heading > div:not(.module-symbol) { flex: 1; }
+.plugin-config-list { width: 230px; max-width: 48%; padding: 8px; border: 1px solid #dad5cc; border-radius: 8px; background: #ffffff80; color: #414855; resize: vertical; font-family: inherit; font-size: 12px; line-height: 1.6; }
+.plugin-registry-item details { margin-top: 14px; font-size: 12px; color: #777d89; }
+.plugin-registry-item summary { cursor: pointer; }
+#plugin-actions { display: contents; }
 .feature-buttons { display: flex; gap: 10px; margin-top: 18px; }
 .module-tag { color: #92969d; font-size: 10px; font-weight: 400; margin-left: 10px; }
 .module-protocol { color: #798395; font: 12px/2.2 Consolas, monospace; padding: 15px; border-radius: 10px; background: #e8e8e4; }

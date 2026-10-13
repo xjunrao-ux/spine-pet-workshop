@@ -1,0 +1,14 @@
+import { app,dialog } from 'electron';
+import { mkdir,mkdtemp,writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),directory=path.join(root,'.local','zip-plugin-smoke');await mkdir(directory,{recursive:true});
+const profile=await mkdtemp(path.join(directory,'profile-'));app.setPath('userData',profile);process.env.PET_TEST_PROFILE=profile;process.env.ZIP_PLUGIN_SMOKE_DIR=directory;
+for(const key of ['VITE_DEV_SERVER_URL','V311_SMOKE_DIR','V321_SMOKE_DIR'])delete process.env[key];
+await writeFile(path.join(profile,'feature-settings.json'),JSON.stringify({music:false,notifications:false,codex:false,details:true}));
+app.commandLine.appendSwitch('mute-audio');app.on('browser-window-created',(_event,window)=>window.setOpacity(0));
+globalThis.zipSmokeControls={confirm:true,cancelPicker:false};
+dialog.showOpenDialog=async()=>({canceled:globalThis.zipSmokeControls.cancelPicker,filePaths:[path.join(root,'release','plugins','Codex-Plugin-v1.1.0.zip')]});
+dialog.showMessageBox=async()=>({response:globalThis.zipSmokeControls.confirm?0:1});
+const watchdog=setTimeout(()=>{console.error('ZIP UI watchdog expired');app.exit(1);},90000);app.on('will-quit',()=>clearTimeout(watchdog));
+await import('../electron/main.mjs');
