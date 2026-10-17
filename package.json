@@ -1,6 +1,6 @@
 {
   "name": "spine-pet-workshop",
-  "version": "3.2.2",
+  "version": "3.2.3",
   "private": true,
   "description": "A Windows Spine 3.8 desktop-pet workshop with local character and voice import.",
   "author": "Amiya Desktop Pet Project",
@@ -22,8 +22,13 @@
     "test:weather": "node --test scripts/test-weather-plugin.mjs",
     "test:weather:sandbox": "electron scripts/test-weather-sandbox.mjs",
     "package:weather": "node scripts/package-plugin.mjs examples/weather-plugin release/plugins/Weather-Plugin-v1.1.0.zip",
-    "test:release": "node --test scripts/test-character-parameters.mjs scripts/test-startup.mjs scripts/test-extensions.mjs scripts/test-plugins.mjs scripts/test-external-plugins.mjs scripts/test-weather-plugin.mjs scripts/test-plugin-promotion.mjs scripts/test-plugin-documentation.mjs",
-    "test:packaged": "node scripts/test-packaged-release.mjs"
+    "test:release": "node --test scripts/test-character-parameters.mjs scripts/test-startup.mjs scripts/test-extensions.mjs scripts/test-plugins.mjs scripts/test-external-plugins.mjs scripts/test-weather-plugin.mjs scripts/test-plugin-promotion.mjs scripts/test-plugin-documentation.mjs scripts/test-community-catalog.mjs scripts/test-hello-counter.mjs",
+    "test:packaged": "node scripts/test-packaged-release.mjs",
+    "package:hello": "node scripts/package-plugin.mjs examples/hello-counter-plugin release/plugins/Hello-Counter-v1.0.0.zip",
+    "community:generate": "node scripts/community-catalog.mjs --write",
+    "community:check": "node scripts/community-catalog.mjs",
+    "test:community": "node --test scripts/test-community-catalog.mjs scripts/test-hello-counter.mjs",
+    "test:community:sandbox": "electron scripts/test-hello-counter-sandbox.mjs"
   },
   "dependencies": {
     "@pixi-spine/all-3.8": "4.0.6",

@@ -1,0 +1,23 @@
+name: 插件点子或开发认领
+description: 提出希望桌宠增加的工具，或认领开发。
+title: "[插件点子] "
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: 想解决什么问题
+      description: 描述一个具体使用场景和期望效果。
+    validations:
+      required: true
+  - type: textarea
+    id: capabilities
+    attributes:
+      label: 需要的数据与能力
+      description: 是否需要联网、外部程序数据、文件或提醒？不清楚可写待讨论。
+    validations:
+      required: true
+  - type: textarea
+    id: participation
+    attributes:
+      label: 是否愿意参与开发或测试
+      description: 可说明开发认领、相关 Issue 或原型链接。

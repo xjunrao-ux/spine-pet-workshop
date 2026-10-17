@@ -1,0 +1,23 @@
+{
+  "packageType": "spine-pet-plugin",
+  "packageVersion": 1,
+  "id": "com.example.hello-counter",
+  "name": "我的第一个插件",
+  "menuLabel": "计数器",
+  "version": "1.0.0",
+  "apiVersion": 1,
+  "configVersion": 1,
+  "entry": "provider.js",
+  "icon": "plus",
+  "entryVisibility": "when-enabled",
+  "description": "入门 demo：点击加一或清零，不联网、不保存数据。",
+  "permissions": [],
+  "compatibilityNotes": [
+    "适用于 v3.2.2 / API v1。禁用、重启插件或退出程序后，计数归零。"
+  ],
+  "settingsSchema": [],
+  "commands": [
+    { "id": "increment", "permissions": [], "fields": {} },
+    { "id": "reset", "permissions": [], "fields": {} }
+  ]
+}

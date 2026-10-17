@@ -1,0 +1,18 @@
+{
+  "id": "local.spine-weather",
+  "name": "天气与预报",
+  "author": "xjunrao-ux",
+  "description": "城市搜索、当前天气、24 小时与 7 天天气预报。",
+  "version": "1.1.0",
+  "apiVersion": 1,
+  "minHostVersion": "3.2.3",
+  "category": "天气",
+  "sourceUrl": "https://github.com/xjunrao-ux/spine-pet-workshop/tree/v3.2.3/examples/weather-plugin",
+  "downloadUrl": "https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v3.2.3/Weather-Plugin-v1.1.0.zip",
+  "sha256": "5a8b002be37a6d9085106d25ac83e821103770e383bae27a1774e106f35d3f49",
+  "permissions": [
+    "storage.own",
+    "weather.read"
+  ],
+  "license": "UNLICENSED"
+}

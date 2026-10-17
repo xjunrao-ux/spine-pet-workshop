@@ -1,5 +1,12 @@
 # 正式发布流程
 
+## v3.2.3 社区插件附件
+
+新增社区条目后运行 `pnpm community:generate`、`pnpm community:check` 和 `pnpm test:community`。
+本版发布计数器、天气、Codex 三个 ZIP；打包后用 `node scripts/community-catalog.mjs --archives release/v3.2.3` 核对每个完整附件的摘要和清单，不执行插件代码。
+调用下文发布脚本时，在 `-PluginArchives` 中传入这三个附件。目录条目指向 v3.2.3 固定下载地址，上传完成后核对下载文件摘要。
+社区目录 PR 可以独立审核合并，不要求每次重发 EXE；宿主正式版本仍按下面流程验收与标记。
+
 公共 main 和正式标签只保存验收后的版本。日常测试提交留在本地 dev/v3。
 
 版本提交使用 `release: vX.Y.Z`，产物自动输出到 `release/vX.Y.Z/`。每次可交付修订递增版本号，不使用 `-pages`、`-polish` 等测试后缀替代版本；已发布版本不覆盖。发布脚本默认读取当前版本目录。
@@ -35,6 +42,7 @@ git status --short
 
 ```powershell
 git add electron src assets public docs scripts .github .githooks
+git add community examples CONTRIBUTING.md
 git add package.json pnpm-lock.yaml pnpm-workspace.yaml README.md CHANGELOG.md ROADMAP.md
 git commit -m "release: v3.0.0"
 ```

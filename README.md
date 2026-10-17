@@ -2,19 +2,20 @@
 
 把喜欢的角色放到 Windows 桌面上：导入本地 Spine 3.8 模型与语音，让小人走动、坐在窗口边缘、说话，也可以控制音乐、查看通知、记录待办，并按需添加天气预报和 Codex 状态插件。
 
-当前正式版 **v3.2.2 · Windows x64**。内置音乐、系统通知和待办；天气与 Codex 通过本地 ZIP 安装。页面用左右箭头翻页，滚轮只滚动当前页。本版不提供 AI 对话。
+当前正式版 **v3.2.3 · Windows x64**。新增 GitHub 社区插件目录、开发入口和计数器示例。内置音乐、系统通知和待办；天气与 Codex 通过本地 ZIP 安装。页面用左右箭头翻页，滚轮只滚动当前页。本版不提供 AI 对话。
 
-[下载与运行](#下载与运行) · [第一次使用](#第一次使用) · [待办事项](#待办事项) · [天气与codex插件](#天气与-codex-插件) · [导入角色](#导入新角色) · [常见问题](#常见问题)
+[社区插件](community/README.md) · [开发插件](docs/PLUGIN_QUICKSTART.md) · [下载与运行](#下载与运行) · [第一次使用](#第一次使用) · [待办事项](#待办事项) · [天气与codex插件](#天气与-codex-插件) · [导入角色](#导入新角色) · [常见问题](#常见问题)
 
 ## 下载与运行
 
 普通用户下载 EXE 即可，**不需要安装 Node.js、pnpm 或 Electron**。
 
-- [安装版 v3.2.2](https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v3.2.2/Spine-Pet-Workshop-Setup-v3.2.2-x64.exe)：双击安装，从桌面快捷方式启动。
-- [便携版 v3.2.2](https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v3.2.2/Spine-Pet-Workshop-Portable-v3.2.2-x64.exe)：放在固定文件夹内，双击直接启动。
-- [天气插件 v1.1.0](https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v3.2.2/Weather-Plugin-v1.1.0.zip)：选装，显示当前天气、未来 24 小时和 7 天预报。
-- [Codex 插件 v1.1.0](https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v3.2.2/Codex-Plugin-v1.1.0.zip)：选装，只读本机额度和最近任务。
-- [校验文件](https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v3.2.2/SHA256SUMS.txt)：用于核对 EXE 与 ZIP 下载是否完整。
+- [安装版 v3.2.3](https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v3.2.3/Spine-Pet-Workshop-Setup-v3.2.3-x64.exe)：双击安装，从桌面快捷方式启动。
+- [便携版 v3.2.3](https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v3.2.3/Spine-Pet-Workshop-Portable-v3.2.3-x64.exe)：放在固定文件夹内，双击直接启动。
+- [计数器示例 v1.0.0](https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v3.2.3/Hello-Counter-v1.0.0.zip)：零权限入门插件，点击加一、清零，重启归零；附[开发教程](docs/PLUGIN_QUICKSTART.md)。
+- [天气插件 v1.1.0](https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v3.2.3/Weather-Plugin-v1.1.0.zip)：选装，显示当前天气、未来 24 小时和 7 天预报。
+- [Codex 插件 v1.1.0](https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v3.2.3/Codex-Plugin-v1.1.0.zip)：选装，只读本机额度和最近任务。
+- [校验文件](https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v3.2.3/SHA256SUMS.txt)：用于核对 EXE 与 ZIP 下载是否完整。
 - [全部正式版本](https://github.com/xjunrao-ux/spine-pet-workshop/releases)：历史版本、更新说明、使用说明和校验文件。
 
 > GitHub 自动提供的 `Source code.zip` 是源码，不是安装包。便携版只表示无需安装，角色库仍保存在 Windows 用户数据目录，并非与 EXE 放在一起。
@@ -274,16 +275,23 @@ v3.1.2 的 Codex 已改为选装插件，升级后没有入口时，先导入上
 | v2.3.1 | 本地开发，未发行 | 音频手动校准、气泡高度、左右随机行走、角色预览与逐角色参数 |
 | v3.1.1 | 本地开发预览 | 滚轮胶囊、音乐控制、系统通知、Codex 信息与功能开关；未公开发布 |
 | v3.1.2 | 历史正式版 | 平滑吸附分页、预览撤销重做、开机启动修复、通知常驻入口与兼容说明 |
-| v3.2.2 | 当前正式版 | 内置待办、ZIP 插件、天气与 Codex 选装、左右分页和待办右键菜单 |
+| v3.2.2 | 历史正式版 | 内置待办、ZIP 插件、天气与 Codex 选装、左右分页和待办右键菜单 |
+| v3.2.3 | 当前正式版 | GitHub 社区插件目录、开发入口、计数器示例、投稿与目录校验 |
 | v4 | 规划中 | 评估 AI 对话和行为能力 |
 
 详见 [更新日志](CHANGELOG.md)、[版本前瞻](ROADMAP.md)。
+
+## 社区插件与开发入口
+
+[浏览社区插件](community/README.md) · [插件安装使用手册](docs/PLUGIN_USAGE.md) · [手写第一个插件](docs/PLUGIN_QUICKSTART.md) · [完整开发规范](docs/PLUGIN_DEVELOPMENT.md) · [提交插件 PR](community/CONTRIBUTING.md)
+
+v3.2.3 新增 GitHub 社区目录、投稿模板和目录校验，无需独立网站。下载 [计数器入门 ZIP](https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v3.2.3/Hello-Counter-v1.0.0.zip) 即可体验零权限示例。作者在自己的仓库发布插件，通过 PR 向本仓库提交收录信息；审核后进入目录，用户下载 ZIP 手动导入。当前未提供应用内商店、在线安装或自动更新。
 
 ## 开发
 
 以下内容仅供开发者，直接使用 Release 的用户不需要执行。技术栈：Electron、TypeScript、Vite、PixiJS、Spine 3.8、PowerShell / Win32。
 
-### 插件二次开发（v3.2.2）
+### 插件二次开发（v3.2.3 / API v1）
 
 独立插件可打包成 ZIP，在角色管理器的“扩展”页导入，无需修改主程序。请阅读 [插件开发规范与接入手册](docs/PLUGIN_DEVELOPMENT.md)：提供可运行示例、接口、组件、权限、存储、提醒、调试与发布规范。正式版内置音乐、通知和待办；待办右侧完成/撤回，右键编辑/删除，并兼容旧 ZIP 数据。Codex 改为外置，可用 `pnpm package:codex` 生成 ZIP 后导入；宿主提供受控只读订阅，并提供受控天气查询。可用 pnpm package:weather 生成天气 ZIP。v3.1.2 正式版不支持 ZIP 导入，插件市场与自动更新尚未实现。
 
@@ -301,7 +309,7 @@ pnpm build
 pnpm package:win
 ```
 
-首次使用 pnpm 时可按 `package.json` 安装 pnpm 11.19.0。构建产物自动写入 `release/v<版本号>/`，当前为 `release/v3.2.2/`，不提交到 Git。第三方角色模型和音频不在公共源码中；从源码运行时请准备本地素材，或通过角色管理器导入自己的角色，详见 [素材说明](public/README.md)。
+首次使用 pnpm 时可按 `package.json` 安装 pnpm 11.19.0。构建产物自动写入 `release/v<版本号>/`，当前为 `release/v3.2.3/`，不提交到 Git。第三方角色模型和音频不在公共源码中；从源码运行时请准备本地素材，或通过角色管理器导入自己的角色，详见 [素材说明](public/README.md)。
 
 ```text
 electron/   主进程、系统窗口、IPC 和语音配置解析
