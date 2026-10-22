@@ -8,6 +8,7 @@ import { LocalConnectionStore,LocalService,LocalSSEParser,validateLocalEndpoint,
 import { CapabilityBroker } from '../electron/plugins/capabilities.mjs';
 import { inspectPluginZip,EXTERNAL_PERMISSIONS } from '../electron/plugins/packages.mjs';
 import { PERMISSIONS } from '../electron/plugins/contracts.mjs';
+import { createZip } from '../electron/plugins/zip.mjs';
 
 const token='fixture-connection-token-only';
 const encryption={isEncryptionAvailable:()=>true,encryptString:value=>Buffer.from([...value].reverse().join('')),decryptString:bytes=>[...bytes.toString()].reverse().join('')};
@@ -123,5 +124,13 @@ test('capability authorization and revocation isolate plugins and suppress late 
 
 test('net.local is additive and existing external ZIP packages still validate',async()=>{
   assert.ok(PERMISSIONS.has('net.local'));assert.ok(EXTERNAL_PERMISSIONS.has('net.local'));
-  for(const name of ['DeepSeek-Plugin-v1.0.0.zip','Weather-Plugin-v1.1.0.zip','Codex-Plugin-v1.1.0.zip']){const bundle=inspectPluginZip(await readFile(new URL('../release/plugins/'+name,import.meta.url)));assert.equal(bundle.manifest.apiVersion,1);}
+  for(const name of ['deepseek-plugin','weather-plugin','codex-plugin']){
+    const source=new URL('../examples/'+name+'/',import.meta.url);
+    const manifestBytes=await readFile(new URL('plugin.json',source));
+    const manifest=JSON.parse(manifestBytes);
+    const bundle=inspectPluginZip(createZip({'plugin.json':manifestBytes,[manifest.entry]:await readFile(new URL(manifest.entry,source))}));
+    assert.equal(bundle.manifest.apiVersion,1);
+    assert.equal(bundle.manifest.id,manifest.id);
+    assert.ok(!bundle.manifest.permissions.includes('net.local'));
+  }
 });
