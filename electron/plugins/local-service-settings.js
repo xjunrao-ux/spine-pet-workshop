@@ -1,0 +1,6 @@
+const api=window.localServiceSettings,endpoint=document.querySelector('#endpoint'),token=document.querySelector('#token'),status=document.querySelector('#status');
+async function update(){const state=await api.status();document.querySelector('#plugin-owner').textContent='授权插件：'+state.pluginId;endpoint.value=state.endpoint??'';token.placeholder=state.configured?'已保存；更换连接时重新填写令牌':'输入服务提供的令牌';status.textContent=state.error?'配置无法读取，请重新保存。':state.configured?'已保存连接。服务可用性由插件验证。':'尚未配置连接。';}
+async function run(action){document.querySelectorAll('button').forEach(button=>button.disabled=true);try{const result=await action();if(result.ok)await update();else status.textContent=result.message;}catch{status.textContent='连接设置不可用，请重新打开。';}finally{document.querySelectorAll('button').forEach(button=>button.disabled=false);}}
+document.querySelector('#connection-form').addEventListener('submit',event=>{event.preventDefault();const connection={endpoint:endpoint.value.trim(),token:token.value.trim()};token.value='';void run(()=>api.save(connection));});
+document.querySelector('#clear').addEventListener('click',()=>{token.value='';void run(()=>api.clear());});
+void update().catch(()=>{status.textContent='无法读取配置，请重新打开。';});

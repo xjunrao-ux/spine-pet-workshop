@@ -68,7 +68,8 @@ node scripts/package-plugin.mjs examples/hello-counter-plugin release/plugins/He
 - 持久化：声明 `storage.own`，激活时读取 `context.storage.get`；命令中串行处理写入，先 `await context.storage.set` 成功再更新内存和页面。
 - 字幕：声明 `ui.reminders`，调用 `context.emit`。宿主管理隐私、静默和去重；可见字幕不是绝对可靠的业务投递确认。
 - 天气与 Codex：分别通过 `weather.read` 与 `codex.read` 调用宿主受控接口。
-- 其他联网、AI API、系统文件、进程、DOM 或自定义窗口：当前未开放，先向维护者讨论新能力，不绕过沙盒。
+- DeepSeek 官方对话：v4.1.1+ 的 `ai.deepseek`；其他本地服务：v4.2.2+ 的 `net.local`，见 [HTTP/SSE 接口](LOCAL_SERVICE_API.md)，需用户另行授权地址和令牌。
+- 其他远程联网、系统文件、进程、DOM 或自定义窗口：当前未开放，先向维护者讨论新能力，不绕过沙盒。
 
 需要完整表单、持久化和提醒的示例时，使用[开发手册中的便签](PLUGIN_DEVELOPMENT.md#2-从零做一个可安装插件)。
 

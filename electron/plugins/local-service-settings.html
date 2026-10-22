@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; base-uri 'none'; form-action 'none'; frame-src 'none'">
+<title>本地服务连接设置</title><link rel="stylesheet" href="local-service-settings.css"></head>
+<body><main><h1>连接本地服务</h1><p id="plugin-owner"></p>
+<p>填写服务提供的本机地址和连接令牌。保存后，该插件可以读取或提交此地址路径范围内的请求。</p>
+<form id="connection-form"><label for="endpoint">服务根地址</label>
+<input id="endpoint" type="text" maxlength="500" autocomplete="off" spellcheck="false" placeholder="http://127.0.0.1:3080/pet-bridge/v1/" required>
+<label for="token">连接令牌（不是模型 API Key）</label>
+<input id="token" type="password" maxlength="514" autocomplete="off" spellcheck="false" placeholder="输入服务提供的令牌" required>
+<button type="submit">授权并保存连接</button></form>
+<button id="clear" type="button">移除连接并停止传输</button><p id="status" role="status" aria-live="polite">正在读取配置…</p>
+<aside>仅支持带明确端口的 127.0.0.1 或 [::1] HTTP 地址。令牌加密保存在本机，由宿主注入请求头，插件无法通过接口读取。修改连接会停止此插件正在进行的传输。保存只登记授权，服务是否可用由插件执行握手验证。</aside>
+</main><script src="local-service-settings.js"></script></body></html>

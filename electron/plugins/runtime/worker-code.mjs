@@ -14,6 +14,18 @@ export function workerMain(){
     try{await rpc('codex.subscribe',{subscriptionId:id});}catch(error){subscriptions.delete(id);throw error;}
     let active=true;return ()=>{if(!active)return;active=false;subscriptions.delete(id);void rpc('codex.unsubscribe',{subscriptionId:id}).catch(()=>{});};
   };
+  const subscribeDeepSeek=async callback=>{
+    if(typeof callback!=='function')throw new Error('Invalid subscriber');
+    const id='deepseek-'+(++sequence);subscriptions.set(id,{event:callback});
+    try{await rpc('deepseek.subscribe',{subscriptionId:id});}catch(error){subscriptions.delete(id);throw error;}
+    let active=true;return ()=>{if(!active)return;active=false;subscriptions.delete(id);void rpc('deepseek.unsubscribe',{subscriptionId:id}).catch(()=>{});};
+  };
+  const subscribeLocalService=async callback=>{
+    if(typeof callback!=='function')throw new Error('Invalid subscriber');
+    const id='local-'+(++sequence);subscriptions.set(id,{event:callback});
+    try{await rpc('localService.subscribe',{subscriptionId:id});}catch(error){subscriptions.delete(id);throw error;}
+    let active=true;return ()=>{if(!active)return;active=false;subscriptions.delete(id);void rpc('localService.unsubscribe',{subscriptionId:id}).catch(()=>{});};
+  };
   self.onmessage=async event=>{
     let request;try{request=parse(event.data);}catch{return;}
     if(request.kind==='rpcReply'){const item=pending.get(request.id);if(!item)return;pending.delete(request.id);request.ok?item.resolve(request.data):item.reject(new Error('插件能力请求失败或未授权'));return;}
@@ -23,6 +35,8 @@ export function workerMain(){
         const context=Object.freeze({signal:controller.signal,startedAt:inputs.startedAt,getConfig:()=>clone(inputs.config),getPreferences:()=>clone(inputs.preferences),isRead:key=>inputs.readKeys.includes(key),
           weather:Object.freeze({search:params=>rpc('weather.search',{params}),forecast:params=>rpc('weather.forecast',{params})}),
           ...(inputs.permissions.includes('codex.read')?{codex:Object.freeze({subscribe:subscribeCodex})}:{}),
+          ...(inputs.permissions.includes('ai.deepseek')?{deepseek:Object.freeze({subscribe:subscribeDeepSeek,configure:()=>rpc('deepseek.configure'),start:params=>rpc('deepseek.start',{params}),cancel:()=>rpc('deepseek.cancel')})}:{}),
+          ...(inputs.permissions.includes('net.local')?{localService:Object.freeze({subscribe:subscribeLocalService,configure:()=>rpc('localService.configure'),status:()=>rpc('localService.status'),request:params=>rpc('localService.request',{params}),stream:params=>rpc('localService.stream',{params}),cancel:params=>rpc('localService.cancel',{params})})}:{}),
           storage:Object.freeze({get:key=>rpc('storage.get',{key}),set:(key,value)=>rpc('storage.set',{key,value})}),
           publish:snapshot=>send({kind:'publish',snapshot}),emit:event=>rpc('emit',{event}),onCleanup:callback=>cleanups.push(callback)});
         const module=await import(URL.createObjectURL(new Blob([request.code],{type:'text/javascript'})));

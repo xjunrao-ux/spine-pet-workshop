@@ -35,7 +35,7 @@ test('same-ID builtin preserves disable/config/data, enables once and refuses ZI
   const {userData,state}=await prepare(t),options=createTestOptions();const host=new ExtensionService({directory:'.',userData,...options,definitions:[...options.definitions.filter(def=>def.manifest.id!==manifest.id),{manifest,activate}],onUpdate:()=>{},onEvent:()=>{}});t.after(()=>host.stop());
   const loader=new PluginPackages({userData,makeProvider:fake});for(const def of await loader.load({builtinIds:[...host.records.keys()]}))host.addDefinition(def);await host.start();
   assert.equal(host.snapshot().plugins.filter(p=>p.id===manifest.id).length,1);assert.equal(host.records.get(manifest.id).origin,'builtin');assert.equal(host.records.get(manifest.id).enabled,false);assert.equal(host.store.data.plugins[manifest.id].config.intervalSeconds,21);
-  await host.setSettings({plugins:{[manifest.id]:{enabled:true}}});assert.equal(host.records.get(manifest.id).snapshot.pages[0].blocks[1].children[0].children[0].text,state.items[0].title);
+  await host.setSettings({plugins:{[manifest.id]:{enabled:true}}});assert.equal(host.records.get(manifest.id).snapshot.pages[0].blocks.find(b=>b.appearance==='task-row').children.find(b=>b.appearance==='task-content').children[0].text,state.items[0].title);
   await assert.rejects(loader.install(inspectPluginZip(createZip({'plugin.json':JSON.stringify(manifest),'provider.js':code})),host),/内置/);await assert.rejects(host.uninstallDefinition(manifest.id),/内置/);
   assert.equal(host.records.get(manifest.id).runtime,'active');assert.equal(JSON.parse(await readFile(loader.index,'utf8')).installed.length,0);
 });

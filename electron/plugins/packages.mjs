@@ -4,12 +4,12 @@ import path from 'node:path';
 import { readZip,safeZipPath } from './zip.mjs';
 import { validateManifest,API_VERSION } from './contracts.mjs';
 import { atomicWrite } from './settings-store.mjs';
-export const EXTERNAL_PERMISSIONS=new Set(['storage.own','ui.reminders','weather.read','codex.read']);
+export const EXTERNAL_PERMISSIONS=new Set(['storage.own','ui.reminders','weather.read','codex.read','ai.deepseek','net.local']);
 const hashBundle=bundle=>createHash('sha256').update(JSON.stringify({manifest:bundle.manifest,code:bundle.code})).digest('hex');
 function validateBundle(bundle){
   const manifest=validateManifest(bundle.manifest);
   if(manifest.id.startsWith('workshop.')||manifest.apiVersion!==API_VERSION||manifest.packageVersion!==1||manifest.packageType!=='spine-pet-plugin') throw new Error('插件标识、包格式或接口版本不兼容');
-  if(manifest.permissions.some(permission=>!EXTERNAL_PERMISSIONS.has(permission))) throw new Error('当前 ZIP 插件仅开放独立存储、角色提醒、受控天气与 Codex 只读权限');
+  if(manifest.permissions.some(permission=>!EXTERNAL_PERMISSIONS.has(permission))) throw new Error('ZIP 插件请求了未开放的权限');
   safeZipPath(manifest.entry);if(!/\.(?:js|mjs)$/.test(manifest.entry)||typeof bundle.code!=='string'||Buffer.byteLength(bundle.code)>512*1024||!bundle.code.trim()) throw new Error('插件入口必须是小于 512 KB 的打包 JavaScript 模块');
   return {manifest,code:bundle.code};
 }

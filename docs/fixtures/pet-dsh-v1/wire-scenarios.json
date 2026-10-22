@@ -1,0 +1,979 @@
+{
+  "format": "pet-dsh-wire-design/1",
+  "notExecutedClientTests": true,
+  "protocol": "pet-dsh/1",
+  "revision": "1.0.0",
+  "notes": [
+    "所有凭据和会话身份均为虚构示例",
+    "正常 DTO 来自当前服务实现形态",
+    "negative:true 仅表示客户端必须拒绝该语义，不代表 Schema 包络必然不合法",
+    "expected 为待实现客户端的验收断言，生成器不模拟领域状态机"
+  ],
+  "scenarios": [
+    {
+      "id": "normal",
+      "covers": [
+        "C05",
+        "C10",
+        "C12"
+      ],
+      "steps": [
+        {
+          "direction": "pet-to-host",
+          "kind": "request",
+          "args": {
+            "requestId": "http.info-1",
+            "method": "GET",
+            "path": "/info"
+          }
+        },
+        {
+          "direction": "host-to-pet",
+          "event": {
+            "type": "response",
+            "requestId": "http.info-1",
+            "status": 200,
+            "ok": true,
+            "data": {
+              "protocols": [
+                "pet-dsh/1"
+              ],
+              "instanceId": "bridge-A",
+              "serverVersion": "1.0.0",
+              "dshVersion": "0.1.1-rc.2",
+              "capabilities": [
+                "sessions.list",
+                "session.snapshot",
+                "message.send",
+                "events.follow",
+                "requests.lookup",
+                "session.cancel"
+              ],
+              "limits": {
+                "requestBytes": 65536,
+                "responseBytes": 262144,
+                "eventBytes": 65536,
+                "messageChars": 4000,
+                "eventsPerSecond": 30,
+                "heartbeatMs": 15000,
+                "journalRetentionHours": 24,
+                "sessionPageSize": 20,
+                "snapshotMessageLimit": 20
+              }
+            }
+          }
+        },
+        {
+          "direction": "pet-to-host",
+          "kind": "request",
+          "args": {
+            "requestId": "http.sessions-1",
+            "method": "GET",
+            "path": "/sessions"
+          }
+        },
+        {
+          "direction": "host-to-pet",
+          "event": {
+            "type": "response",
+            "requestId": "http.sessions-1",
+            "status": 200,
+            "ok": true,
+            "data": {
+              "instanceId": "bridge-A",
+              "items": [
+                {
+                  "sessionId": "session-A",
+                  "title": "仓库检查",
+                  "workspace": "spine-pet-workshop",
+                  "status": "idle",
+                  "available": true
+                },
+                {
+                  "sessionId": "session-old",
+                  "title": "历史会话",
+                  "workspace": "old-project",
+                  "status": "unavailable",
+                  "available": false
+                }
+              ],
+              "nextCursor": null
+            }
+          }
+        },
+        {
+          "direction": "local",
+          "note": "用户明确选择 session-A，递增绑定版本"
+        },
+        {
+          "direction": "pet-to-host",
+          "kind": "request",
+          "args": {
+            "requestId": "http.snapshot-1",
+            "method": "GET",
+            "path": "/snapshot",
+            "query": {
+              "sessionId": "session-A"
+            }
+          }
+        },
+        {
+          "direction": "host-to-pet",
+          "event": {
+            "type": "response",
+            "requestId": "http.snapshot-1",
+            "status": 200,
+            "ok": true,
+            "data": {
+              "instanceId": "bridge-A",
+              "sessionId": "session-A",
+              "cursor": "bridge-A.100",
+              "messages": [
+                {
+                  "messageId": "user-01",
+                  "role": "user",
+                  "text": "之前的讨论",
+                  "turn": 1
+                }
+              ],
+              "activity": null,
+              "pendingInteractions": [],
+              "pendingPetCalls": [],
+              "truncated": false
+            }
+          }
+        },
+        {
+          "direction": "pet-to-host",
+          "kind": "stream",
+          "args": {
+            "streamId": "sse.1",
+            "path": "/events",
+            "query": {
+              "sessionId": "session-A"
+            },
+            "lastEventId": "bridge-A.100"
+          }
+        },
+        {
+          "direction": "host-to-pet",
+          "event": {
+            "type": "stream.open",
+            "streamId": "sse.1"
+          }
+        },
+        {
+          "direction": "local",
+          "note": "先持久化发送意图"
+        },
+        {
+          "direction": "pet-to-host",
+          "kind": "request",
+          "args": {
+            "requestId": "http.send-1",
+            "method": "POST",
+            "path": "/commands",
+            "body": {
+              "protocol": "pet-dsh/1",
+              "instanceId": "bridge-A",
+              "requestId": "pet.send-01",
+              "op": "message.send",
+              "sessionId": "session-A",
+              "data": {
+                "mode": "followup",
+                "text": "分析仓库测试失败的原因"
+              }
+            }
+          }
+        },
+        {
+          "direction": "host-to-pet",
+          "event": {
+            "type": "response",
+            "requestId": "http.send-1",
+            "status": 202,
+            "ok": true,
+            "data": {
+              "protocol": "pet-dsh/1",
+              "instanceId": "bridge-A",
+              "requestId": "pet.send-01",
+              "ok": true,
+              "data": {
+                "status": "accepted",
+                "messageId": "user-02"
+              }
+            }
+          }
+        },
+        {
+          "direction": "host-to-pet",
+          "event": {
+            "type": "stream.event",
+            "streamId": "sse.1",
+            "event": "bridge",
+            "data": "{\"protocol\":\"pet-dsh/1\",\"instanceId\":\"bridge-A\",\"sessionId\":\"session-A\",\"cursor\":\"bridge-A.101\",\"type\":\"message.claimed\",\"data\":{\"requestId\":\"pet.send-01\",\"messageId\":\"user-02\",\"activityId\":\"activity-A\",\"turn\":2}}",
+            "lastEventId": "bridge-A.101"
+          }
+        },
+        {
+          "direction": "host-to-pet",
+          "event": {
+            "type": "stream.event",
+            "streamId": "sse.1",
+            "event": "bridge",
+            "data": "{\"protocol\":\"pet-dsh/1\",\"instanceId\":\"bridge-A\",\"sessionId\":\"session-A\",\"cursor\":\"bridge-A.105\",\"type\":\"assistant.delta\",\"data\":{\"activityId\":\"activity-A\",\"attemptId\":\"attempt-A\",\"index\":0,\"text\":\"已经找到\"}}",
+            "lastEventId": "bridge-A.105"
+          }
+        },
+        {
+          "direction": "host-to-pet",
+          "event": {
+            "type": "stream.event",
+            "streamId": "sse.1",
+            "event": "bridge",
+            "data": "{\"protocol\":\"pet-dsh/1\",\"instanceId\":\"bridge-A\",\"sessionId\":\"session-A\",\"cursor\":\"bridge-A.106\",\"type\":\"tool.started\",\"data\":{\"activityId\":\"activity-A\",\"callId\":\"call-A\",\"name\":\"read_file\",\"summary\":\"读取项目文件\"}}",
+            "lastEventId": "bridge-A.106"
+          }
+        },
+        {
+          "direction": "host-to-pet",
+          "event": {
+            "type": "stream.event",
+            "streamId": "sse.1",
+            "event": "bridge",
+            "data": "{\"protocol\":\"pet-dsh/1\",\"instanceId\":\"bridge-A\",\"sessionId\":\"session-A\",\"cursor\":\"bridge-A.109\",\"type\":\"tool.finished\",\"data\":{\"activityId\":\"activity-A\",\"callId\":\"call-A\",\"summary\":\"工具返回结果\",\"status\":\"completed\"}}",
+            "lastEventId": "bridge-A.109"
+          }
+        },
+        {
+          "direction": "host-to-pet",
+          "event": {
+            "type": "stream.event",
+            "streamId": "sse.1",
+            "event": "bridge",
+            "data": "{\"protocol\":\"pet-dsh/1\",\"instanceId\":\"bridge-A\",\"sessionId\":\"session-A\",\"cursor\":\"bridge-A.110\",\"type\":\"assistant.delta\",\"data\":{\"activityId\":\"activity-A\",\"attemptId\":\"attempt-A\",\"index\":1,\"text\":\"测试入口。\"}}",
+            "lastEventId": "bridge-A.110"
+          }
+        },
+        {
+          "direction": "host-to-pet",
+          "event": {
+            "type": "stream.event",
+            "streamId": "sse.1",
+            "event": "bridge",
+            "data": "{\"protocol\":\"pet-dsh/1\",\"instanceId\":\"bridge-A\",\"sessionId\":\"session-A\",\"cursor\":\"bridge-A.111\",\"type\":\"assistant.message\",\"data\":{\"messageId\":\"assistant-02\",\"turn\":2,\"text\":\"已经找到测试入口。\",\"attemptId\":\"attempt-A\"}}",
+            "lastEventId": "bridge-A.111"
+          }
+        },
+        {
+          "direction": "host-to-pet",
+          "event": {
+            "type": "stream.event",
+            "streamId": "sse.1",
+            "event": "bridge",
+            "data": "{\"protocol\":\"pet-dsh/1\",\"instanceId\":\"bridge-A\",\"sessionId\":\"session-A\",\"cursor\":\"bridge-A.112\",\"type\":\"activity.ended\",\"data\":{\"activityId\":\"activity-A\",\"outcome\":\"completed\"}}",
+            "lastEventId": "bridge-A.112"
+          }
+        }
+      ],
+      "expected": [
+        "stream.open 前不可写",
+        "cursor 数字间隔合法",
+        "authoritative assistant-02 只有一条",
+        "结束状态 completed"
+      ]
+    },
+    {
+      "id": "late-http",
+      "covers": [
+        "C07"
+      ],
+      "precondition": "ready，意图已持久化",
+      "steps": [
+        {
+          "direction": "pet-to-host",
+          "kind": "request",
+          "args": {
+            "requestId": "http.send-1",
+            "method": "POST",
+            "path": "/commands",
+            "body": {
+              "protocol": "pet-dsh/1",
+              "instanceId": "bridge-A",
+              "requestId": "pet.send-01",
+              "op": "message.send",
+              "sessionId": "session-A",
+              "data": {
+                "mode": "followup",
+                "text": "分析仓库测试失败的原因"
+              }
+            }
+          }
+        },
+        {
+          "direction": "host-to-pet",
+          "event": {
+            "type": "stream.event",
+            "streamId": "sse.1",
+            "event": "bridge",
+            "data": "{\"protocol\":\"pet-dsh/1\",\"instanceId\":\"bridge-A\",\"sessionId\":\"session-A\",\"cursor\":\"bridge-A.101\",\"type\":\"message.claimed\",\"data\":{\"requestId\":\"pet.send-01\",\"messageId\":\"user-02\",\"activityId\":\"activity-A\",\"turn\":2}}",
+            "lastEventId": "bridge-A.101"
+          }
+        },
+        {
+          "direction": "host-to-pet",
+          "event": {
+            "type": "stream.event",
+            "streamId": "sse.1",
+            "event": "bridge",
+            "data": "{\"protocol\":\"pet-dsh/1\",\"instanceId\":\"bridge-A\",\"sessionId\":\"session-A\",\"cursor\":\"bridge-A.111\",\"type\":\"assistant.message\",\"data\":{\"messageId\":\"assistant-02\",\"turn\":2,\"text\":\"已经找到测试入口。\",\"attemptId\":\"attempt-A\"}}",
+            "lastEventId": "bridge-A.111"
+          }
+        },
+        {
+          "direction": "host-to-pet",
+          "event": {
+            "type": "stream.event",
+            "streamId": "sse.1",
+            "event": "bridge",
+            "data": "{\"protocol\":\"pet-dsh/1\",\"instanceId\":\"bridge-A\",\"sessionId\":\"session-A\",\"cursor\":\"bridge-A.112\",\"type\":\"activity.ended\",\"data\":{\"activityId\":\"activity-A\",\"outcome\":\"completed\"}}",
+            "lastEventId": "bridge-A.112"
+          }
+        },
+        {
+          "direction": "host-to-pet",
+          "event": {
+            "type": "response",
+            "requestId": "http.send-1",
+            "status": 202,
+            "ok": true,
+            "data": {
+              "protocol": "pet-dsh/1",
+              "instanceId": "bridge-A",
+              "requestId": "pet.send-01",
+              "ok": true,
+              "data": {
+                "status": "accepted",
+                "messageId": "user-02"
+              }
+            }
+          }
+        }
+      ],
+      "expected": [
+        "先到的 ended 保持，迟到 accepted 不得回退",
+        "单次发送锁与业务完成状态分开"
+      ]
+    },
+    {
+      "id": "timeout-after-send",
+      "covers": [
+        "C06",
+        "C08"
+      ],
+      "precondition": "ready，意图已持久化",
+      "steps": [
+        {
+          "direction": "pet-to-host",
+          "kind": "request",
+          "args": {
+            "requestId": "http.send-1",
+            "method": "POST",
+            "path": "/commands",
+            "body": {
+              "protocol": "pet-dsh/1",
+              "instanceId": "bridge-A",
+              "requestId": "pet.send-01",
+              "op": "message.send",
+              "sessionId": "session-A",
+              "data": {
+                "mode": "followup",
+                "text": "分析仓库测试失败的原因"
+              }
+            }
+          }
+        },
+        {
+          "direction": "host-to-pet",
+          "event": {
+            "type": "request.error",
+            "requestId": "http.send-1",
+            "code": "TIMEOUT"
+          }
+        },
+        {
+          "direction": "pet-to-host",
+          "kind": "request",
+          "args": {
+            "requestId": "http.lookup-1",
+            "method": "GET",
+            "path": "/requests",
+            "query": {
+              "requestId": "pet.send-01"
+            }
+          }
+        },
+        {
+          "direction": "host-to-pet",
+          "event": {
+            "type": "response",
+            "requestId": "http.lookup-1",
+            "status": 200,
+            "ok": true,
+            "data": {
+              "protocol": "pet-dsh/1",
+              "instanceId": "bridge-A",
+              "requestId": "pet.send-01",
+              "ok": true,
+              "data": {
+                "status": "ended",
+                "op": "message.send",
+                "sessionId": "session-A",
+                "messageId": "user-02",
+                "acceptedInstanceId": "bridge-A",
+                "receivedAt": "2026-10-21T08:00:00.000Z",
+                "updatedAt": "2026-10-21T08:00:01.000Z",
+                "activityId": "activity-A",
+                "outcome": "completed",
+                "endedAt": "2026-10-21T08:00:02.000Z"
+              }
+            }
+          }
+        }
+      ],
+      "expected": [
+        "超时进入 unknown，只查回执",
+        "没有第二个 POST",
+        "查清后 completed"
+      ]
+    },
+    {
+      "id": "unknown-receipt",
+      "covers": [
+        "C09"
+      ],
+      "steps": [
+        {
+          "direction": "pet-to-host",
+          "kind": "request",
+          "args": {
+            "requestId": "http.lookup-1",
+            "method": "GET",
+            "path": "/requests",
+            "query": {
+              "requestId": "pet.send-01"
+            }
+          }
+        },
+        {
+          "direction": "host-to-pet",
+          "event": {
+            "type": "response",
+            "requestId": "http.lookup-1",
+            "status": 404,
+            "ok": false,
+            "data": {
+              "protocol": "pet-dsh/1",
+              "ok": false,
+              "error": {
+                "code": "REQUEST_UNKNOWN",
+                "message": "没有台账记录或已超出保留期",
+                "retryable": false
+              }
+            }
+          }
+        }
+      ],
+      "expected": [
+        "保留原文和 unknown",
+        "不得据此认定未执行",
+        "不创建新 requestId"
+      ]
+    },
+    {
+      "id": "result-unknown",
+      "covers": [
+        "C09"
+      ],
+      "steps": [
+        {
+          "direction": "pet-to-host",
+          "kind": "request",
+          "args": {
+            "requestId": "http.lookup-1",
+            "method": "GET",
+            "path": "/requests",
+            "query": {
+              "requestId": "pet.send-01"
+            }
+          }
+        },
+        {
+          "direction": "host-to-pet",
+          "event": {
+            "type": "response",
+            "requestId": "http.lookup-1",
+            "status": 200,
+            "ok": true,
+            "data": {
+              "protocol": "pet-dsh/1",
+              "instanceId": "bridge-A",
+              "requestId": "pet.send-01",
+              "ok": true,
+              "data": {
+                "status": "unknown",
+                "op": "message.send",
+                "sessionId": "session-A",
+                "messageId": "user-02",
+                "acceptedInstanceId": "bridge-A",
+                "receivedAt": "2026-10-21T08:00:00.000Z",
+                "updatedAt": "2026-10-21T08:00:01.000Z",
+                "error": {
+                  "code": "RESULT_UNKNOWN",
+                  "message": "无法证明执行结果",
+                  "retryable": false
+                }
+              }
+            }
+          }
+        }
+      ],
+      "expected": [
+        "日志 unknown，禁止自动重发"
+      ]
+    },
+    {
+      "id": "delta-replay-and-gap",
+      "covers": [
+        "C11",
+        "C12"
+      ],
+      "steps": [
+        {
+          "direction": "host-to-pet",
+          "event": {
+            "type": "stream.event",
+            "streamId": "sse.1",
+            "event": "bridge",
+            "data": "{\"protocol\":\"pet-dsh/1\",\"instanceId\":\"bridge-A\",\"sessionId\":\"session-A\",\"cursor\":\"bridge-A.105\",\"type\":\"assistant.delta\",\"data\":{\"activityId\":\"activity-A\",\"attemptId\":\"attempt-A\",\"index\":0,\"text\":\"已经找到\"}}",
+            "lastEventId": "bridge-A.105"
+          }
+        },
+        {
+          "direction": "host-to-pet",
+          "event": {
+            "type": "stream.event",
+            "streamId": "sse.1",
+            "event": "bridge",
+            "data": "{\"protocol\":\"pet-dsh/1\",\"instanceId\":\"bridge-A\",\"sessionId\":\"session-A\",\"cursor\":\"bridge-A.105\",\"type\":\"assistant.delta\",\"data\":{\"activityId\":\"activity-A\",\"attemptId\":\"attempt-A\",\"index\":0,\"text\":\"已经找到\"}}",
+            "lastEventId": "bridge-A.105"
+          }
+        },
+        {
+          "direction": "host-to-pet",
+          "event": {
+            "type": "stream.event",
+            "streamId": "sse.1",
+            "event": "bridge",
+            "data": "{\"protocol\":\"pet-dsh/1\",\"instanceId\":\"bridge-A\",\"sessionId\":\"session-A\",\"cursor\":\"bridge-A.115\",\"type\":\"assistant.delta\",\"data\":{\"activityId\":\"activity-A\",\"attemptId\":\"attempt-A\",\"index\":3,\"text\":\"缺口后的内容\"}}",
+            "lastEventId": "bridge-A.115"
+          }
+        }
+      ],
+      "expected": [
+        "重复 cursor 不追加两次",
+        "同 attempt 的 index 缺口触发快照恢复，不能从 cursor 数值猜缺口"
+      ]
+    },
+    {
+      "id": "sse-id-mismatch",
+      "covers": [
+        "C12"
+      ],
+      "negative": true,
+      "steps": [
+        {
+          "direction": "host-to-pet",
+          "event": {
+            "type": "stream.event",
+            "streamId": "sse.1",
+            "event": "bridge",
+            "data": "{\"protocol\":\"pet-dsh/1\",\"instanceId\":\"bridge-A\",\"sessionId\":\"session-A\",\"cursor\":\"bridge-A.105\",\"type\":\"assistant.delta\",\"data\":{\"activityId\":\"activity-A\",\"attemptId\":\"attempt-A\",\"index\":0,\"text\":\"已经找到\"}}",
+            "lastEventId": "bridge-A.other"
+          }
+        }
+      ],
+      "expected": [
+        "SSE id 与 JSON cursor 不同，停止应用并有界重同步"
+      ]
+    },
+    {
+      "id": "session-change-resync",
+      "covers": [
+        "C13",
+        "C27"
+      ],
+      "steps": [
+        {
+          "direction": "host-to-pet",
+          "event": {
+            "type": "stream.event",
+            "streamId": "sse.1",
+            "event": "bridge",
+            "data": "{\"protocol\":\"pet-dsh/1\",\"instanceId\":\"bridge-A\",\"sessionId\":\"session-A\",\"cursor\":\"bridge-A.120\",\"type\":\"session.changed\",\"data\":{\"status\":\"input\"}}",
+            "lastEventId": "bridge-A.120"
+          }
+        },
+        {
+          "direction": "local",
+          "note": "150ms 合并，取消并等待当前流终态，再 snapshot 后新订阅"
+        }
+      ],
+      "expected": [
+        "原生前端输入通过快照同步",
+        "不将会话活动认作本机请求成功",
+        "不覆盖新投影后继续旧流"
+      ]
+    },
+    {
+      "id": "switch-and-late-event",
+      "covers": [
+        "C14",
+        "C28"
+      ],
+      "steps": [
+        {
+          "direction": "local",
+          "note": "选择 session-B，selectionEpoch 递增，旧流被取消"
+        },
+        {
+          "direction": "host-to-pet",
+          "event": {
+            "type": "stream.event",
+            "streamId": "sse.1",
+            "event": "bridge",
+            "data": "{\"protocol\":\"pet-dsh/1\",\"instanceId\":\"bridge-A\",\"sessionId\":\"session-A\",\"cursor\":\"bridge-A.112\",\"type\":\"activity.ended\",\"data\":{\"activityId\":\"activity-A\",\"outcome\":\"completed\"}}",
+            "lastEventId": "bridge-A.112"
+          }
+        }
+      ],
+      "expected": [
+        "旧 sse.1 回调仅清理资源，不更新 session-B，也不发提醒"
+      ]
+    },
+    {
+      "id": "network-disconnect",
+      "covers": [
+        "C15",
+        "C23"
+      ],
+      "steps": [
+        {
+          "direction": "pet-to-host",
+          "kind": "cancel",
+          "args": {
+            "streamId": "sse.1"
+          }
+        },
+        {
+          "direction": "host-to-pet",
+          "event": {
+            "type": "stream.error",
+            "streamId": "sse.1",
+            "code": "CANCELLED"
+          }
+        }
+      ],
+      "expected": [
+        "只停止网络，无 session.cancel POST",
+        "远端活动标 unknown",
+        "退订不代替取消传输"
+      ]
+    },
+    {
+      "id": "cancel-confirmed",
+      "covers": [
+        "C15",
+        "C16"
+      ],
+      "precondition": "当前活动仍为 activity-A，确认卡绑定版本匹配",
+      "steps": [
+        {
+          "direction": "pet-to-host",
+          "kind": "request",
+          "args": {
+            "requestId": "http.cancel-1",
+            "method": "POST",
+            "path": "/commands",
+            "body": {
+              "protocol": "pet-dsh/1",
+              "instanceId": "bridge-A",
+              "requestId": "pet.cancel-01",
+              "op": "session.cancel",
+              "sessionId": "session-A",
+              "data": {
+                "activityId": "activity-A"
+              }
+            }
+          }
+        },
+        {
+          "direction": "host-to-pet",
+          "event": {
+            "type": "response",
+            "requestId": "http.cancel-1",
+            "status": 200,
+            "ok": true,
+            "data": {
+              "protocol": "pet-dsh/1",
+              "instanceId": "bridge-A",
+              "requestId": "pet.cancel-01",
+              "ok": true,
+              "data": {
+                "status": "cancelling",
+                "activityId": "activity-A"
+              }
+            }
+          }
+        },
+        {
+          "direction": "host-to-pet",
+          "event": {
+            "type": "stream.event",
+            "streamId": "sse.1",
+            "event": "bridge",
+            "data": "{\"protocol\":\"pet-dsh/1\",\"instanceId\":\"bridge-A\",\"sessionId\":\"session-A\",\"cursor\":\"bridge-A.116\",\"type\":\"activity.ended\",\"data\":{\"activityId\":\"activity-A\",\"outcome\":\"cancelled\"}}",
+            "lastEventId": "bridge-A.116"
+          }
+        }
+      ],
+      "expected": [
+        "受理仅表示取消请求",
+        "ended/cancelled 才确认停止",
+        "如果活动已换为 B，旧确认不得发 POST"
+      ]
+    },
+    {
+      "id": "new-instance-old-receipt",
+      "covers": [
+        "C17"
+      ],
+      "steps": [
+        {
+          "direction": "host-to-pet",
+          "event": {
+            "type": "response",
+            "requestId": "http.info-2",
+            "status": 200,
+            "ok": true,
+            "data": {
+              "protocols": [
+                "pet-dsh/1"
+              ],
+              "instanceId": "bridge-B",
+              "serverVersion": "1.0.0",
+              "dshVersion": "0.1.1-rc.2",
+              "capabilities": [
+                "sessions.list",
+                "session.snapshot",
+                "message.send",
+                "events.follow",
+                "requests.lookup",
+                "session.cancel"
+              ],
+              "limits": {
+                "requestBytes": 65536,
+                "responseBytes": 262144,
+                "eventBytes": 65536,
+                "messageChars": 4000,
+                "eventsPerSecond": 30,
+                "heartbeatMs": 15000,
+                "journalRetentionHours": 24,
+                "sessionPageSize": 20,
+                "snapshotMessageLimit": 20
+              }
+            }
+          }
+        },
+        {
+          "direction": "host-to-pet",
+          "event": {
+            "type": "response",
+            "requestId": "http.lookup-2",
+            "status": 200,
+            "ok": true,
+            "data": {
+              "protocol": "pet-dsh/1",
+              "instanceId": "bridge-B",
+              "requestId": "pet.send-01",
+              "ok": true,
+              "data": {
+                "status": "ended",
+                "op": "message.send",
+                "sessionId": "session-A",
+                "messageId": "user-02",
+                "acceptedInstanceId": "bridge-A",
+                "receivedAt": "2026-10-21T08:00:00.000Z",
+                "updatedAt": "2026-10-21T08:00:01.000Z",
+                "activityId": "activity-A",
+                "outcome": "completed",
+                "endedAt": "2026-10-21T08:00:02.000Z"
+              }
+            }
+          }
+        }
+      ],
+      "expected": [
+        "新实例重建快照和订阅",
+        "回执 acceptedInstanceId 仍是 bridge-A",
+        "不把旧回执当作新活动"
+      ]
+    },
+    {
+      "id": "approval-not-supported",
+      "covers": [
+        "C18"
+      ],
+      "steps": [
+        {
+          "direction": "host-to-pet",
+          "event": {
+            "type": "stream.event",
+            "streamId": "sse.1",
+            "event": "bridge",
+            "data": "{\"protocol\":\"pet-dsh/1\",\"instanceId\":\"bridge-A\",\"sessionId\":\"session-A\",\"cursor\":\"bridge-A.114\",\"type\":\"activity.state\",\"data\":{\"activityId\":\"activity-A\",\"status\":\"waiting-approval\"}}",
+            "lastEventId": "bridge-A.114"
+          }
+        }
+      ],
+      "expected": [
+        "显示等待审批和去 DSH 界面处理",
+        "无允许或拒绝按钮",
+        "不发 interaction.answer"
+      ]
+    },
+    {
+      "id": "capabilities-and-501",
+      "covers": [
+        "C03",
+        "C19",
+        "C26"
+      ],
+      "steps": [
+        {
+          "direction": "host-to-pet",
+          "event": {
+            "type": "response",
+            "requestId": "http.info-3",
+            "status": 200,
+            "ok": true,
+            "data": {
+              "protocols": [
+                "pet-dsh/1"
+              ],
+              "instanceId": "bridge-A",
+              "serverVersion": "1.0.0",
+              "dshVersion": "0.1.1-rc.2",
+              "capabilities": [
+                "sessions.list",
+                "session.snapshot",
+                "message.send",
+                "events.follow",
+                "requests.lookup"
+              ],
+              "limits": {
+                "requestBytes": 65536,
+                "responseBytes": 262144,
+                "eventBytes": 65536,
+                "messageChars": 4000,
+                "eventsPerSecond": 30,
+                "heartbeatMs": 15000,
+                "journalRetentionHours": 24,
+                "sessionPageSize": 20,
+                "snapshotMessageLimit": 20
+              }
+            }
+          }
+        },
+        {
+          "direction": "host-to-pet",
+          "event": {
+            "type": "response",
+            "requestId": "http.optional-1",
+            "status": 501,
+            "ok": false,
+            "data": {
+              "protocol": "pet-dsh/1",
+              "ok": false,
+              "error": {
+                "code": "UNSUPPORTED_CAPABILITY",
+                "message": "当前能力未实现",
+                "retryable": false
+              }
+            }
+          }
+        }
+      ],
+      "expected": [
+        "不启用 cancel/steer/人格同步/反向工具",
+        "本机人设仍可保存，明确未同步",
+        "501 不转为 message.send"
+      ]
+    },
+    {
+      "id": "auth-and-backoff",
+      "covers": [
+        "C22"
+      ],
+      "steps": [
+        {
+          "direction": "host-to-pet",
+          "event": {
+            "type": "response",
+            "requestId": "http.info-4",
+            "status": 401,
+            "ok": false,
+            "data": {
+              "protocol": "pet-dsh/1",
+              "ok": false,
+              "error": {
+                "code": "UNAUTHORIZED",
+                "message": "连接令牌无效",
+                "retryable": false
+              }
+            }
+          }
+        },
+        {
+          "direction": "host-to-pet",
+          "event": {
+            "type": "stream.error",
+            "streamId": "sse.1",
+            "code": "HTTP_401"
+          }
+        }
+      ],
+      "expected": [
+        "停止自动重连，需要重新授权",
+        "429 只对读操作退避；变更不重投"
+      ]
+    },
+    {
+      "id": "storage-failed",
+      "covers": [
+        "C20"
+      ],
+      "steps": [
+        {
+          "direction": "local",
+          "note": "写前日志 storage.set 拒绝"
+        }
+      ],
+      "expected": [
+        "不发任何 POST",
+        "输入保留，不 resetForm",
+        "不静默清除旧 unknown 记录"
+      ]
+    }
+  ]
+}

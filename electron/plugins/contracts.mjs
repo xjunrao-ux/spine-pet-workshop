@@ -1,7 +1,7 @@
 // Shared API v1 for trusted builtins and constrained ZIP providers.
 export const API_VERSION = 1;
-export const PERMISSIONS = new Set(['media.read','media.control','notifications.read','codex.read','ui.reminders','storage.own','weather.read']);
-const icons = new Set(['music','notifications','codex','note','clock','cloud','close','play','pause','next','previous','checklist','check','undo','trash','plus','edit']);
+export const PERMISSIONS = new Set(['media.read','media.control','notifications.read','codex.read','ui.reminders','storage.own','weather.read','ai.deepseek','net.local']);
+const icons = new Set(['music','notifications','codex','note','clock','cloud','close','play','pause','next','previous','checklist','check','undo','trash','plus','edit','chat','deepseek']);
 const statuses = new Set(['waiting','ready','degraded','error']);
 const text = (value, max = 4000) => typeof value === 'string' && value.length <= max;
 const plain = value => value !== null && typeof value === 'object' && !Array.isArray(value) && Object.getPrototypeOf(value) === Object.prototype;
@@ -9,6 +9,7 @@ export const readKey = (id, version) => JSON.stringify([String(id), String(versi
 export function validateManifest(input) {
   if (!plain(input) || !/^[a-z][a-z0-9.-]{2,99}$/.test(input.id) || !text(input.name,100) || !input.name || !text(input.version,30)) throw new Error('Invalid plugin manifest');
   if (!Number.isInteger(input.apiVersion) || !Number.isInteger(input.configVersion) || input.configVersion < 1) throw new Error('Invalid plugin version');
+  if(input.presentation!=null&&(!plain(input.presentation)||!['compact','conversation','bubble'].includes(input.presentation.panel??'compact')||(input.presentation.navigation!=null&&!['pages','tabs'].includes(input.presentation.navigation))))throw new Error('Invalid plugin presentation');
   if (!icons.has(input.icon) || !['when-enabled','when-available'].includes(input.entryVisibility)) throw new Error('Invalid plugin presentation');
   if (!Array.isArray(input.permissions) || input.permissions.some(p=>!PERMISSIONS.has(p))) throw new Error('Invalid plugin permissions');
   if(input.description!=null&&!text(input.description,1000)||input.menuLabel!=null&&!text(input.menuLabel,100)) throw new Error('Invalid plugin description');
@@ -51,11 +52,14 @@ export function sanitizeConfig(manifest, input = {}, { preserveUnknown = false }
   }
   return result;
 }
-const appearances = new Set(['default','album','song-info','controls','notice','notice-top','item','actions']);
+const appearances = new Set(['default','album','song-info','controls','notice','notice-top','item','actions','task-row','task-content','task-actions','task-toggle','task-progress','task-create','session-card','session-heading','task-strip']);
 function validateBlock(block, depth, assets) {
   if (!plain(block) || depth>8) throw new Error('Invalid page block');
   if (block.appearance && !appearances.has(block.appearance)) throw new Error('Invalid block appearance');
   switch(block.type) {
+    case 'chat':
+      if(!Array.isArray(block.messages)||block.messages.length>24||block.messages.some(m=>!plain(m)||!text(m.id,100)||!['user','assistant'].includes(m.role)||!text(m.content,16000)||!['complete','partial','streaming'].includes(m.state)))throw new Error('Invalid chat messages');
+      break;
     case 'text':
       if (!text(block.text) || (block.tone && !['normal','muted','error'].includes(block.tone))) throw new Error('Invalid text block');
       break;
@@ -76,6 +80,9 @@ function validateBlock(block, depth, assets) {
       break;
     case 'form':
       if(!text(block.id,100)||!block.id||!text(block.commandId,100)||!text(block.submitLabel,100)||!plain(block.payload??{})||!Array.isArray(block.fields)||block.fields.length>12) throw new Error('Invalid form');
+      if(block.variant!=null&&block.variant!=='composer'||block.pending!=null&&typeof block.pending!=='boolean')throw new Error('Invalid form presentation');
+      if(block.variant==='composer'&&(block.fields.length!==1||block.fields[0]?.type!=='text'))throw new Error('Composer requires one text field');
+      if(block.stopAction!=null){if(block.variant!=='composer'||block.stopAction.type!=='button')throw new Error('Invalid composer action');validateBlock(block.stopAction,depth+1,assets);}
       if(new Set(block.fields.map(field=>field.key)).size!==block.fields.length) throw new Error('Duplicate form field');
       for(const field of block.fields) if(!plain(field)||!/^[a-zA-Z][a-zA-Z0-9]{0,60}$/.test(field.key)||['constructor','prototype'].includes(field.key)||!['text','textarea','datetime'].includes(field.type)||!text(field.label,100)||(field.value!=null&&!text(field.value,4000))||(field.maxLength!=null&&(!Number.isInteger(field.maxLength)||field.maxLength<1||field.maxLength>4000))) throw new Error('Invalid form field');
       break;
@@ -107,16 +114,19 @@ export function validateSnapshot(input, assets = new Map()) {
   if (!plain(input) || typeof input.available!=='boolean' || !statuses.has(input.status) || !Array.isArray(input.pages) || input.pages.length>100) throw new Error('Invalid plugin snapshot');
   if (input.message!=null && !text(input.message)) throw new Error('Invalid plugin message');
   if (input.updatedAt!=null && !validDate(input.updatedAt)) throw new Error('Invalid update time');
+  if(input.settingsPages!=null&&(!Array.isArray(input.settingsPages)||input.settingsPages.length>20))throw new Error('Invalid settings pages');
   const ids=new Set();
-  for (const page of input.pages) {
+  for (const page of [...input.pages,...input.settingsPages??[]]) {
     if (!plain(page) || !text(page.id,200) || !page.id || ids.has(page.id) || !text(page.title,200) || !icons.has(page.icon) || !Array.isArray(page.blocks) || page.blocks.length>100) throw new Error('Invalid plugin page');
     if (page.readKey!=null && !text(page.readKey,500)) throw new Error('Invalid page read key');
     if (page.subtitle!=null && !text(page.subtitle,300)) throw new Error('Invalid page subtitle');
     ids.add(page.id);page.blocks.forEach(block=>validateBlock(block,0,assets));
+    if(page.footer!=null){if(!Array.isArray(page.footer)||page.footer.length>12)throw new Error('Invalid page footer');page.footer.forEach(block=>validateBlock(block,0,assets));}
   }
   if (JSON.stringify(input).length>1024*1024) throw new Error('Plugin snapshot too large');
   // Do not allow untrusted snapshots to replace identity, permissions or origin.
   const result={available:input.available,status:input.status,pages:structuredClone(input.pages)};
+  if(input.settingsPages!=null)result.settingsPages=structuredClone(input.settingsPages);
   for(const key of ['message','updatedAt','preferredPageId']) if(input[key]!=null) result[key]=input[key];
   if(input.preferredPageId!=null&&!text(input.preferredPageId,200)) throw new Error('Invalid preferred page');
   if(input.diagnostics!=null){

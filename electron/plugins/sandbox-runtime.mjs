@@ -59,17 +59,46 @@ class SandboxRuntime {
     if(message.kind!=='rpc'||!Number.isInteger(message.id)||this.rpcCount>=32)throw new Error('无效或过多的插件请求');
     ++this.rpcCount;
     try{
+      if(message.method==='localService.configure')return this.context.localService.configure();
+      if(message.method==='localService.status')return await this.context.localService.status();
+      if(message.method==='localService.request')return this.context.localService.request(message.params);
+      if(message.method==='localService.stream')return this.context.localService.stream(message.params);
+      if(message.method==='localService.cancel')return this.context.localService.cancel(message.params);
+      if(message.method==='localService.subscribe'){
+        const id=message.subscriptionId;
+        if(typeof id!=='string'||!/^local-[0-9]+$/.test(id)||[...this.subscriptions.keys()].some(key=>key.startsWith('local-')))throw new Error('无效或重复的本地服务订阅');
+        const release=this.context.localService.subscribe(value=>{if(!this.stopped)this.window.webContents.send('plugin-runtime:request',{method:'capability',subscriptionId:id,channel:'event',value});});
+        this.subscriptions.set(id,release);return null;
+      }
+      if(message.method==='localService.unsubscribe'){
+        if(typeof message.subscriptionId!=='string'||!message.subscriptionId.startsWith('local-'))throw new Error('无效的本地服务订阅');
+        this.subscriptions.get(message.subscriptionId)?.();this.subscriptions.delete(message.subscriptionId);return null;
+      }
+      if(message.method==='deepseek.configure')return this.context.deepseek.configure();
+      if(message.method==='deepseek.start')return this.context.deepseek.start(message.params);
+      if(message.method==='deepseek.cancel')return this.context.deepseek.cancel();
+      if(message.method==='deepseek.subscribe'){
+        const id=message.subscriptionId;
+        if(typeof id!=='string'||!/^deepseek-[0-9]+$/.test(id)||[...this.subscriptions.keys()].some(key=>key.startsWith('deepseek-')))throw new Error('无效或重复的 AI 订阅');
+        const release=this.context.deepseek.subscribe(value=>{if(!this.stopped)this.window.webContents.send('plugin-runtime:request',{method:'capability',subscriptionId:id,channel:'event',value});});
+        this.subscriptions.set(id,release);return null;
+      }
+      if(message.method==='deepseek.unsubscribe'){
+        if(typeof message.subscriptionId!=='string'||!message.subscriptionId.startsWith('deepseek-'))throw new Error('无效 AI 订阅');
+        this.subscriptions.get(message.subscriptionId)?.();this.subscriptions.delete(message.subscriptionId);return null;
+      }
       if(message.method==='weather.search')return await this.context.weather.search(message.params);
       if(message.method==='weather.forecast')return await this.context.weather.forecast(message.params);
       if(message.method==='storage.get')return await this.context.storage.get(message.key);
       if(message.method==='storage.set'){await this.context.storage.set(message.key,message.value);return null;}
       if(message.method==='emit'){this.context.emit(message.event);return null;}
       if(message.method==='codex.subscribe'){
-        const id=message.subscriptionId;if(typeof id!=='string'||!/^[a-zA-Z][a-zA-Z0-9.-]{0,60}$/.test(id)||this.subscriptions.size>=1)throw new Error('无效或重复的 Codex 订阅');
+        const id=message.subscriptionId;if(typeof id!=='string'||!/^codex-[0-9]+$/.test(id)||[...this.subscriptions.keys()].some(key=>key.startsWith('codex-')))throw new Error('无效或重复的 Codex 订阅');
         const notify=channel=>value=>{if(this.stopped)return;const safe=codexCapabilityValue(channel,value);if(safe)this.window.webContents.send('plugin-runtime:request',{method:'capability',subscriptionId:id,channel,value:safe});};
         const release=this.context.capabilities.codex.subscribe(notify('state'),notify('event'));this.subscriptions.set(id,release);return null;
       }
       if(message.method==='codex.unsubscribe'){
+        if(typeof message.subscriptionId!=='string'||!message.subscriptionId.startsWith('codex-'))throw new Error('无效 Codex 订阅');
         const release=this.subscriptions.get(message.subscriptionId);this.subscriptions.delete(message.subscriptionId);release?.();return null;
       }
       throw new Error('插件请求未授权的能力');

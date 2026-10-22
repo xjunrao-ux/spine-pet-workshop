@@ -27,3 +27,14 @@ Thumbs.db
 # Original screenshots include account/network details; publish cropped examples instead.
 /docs/images/easynet-SMTC.png
 /docs/images/easynet-result.png
+
+# Local filesystem permission probe, not source.
+/dsh-pet-bridge/.write-probe.txt
+
+# Historical local research and superseded process notes stay out of formal snapshots.
+/v3/
+/dsh-pet-bridge/legacy-stage0/
+/docs/UI_REFRESH_20261022.md
+/docs/UI_REFRESH_20261022_VALIDATION.md
+/docs/UI_THEMES_20261022.md
+/docs/DAILY_COMPANION_REMINDERS_PLAN.md

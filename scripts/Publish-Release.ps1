@@ -4,7 +4,8 @@ param(
     [ValidatePattern('^\d+\.\d+\.\d+$')]
     [string]$Version,
     [string]$ArtifactDirectory = "release/v$Version",
-    [string[]]$PluginArchives = @()
+    [string[]]$PluginArchives = @(),
+    [string[]]$AdditionalAssets = @()
 )
 
 $ErrorActionPreference = 'Stop'
@@ -30,8 +31,8 @@ try {
     }
 
     $tag = "v$Version"
-    $setupName = "Spine-Pet-Workshop-Setup-$tag-x64.exe"
-    $portableName = "Spine-Pet-Workshop-Portable-$tag-x64.exe"
+    $setupName = "SpinePet-Setup-$tag-x64.exe"
+    $portableName = "SpinePet-Portable-$tag-x64.exe"
     $artifactRoot = [System.IO.Path]::GetFullPath((Join-Path $projectRoot $ArtifactDirectory))
     if (-not $artifactRoot.StartsWith($projectRoot + '\', [System.StringComparison]::OrdinalIgnoreCase)) {
         throw 'ArtifactDirectory must be inside the project.'
@@ -40,7 +41,8 @@ try {
     $portable = Join-Path $artifactRoot $portableName
     $notes = Join-Path $projectRoot "docs/RELEASE_$tag.md"
     $series = ($Version.Split('.')[0..1] -join '.')
-    $usage = Join-Path $projectRoot "docs/versions/v$series.md"
+    $usage = Join-Path $projectRoot "docs/versions/v$Version.md"
+    if (-not (Test-Path -LiteralPath $usage -PathType Leaf)) { $usage = Join-Path $projectRoot "docs/versions/v$series.md" }
     foreach ($required in @($setup, $portable, $notes, $usage)) {
         if (-not (Test-Path -LiteralPath $required -PathType Leaf)) { throw "Missing release file: $required" }
     }
@@ -54,6 +56,13 @@ try {
         if ($LASTEXITCODE -ne 0) { throw "Invalid plugin ZIP: $full" }
         $full
     })
+    $extras = @(foreach ($asset in $AdditionalAssets) {
+        $full = [System.IO.Path]::GetFullPath((Join-Path $projectRoot $asset))
+        if (-not $full.StartsWith($projectRoot + '\', [System.StringComparison]::OrdinalIgnoreCase) -or -not (Test-Path -LiteralPath $full -PathType Leaf)) {
+            throw "Additional asset must be a file inside the project: $asset"
+        }
+        $full
+    })
     $existing = gh release list --repo xjunrao-ux/spine-pet-workshop --limit 100 --json tagName | ConvertFrom-Json
     if ($LASTEXITCODE -ne 0) { throw 'Could not read existing releases.' }
     if ($tag -in @($existing | ForEach-Object { $_.tagName })) { throw 'Release already exists; use a new version instead of replacing it.' }
@@ -65,20 +74,21 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Could not create release tag.' }
     }
 
+    $usageArtifact = Join-Path $artifactRoot "USAGE-$tag.md"
+    Copy-Item -LiteralPath $usage -Destination $usageArtifact -Force
+    $attachments = @($portable, $setup, $usageArtifact) + @($plugins) + @($extras)
+    if (@($attachments | ForEach-Object { [System.IO.Path]::GetFileName($_) } | Sort-Object -Unique).Count -ne $attachments.Count) { throw 'Release asset names must be unique.' }
     $checksumPath = Join-Path $artifactRoot 'SHA256SUMS.txt'
-    $checksumLines = foreach ($artifact in (@($portable, $setup) + @($plugins))) {
+    $checksumLines = foreach ($artifact in $attachments) {
         $hash = Get-FileHash -Algorithm SHA256 -LiteralPath $artifact
         "$($hash.Hash)  $([System.IO.Path]::GetFileName($artifact))"
     }
     [System.IO.File]::WriteAllLines($checksumPath, [string[]]$checksumLines, [System.Text.UTF8Encoding]::new($false))
 
-    $usageArtifact = Join-Path $artifactRoot "USAGE-$tag.md"
-    Copy-Item -LiteralPath $usage -Destination $usageArtifact -Force
-
     git push --atomic --set-upstream public main "refs/tags/$tag"
     if ($LASTEXITCODE -ne 0) { throw 'Push failed; Release was not created.' }
-    $assets = @($setup, $portable, $checksumPath, $usageArtifact) + @($plugins)
-    gh release create $tag @assets --repo xjunrao-ux/spine-pet-workshop --verify-tag --title "Spine 桌宠工坊 $tag" --notes-file $notes --draft
+    $assets = @($attachments) + @($checksumPath)
+    gh release create $tag @assets --repo xjunrao-ux/spine-pet-workshop --verify-tag --title "SpinePet $tag" --notes-file $notes --draft
     if ($LASTEXITCODE -ne 0) { throw 'Release upload failed. Inspect GitHub before retrying.' }
     gh release edit $tag --repo xjunrao-ux/spine-pet-workshop --draft=false --latest
     if ($LASTEXITCODE -ne 0) { throw 'Assets uploaded, but publishing the draft failed. Inspect GitHub before retrying.' }

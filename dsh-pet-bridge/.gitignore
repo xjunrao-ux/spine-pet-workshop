@@ -1,0 +1,6 @@
+# Development-only artifacts. None of these belong in the published bundle.
+node_modules/
+.build/
+.probe/
+*.tgz
+*.log

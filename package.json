@@ -1,6 +1,6 @@
 {
   "name": "spine-pet-workshop",
-  "version": "3.2.3",
+  "version": "5.1.2",
   "private": true,
   "description": "A Windows Spine 3.8 desktop-pet workshop with local character and voice import.",
   "author": "Amiya Desktop Pet Project",
@@ -8,6 +8,11 @@
   "type": "module",
   "main": "electron/main.mjs",
   "scripts": {
+    "test:local-service": "node --test scripts/test-local-service.mjs",
+    "test:local-service:sandbox": "node scripts/run-local-service-sandbox.mjs",
+    "test:deepseek": "node --test scripts/test-deepseek.mjs",
+    "test:deepseek:sandbox": "electron scripts/test-deepseek-sandbox.mjs",
+    "package:deepseek": "node scripts/package-plugin.mjs examples/deepseek-plugin release/plugins/DeepSeek-Plugin-v1.1.0.zip",
     "dev": "concurrently -k -s first \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron .\"",
     "build": "tsc --noEmit && vite build",
     "test:plugins": "node --test scripts/test-plugins.mjs scripts/test-extensions.mjs scripts/test-external-plugins.mjs scripts/test-weather-plugin.mjs scripts/test-plugin-promotion.mjs scripts/test-plugin-documentation.mjs",
@@ -21,14 +26,24 @@
     "package:win": "pnpm build && electron-builder --win nsis portable --x64 --publish never",
     "test:weather": "node --test scripts/test-weather-plugin.mjs",
     "test:weather:sandbox": "electron scripts/test-weather-sandbox.mjs",
-    "package:weather": "node scripts/package-plugin.mjs examples/weather-plugin release/plugins/Weather-Plugin-v1.1.0.zip",
-    "test:release": "node --test scripts/test-character-parameters.mjs scripts/test-startup.mjs scripts/test-extensions.mjs scripts/test-plugins.mjs scripts/test-external-plugins.mjs scripts/test-weather-plugin.mjs scripts/test-plugin-promotion.mjs scripts/test-plugin-documentation.mjs scripts/test-community-catalog.mjs scripts/test-hello-counter.mjs",
+    "package:weather": "node scripts/package-plugin.mjs examples/weather-plugin release/plugins/Weather-Plugin-v1.2.0.zip",
+    "test:release": "node --test scripts/test-character-parameters.mjs scripts/test-startup.mjs scripts/test-extensions.mjs scripts/test-plugins.mjs scripts/test-external-plugins.mjs scripts/test-weather-plugin.mjs scripts/test-plugin-promotion.mjs scripts/test-plugin-documentation.mjs scripts/test-community-catalog.mjs scripts/test-hello-counter.mjs scripts/test-local-service.mjs",
     "test:packaged": "node scripts/test-packaged-release.mjs",
     "package:hello": "node scripts/package-plugin.mjs examples/hello-counter-plugin release/plugins/Hello-Counter-v1.0.0.zip",
     "community:generate": "node scripts/community-catalog.mjs --write",
     "community:check": "node scripts/community-catalog.mjs",
     "test:community": "node --test scripts/test-community-catalog.mjs scripts/test-hello-counter.mjs",
-    "test:community:sandbox": "electron scripts/test-hello-counter-sandbox.mjs"
+    "test:community:sandbox": "electron scripts/test-hello-counter-sandbox.mjs",
+    "test:dsh-pet": "node --test scripts/test-dsh-pet.mjs",
+    "test:dsh-pet:sandbox": "node scripts/run-dsh-pet-sandbox.mjs",
+    "package:dsh-pet": "node scripts/package-plugin.mjs examples/dsh-pet-plugin release/plugins/DSH-Pet-Plugin-v1.1.0.zip",
+    "test:companion-ui": "node scripts/run-companion-ui-sandbox.mjs",
+    "test:ui-themes": "node --test scripts/test-ui-themes.mjs",
+    "test:ui-main": "node scripts/run-ui-main-smoke.mjs",
+    "icons:build": "electron scripts/build-app-icon.mjs",
+    "test:manager-layout": "node scripts/run-manager-layout.mjs",
+    "docs:capture": "node scripts/run-doc-capture.mjs",
+    "docs:check": "node scripts/check-doc-links.mjs"
   },
   "dependencies": {
     "@pixi-spine/all-3.8": "4.0.6",
@@ -46,9 +61,9 @@
   "packageManager": "pnpm@11.19.0",
   "build": {
     "appId": "local.spine.desktop.pet.workshop",
-    "productName": "Spine桌宠工坊",
-    "executableName": "SpinePetWorkshop",
-    "artifactName": "Spine-Pet-Workshop-v${version}-${arch}.${ext}",
+    "productName": "SpinePet",
+    "executableName": "SpinePet",
+    "artifactName": "SpinePet-v${version}-${arch}.${ext}",
     "asar": true,
     "asarUnpack": [
       "electron/window-monitor.ps1",
@@ -67,7 +82,7 @@
       "package.json"
     ],
     "win": {
-      "icon": "assets/amiya-app-icon.ico",
+      "icon": "assets/spinepet-icon.ico",
       "target": [
         {
           "target": "nsis",
@@ -84,18 +99,18 @@
       ]
     },
     "nsis": {
-      "artifactName": "Spine-Pet-Workshop-Setup-v${version}-${arch}.${ext}",
-      "installerIcon": "assets/amiya-app-icon.ico",
-      "uninstallerIcon": "assets/amiya-app-icon.ico",
+      "artifactName": "SpinePet-Setup-v${version}-${arch}.${ext}",
+      "installerIcon": "assets/spinepet-icon.ico",
+      "uninstallerIcon": "assets/spinepet-icon.ico",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Spine桌宠工坊",
+      "shortcutName": "SpinePet",
       "deleteAppDataOnUninstall": false
     },
     "portable": {
-      "artifactName": "Spine-Pet-Workshop-Portable-v${version}-${arch}.${ext}"
+      "artifactName": "SpinePet-Portable-v${version}-${arch}.${ext}"
     }
   }
 }

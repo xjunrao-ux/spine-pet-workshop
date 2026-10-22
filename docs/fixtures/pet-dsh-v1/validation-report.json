@@ -1,0 +1,29 @@
+{
+  "format": "pet-dsh-design-static-validation/1",
+  "ok": true,
+  "createdOn": "2026-10-21",
+  "checked": {
+    "manifest": 1,
+    "declaredCommands": 17,
+    "uiSnapshots": 9,
+    "payloadExamples": 112,
+    "transportCalls": 12,
+    "coreWireExamples": 34,
+    "rawDtoExamples": 2,
+    "negativeWireCases": 8,
+    "negativePayloadCases": 5,
+    "negativeSnapshotCases": 1,
+    "semanticNegativeExamples": 1,
+    "documentedWireScenarios": 16,
+    "sourceHashes": 19,
+    "sharedProtocolAligned": true,
+    "documentJsonExamples": 1
+  },
+  "notChecked": [
+    "桌宠客户端实现：尚未编写",
+    "HTTP/SSE 实际运行联调",
+    "Electron 沙盒导入与撤权",
+    "真实 DSH 或真实模型调用",
+    "场景 expected 的运行时状态机断言"
+  ]
+}

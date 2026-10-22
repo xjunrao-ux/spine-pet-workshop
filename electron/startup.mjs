@@ -3,7 +3,7 @@ import path from 'node:path';
 
 // Only the main process chooses the executable. Never accept renderer paths/args.
 export function createStartupSettings(app, { platform = process.platform, env = process.env, executable = process.execPath, exists = existsSync } = {}) {
-  const name = 'SpinePetWorkshop';
+  const name = 'SpinePet', legacyName = 'SpinePetWorkshop';
   const launchPath = env.PORTABLE_EXECUTABLE_FILE || executable;
   const supported = platform === 'win32' && app.isPackaged && path.isAbsolute(launchPath) && /\.exe$/i.test(launchPath) && exists(launchPath);
   // Electron 44 parses the lookup path as a command line: quote paths with spaces.
@@ -14,7 +14,7 @@ export function createStartupSettings(app, { platform = process.platform, env = 
     if (!supported) return { supported: false, enabled: false, reason };
     try {
       const login = app.getLoginItemSettings(options);
-      const ownItem = login.launchItems?.find(item => item.name === name && item.scope === 'user' &&
+      const ownItem = login.launchItems?.find(item => [name,legacyName].includes(item.name) && item.scope === 'user' &&
         normalizedPath(item.path) === normalizedPath(launchPath));
       // openAtLogin checks the default AppUserModelId entry, not our custom name.
       // Chromium omits switches such as --autostart from launchItems.args.
@@ -25,6 +25,8 @@ export function createStartupSettings(app, { platform = process.platform, env = 
     if (typeof enabled !== 'boolean') return { ok: false, ...get(), error: '启动设置必须为开关值。' };
     if (!supported) return { ok: false, ...get(), error: reason };
     try {
+      const legacy=app.getLoginItemSettings(options).launchItems?.find(item=>item.name===legacyName&&item.scope==='user'&&normalizedPath(item.path)===normalizedPath(launchPath));
+      if(legacy)app.setLoginItemSettings({...options,name:legacyName,openAtLogin:false,enabled:false});
       app.setLoginItemSettings({ ...options, name, openAtLogin: enabled, enabled });
       const snapshot = get();
       if (!snapshot.supported || snapshot.enabled !== enabled) return { ok: false, ...snapshot, error: 'Windows 未接受启动设置，请检查系统的“启动应用”。' };

@@ -1,0 +1,273 @@
+{
+  "packageType": "spine-pet-plugin",
+  "packageVersion": 1,
+  "id": "io.spine-workshop.dsh-pet",
+  "name": "DSH 会话伙伴",
+  "menuLabel": "DSH 任务",
+  "version": "1.0.0",
+  "apiVersion": 1,
+  "configVersion": 1,
+  "entry": "provider.js",
+  "icon": "chat",
+  "entryVisibility": "when-enabled",
+  "description": "设计清单：连接已授权且运行中的 DSH 会话，进行对话、查看任务和请求停止；本文件不附带 provider，不能安装。",
+  "permissions": [
+    "net.local",
+    "storage.own",
+    "ui.reminders"
+  ],
+  "compatibilityNotes": [
+    "需桌宠工坊 v4.2.2 的 net.local；业务协议 pet-dsh/1，修订 1.0.0。",
+    "连接令牌仅在宿主可信窗口录入，与模型 API Key 不同。",
+    "首版不创建或恢复 Agent；当前服务不支持桌宠审批、人格同步和反向日程工具。",
+    "本机资料和发送记录为本地明文数据；缓存可关闭，未决凭证查清前保留。",
+    "提醒功能默认关闭；当前导入器整体授权清单权限，不支持单项可选权限。"
+  ],
+  "settingsSchema": [
+    {
+      "key": "autoConnect",
+      "type": "boolean",
+      "label": "启动插件时连接",
+      "default": false
+    },
+    {
+      "key": "enableSteer",
+      "type": "boolean",
+      "label": "允许追加指令（需服务能力）",
+      "default": false
+    },
+    {
+      "key": "cacheHistory",
+      "type": "boolean",
+      "label": "保存少量本机历史缓存",
+      "default": true
+    },
+    {
+      "key": "notify",
+      "type": "boolean",
+      "label": "任务结束与待审批时提醒",
+      "default": false
+    }
+  ],
+  "commands": [
+    {
+      "id": "configure",
+      "permissions": [
+        "net.local"
+      ],
+      "fields": {}
+    },
+    {
+      "id": "configureManager",
+      "label": "配置 DSH 连接",
+      "managerOnly": true,
+      "permissions": [
+        "net.local"
+      ],
+      "fields": {}
+    },
+    {
+      "id": "connect",
+      "permissions": [
+        "net.local"
+      ],
+      "fields": {}
+    },
+    {
+      "id": "disconnect",
+      "permissions": [
+        "net.local"
+      ],
+      "fields": {}
+    },
+    {
+      "id": "refresh",
+      "permissions": [
+        "net.local"
+      ],
+      "fields": {
+        "sessionId": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "bindingEpoch": {
+          "type": "number",
+          "min": 1,
+          "max": 9007199254740991
+        }
+      }
+    },
+    {
+      "id": "loadSessions",
+      "permissions": [
+        "net.local"
+      ],
+      "fields": {
+        "cursor": {
+          "type": "string",
+          "maxLength": 500,
+          "optional": true
+        }
+      }
+    },
+    {
+      "id": "selectSession",
+      "fields": {
+        "sessionId": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "bindingEpoch": {
+          "type": "number",
+          "min": 1,
+          "max": 9007199254740991
+        }
+      }
+    },
+    {
+      "id": "confirmSession",
+      "permissions": [
+        "net.local"
+      ],
+      "fields": {
+        "sessionId": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "bindingEpoch": {
+          "type": "number",
+          "min": 1,
+          "max": 9007199254740991
+        }
+      }
+    },
+    {
+      "id": "setMode",
+      "fields": {
+        "sessionId": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "bindingEpoch": {
+          "type": "number",
+          "min": 1,
+          "max": 9007199254740991
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "followup",
+            "steer"
+          ]
+        }
+      }
+    },
+    {
+      "id": "send",
+      "permissions": [
+        "net.local",
+        "storage.own"
+      ],
+      "fields": {
+        "sessionId": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "bindingEpoch": {
+          "type": "number",
+          "min": 1,
+          "max": 9007199254740991
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 4000
+        }
+      }
+    },
+    {
+      "id": "requestCancel",
+      "fields": {
+        "sessionId": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "bindingEpoch": {
+          "type": "number",
+          "min": 1,
+          "max": 9007199254740991
+        },
+        "activityId": {
+          "type": "string",
+          "maxLength": 100
+        }
+      }
+    },
+    {
+      "id": "confirmCancel",
+      "permissions": [
+        "net.local",
+        "storage.own"
+      ],
+      "fields": {
+        "sessionId": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "bindingEpoch": {
+          "type": "number",
+          "min": 1,
+          "max": 9007199254740991
+        },
+        "activityId": {
+          "type": "string",
+          "maxLength": 100
+        }
+      }
+    },
+    {
+      "id": "lookupRequest",
+      "permissions": [
+        "net.local"
+      ],
+      "fields": {
+        "wireRequestId": {
+          "type": "string",
+          "maxLength": 100
+        }
+      }
+    },
+    {
+      "id": "savePersona",
+      "permissions": [
+        "storage.own"
+      ],
+      "fields": {
+        "persona": {
+          "type": "string",
+          "maxLength": 2000,
+          "allowEmpty": true
+        },
+        "memory": {
+          "type": "string",
+          "maxLength": 4000,
+          "allowEmpty": true
+        }
+      }
+    },
+    {
+      "id": "requestClearCache",
+      "fields": {}
+    },
+    {
+      "id": "confirmClearCache",
+      "permissions": [
+        "storage.own"
+      ],
+      "fields": {}
+    },
+    {
+      "id": "dismissConfirmation",
+      "fields": {}
+    }
+  ]
+}

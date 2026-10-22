@@ -11,18 +11,23 @@ export async function activate(context){
   const save=()=>context.storage.set('state',clone(state));
   const enqueue=operation=>{const result=queue.then(()=>{if(closed)throw new Error('Plugin stopped');return operation();});queue=result.catch(()=>{});return result;};
   const pendingItems=()=>state.items.filter(item=>!item.done).sort((a,b)=>(a.dueAt?Date.parse(a.dueAt):Infinity)-(b.dueAt?Date.parse(b.dueAt):Infinity)||b.createdAt.localeCompare(a.createdAt));
-  function itemBlock(item){return {type:'group',layout:'row',appearance:'item',contextActions:[button('edit','编辑','edit',{id:item.id},'text'),button('delete','删除（可撤销）','trash',{id:item.id},'text'),...(!item.done&&overdue(item)?[button('snooze','10 分钟后提醒','clock',{id:item.id},'text')]:[])],children:[{type:'group',layout:'column',children:[text(item.title,{strong:true}),...(item.notes?[text(item.notes,{tone:'muted',multiline:true})]:[]),
-    ...(item.dueAt?[{type:'time',label:item.done?'截止时间':overdue(item)?'已到期':'截止时间',value:item.dueAt}]:[text('未设置截止时间',{tone:'muted'})])]},
-    {type:'group',layout:'column',appearance:'actions',children:[button(item.done?'reopen':'complete',item.done?'撤回完成':'标记完成',item.done?'undo':'check',{id:item.id})]}]};}
+  function itemBlock(item){return {type:'group',layout:'row',appearance:'task-row',contextActions:[button('edit','编辑','edit',{id:item.id},'text'),button('delete','删除（可撤销）','trash',{id:item.id},'text'),...(!item.done&&overdue(item)?[button('snooze','10 分钟后提醒','clock',{id:item.id},'text')]:[])],children:[
+    {...button(item.done?'reopen':'complete',item.done?'撤回完成':'标记完成',item.done?'undo':'check',{id:item.id}),appearance:'task-toggle'},
+    {type:'group',layout:'column',appearance:'task-content',children:[text(item.title,{strong:true}),...(item.notes?[text(item.notes,{tone:'muted',ellipsis:true})]:[]),...(item.dueAt?[{type:'time',label:overdue(item)?'已到期':'截止',value:item.dueAt}]:[])]},
+    {type:'group',layout:'row',appearance:'task-actions',children:[button('edit','编辑','edit',{id:item.id}),button('delete','删除（可撤销）','close',{id:item.id})]}
+  ]};}
   function getSnapshot(){
     const pending=pendingItems(),completed=state.items.filter(item=>item.done).sort((a,b)=>(b.completedAt??b.createdAt).localeCompare(a.completedAt??a.createdAt)),item=state.items.find(item=>item.id===editing);
+    const total=state.items.length,progress=total?Math.round(completed.length/total*100):0;
+    const progressBlocks=[{type:'group',layout:'row',appearance:'task-progress',children:[text('任务进度 '+completed.length+'/'+total,{strong:true}),text(progress+'%',{tone:'muted'})]},{type:'progress',value:progress}];
+    const createFooter=[{...button('cancelEdit','新增待办','plus',{},'text'),appearance:'task-create'}];
     const latest=state.latestReminder,readKey=latest&&pending.some(task=>latest.taskIds.includes(task.id)&&overdue(task))?latest.id:null;
     return {available:true,status:'ready',message:`${pending.length} 项待办 · ${completed.length} 项已完成`,pages:[
-      {id:'pending',title:'待办事项',icon:'checklist',subtitle:`${pending.length} 项待完成`,readKey,blocks:[
-        {type:'group',layout:'row',children:[button('cancelEdit','新增待办','plus',{},'text'),...(state.trash.length?[button('undoDelete','撤销删除','undo',{},'text')]:[])]},
-        ...(pending.length?pending.map(itemBlock):[{type:'status',icon:'checklist',title:'暂时没有待办',description:'点击“新增待办”，或用右下角箭头打开新增页面。'}])]},
-      {id:'completed',title:'已完成',icon:'check',subtitle:`${completed.length} 项 · 可以恢复`,blocks:completed.length?completed.map(itemBlock):[{type:'status',icon:'check',title:'还没有已完成事项',description:'标记完成后会出现在这里。'}]},
-      {id:'compose',title:item?'编辑待办':'新增待办',icon:item?'edit':'plus',subtitle:'本机保存 · 截止时间可选',blocks:[
+      {id:'pending',title:'待办事项',icon:'checklist',subtitle:`${pending.length} 项待完成`,readKey,blocks:[...progressBlocks,
+        ...(state.trash.length?[button('undoDelete','撤销删除','undo',{},'text')]:[]),
+        ...(pending.length?pending.map(itemBlock):[{type:'status',icon:'checklist',title:'暂时没有待办',description:'点击“新增待办”，开始记录今天的事情。'}])],footer:createFooter},
+      {id:'completed',title:'已完成',icon:'check',subtitle:`${completed.length} 项 · 可以恢复`,blocks:[...progressBlocks,...(completed.length?completed.map(itemBlock):[{type:'status',icon:'check',title:'还没有已完成事项',description:'标记完成后会出现在这里。'}])],footer:createFooter},
+      {id:'compose',navigationHidden:true,title:item?'编辑待办':'新增待办',icon:item?'edit':'plus',subtitle:'本机保存 · 截止时间可选',blocks:[
         text(state.items.length>=80&&!item?'已达到 80 项上限，请先删除旧任务。':'填写标题即可，备注与截止时间可选。',{tone:'muted'}),
         {type:'form',id:item?'edit-'+item.id:'add-task',commandId:item?'save':'add',payload:item?{id:item.id}:{},submitLabel:item?'保存修改':'添加待办',enabled:Boolean(item)||state.items.length<80,fields:[
           {key:'title',type:'text',label:'事项标题',required:true,maxLength:160,value:item?.title??''},

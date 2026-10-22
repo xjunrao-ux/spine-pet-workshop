@@ -1,4 +1,7 @@
-import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, net, protocol, screen, shell, Tray } from "electron";
+import {themeVariables} from './plugins/themes.mjs';
+import {applyCredentialTheme} from './plugins/window-theme.mjs';
+import {createPetCompanionBridge} from './plugins/pet-companion-bridge.mjs';
+import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, net, protocol, safeStorage, screen, shell, Tray } from "electron";
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { copyFile, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
@@ -12,10 +15,17 @@ import { normalizeParameters, mergeParameters } from "./character-parameters.mjs
 import { createStartupSettings } from "./startup.mjs";
 import { PluginPackages } from "./plugins/packages.mjs";
 import { createSandboxProvider,SANDBOX_SCHEME } from "./plugins/sandbox-runtime.mjs";
+import { DeepSeekCredentials,DeepSeekService } from "./plugins/deepseek-service.mjs";
+import { createDeepSeekDialog } from "./plugins/deepseek-dialog.mjs";
+import { LocalConnectionStore,LocalService } from "./plugins/local-service.mjs";
+import { createLocalServiceDialog } from "./plugins/local-service-dialog.mjs";
 
 const rootDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+// Keep the existing profile across the public product rename.
+app.setPath("userData",path.join(app.getPath("appData"),"spine-pet-workshop"));
+app.setName("SpinePet");
 if (process.env.PET_TEST_PROFILE) app.setPath("userData", path.resolve(process.env.PET_TEST_PROFILE));
-const APP_ICON_PATH = path.join(rootDirectory, "assets", "amiya-app-icon.png");
+const APP_ICON_PATH = path.join(rootDirectory, "assets", "spinepet-icon.png");
 const BASE_WIDTH = 420;
 const BASE_HEIGHT = 500;
 const GRAVITY = 1850;
@@ -59,9 +69,10 @@ let groundedWindow;
 let lastPhysicsTime = performance.now();
 let monitorSampleLogged = false;
 let activeCharacterName = "阿米娅";
+let petRenderState = "loading", petRenderError = "", petUnresponsive = false;
 let extensionService;
 let extensionOverlay;
-let featureInteraction = false;
+let featureInteraction = false, companionInteraction = false, petCompanionBridge;
 const previewAssets = new Map();
 const selectedPreviewFolders = new Set();
 const selectedPreviewFiles = new Set();
@@ -465,7 +476,7 @@ async function importCharacter(payload) {
     await writePreferences(id);
     activeCharacterName = name;
     applyCharacterParameters(profile.parameters);
-    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.reload();
+    reloadPetCharacter();
     return id;
   } catch (error) {
     await rm(characterRoot, { recursive: true, force: true });
@@ -479,7 +490,7 @@ async function activateCharacter(characterId) {
   await writePreferences(characterId);
   activeCharacterName = config.name;
   applyCharacterParameters(config.parameters);
-  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.reload();
+  reloadPetCharacter();
 }
 
 async function deleteCharacter(characterId) {
@@ -491,9 +502,27 @@ async function deleteCharacter(characterId) {
     await writePreferences(BUILTIN_CHARACTER.id);
     activeCharacterName = BUILTIN_CHARACTER.name;
     applyCharacterParameters((await getCharacterRuntimeConfig(BUILTIN_CHARACTER.id)).parameters);
-    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.reload();
+    reloadPetCharacter();
   }
   await rm(path.join(charactersDirectory(), characterId), { recursive: true, force: true });
+}
+
+function currentPetStatus() {
+  const exists = mainWindow && !mainWindow.isDestroyed();
+  const visible = Boolean(exists && mainWindow.isVisible() && !mainWindow.isMinimized());
+  const error = !exists ? "桌宠尚未启动" : petUnresponsive ? "桌宠暂时无响应" : petRenderState === "error" ? petRenderError : "";
+  const state = error ? "error" : !visible ? "hidden" : petRenderState === "ready" ? "ready" : "loading";
+  return {name: activeCharacterName, visible, state, message: error || (state === "hidden" ? "桌宠已隐藏" : state === "ready" ? "正常显示中" : "正在加载桌宠…")};
+}
+
+function publishPetStatus() {
+  if (settingsWindow && !settingsWindow.isDestroyed()) settingsWindow.webContents.send("settings:pet-status", currentPetStatus());
+}
+
+function reloadPetCharacter() {
+  petRenderState = "loading"; petRenderError = ""; petUnresponsive = false;
+  publishPetStatus();
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.reload();
 }
 
 function createSettingsWindow() {
@@ -504,14 +533,15 @@ function createSettingsWindow() {
     settingsWindow.focus();
     return;
   }
+  const workArea = screen.getPrimaryDisplay().workAreaSize;
   settingsWindow = new BrowserWindow({
     show: false,
-    width: 980,
-    height: 760,
+    width: Math.min(1280, Math.max(760, workArea.width - 64)),
+    height: Math.min(820, Math.max(620, workArea.height - 64)),
     minWidth: 760,
     minHeight: 620,
-    backgroundColor: "#f5f2ec",
-    title: "Spine 桌宠工坊",
+    backgroundColor: themeVariables(extensionService?.settings.theme,extensionService?.settings.customTheme)["--page-bg"],
+    title: "SpinePet",
     autoHideMenuBar: true,
     icon: APP_ICON_PATH,
     webPreferences: {
@@ -787,7 +817,7 @@ function updatePhysics() {
     if (walking && direction > 0 && centerX >= groundedWindow.X + groundedWindow.Width - edgeMargin) reverseDirection();
   }
 
-  const targetHorizontalVelocity = walking && !featureInteraction ? WALK_SPEED * direction : 0;
+  const targetHorizontalVelocity = walking && !featureInteraction && !companionInteraction ? WALK_SPEED * direction : 0;
   const velocityBlend = Math.min(1, WALK_ACCELERATION * deltaTime);
   horizontalVelocity += (targetHorizontalVelocity - horizontalVelocity) * velocityBlend;
   if (!walking && Math.abs(horizontalVelocity) < 0.35) horizontalVelocity = 0;
@@ -959,6 +989,20 @@ function createWindow() {
     }, 4000);
   });
 
+  for (const event of ["show", "hide", "minimize", "restore", "closed"]) mainWindow.on(event, publishPetStatus);
+  mainWindow.on("unresponsive", () => { petUnresponsive = true; publishPetStatus(); });
+  mainWindow.on("responsive", () => { petUnresponsive = false; publishPetStatus(); });
+  mainWindow.webContents.on("did-start-loading", () => {
+    petRenderState = "loading"; petRenderError = ""; petUnresponsive = false; publishPetStatus();
+  });
+  mainWindow.webContents.on("did-fail-load", (_event, code, description, _url, isMainFrame) => {
+    if (!isMainFrame || code === -3) return;
+    petRenderState = "error"; petRenderError = "桌宠页面加载失败：" + description; publishPetStatus();
+  });
+  mainWindow.webContents.on("render-process-gone", () => {
+    petRenderState = "error"; petRenderError = "桌宠进程已停止"; publishPetStatus();
+  });
+
   const developmentUrl = process.env.VITE_DEV_SERVER_URL;
   if (developmentUrl) void mainWindow.loadURL(developmentUrl);
   else void mainWindow.loadFile(path.join(rootDirectory, "dist", "index.html"));
@@ -1000,6 +1044,14 @@ app.whenReady().then(async () => {
       if (!file || path.extname(file).toLowerCase() !== match[2]) return new Response("Not found", { status: 404 });
       return net.fetch(pathToFileURL(file).toString());
     } catch { return new Response("Not found", { status: 404 }); }
+  });
+  ipcMain.handle("settings:pet-status", event => { requireSettingsSender(event); return currentPetStatus(); });
+  ipcMain.on("pet:render-status", (event, state, message) => {
+    if (!mainWindow || mainWindow.isDestroyed() || event.sender !== mainWindow.webContents || event.senderFrame !== mainWindow.webContents.mainFrame) return;
+    if (!["loading", "ready", "error"].includes(state)) return;
+    petRenderState = state;
+    petRenderError = state === "error" ? String(message || "模型加载失败").slice(0, 180) : "";
+    publishPetStatus();
   });
   ipcMain.handle("settings:get-character-config", async (event, id) => {
     requireSettingsSender(event);
@@ -1138,20 +1190,33 @@ app.whenReady().then(async () => {
   createWindow();
   const pluginTestOptions = !app.isPackaged && (process.env.V321_SMOKE_DIR || process.env.V311_SMOKE_DIR || process.env.ZIP_PLUGIN_SMOKE_DIR)
     ? (await import("../scripts/plugin-fixture.mjs")).createTestOptions({fourth:!process.env.ZIP_PLUGIN_SMOKE_DIR,legacyCodex:!process.env.ZIP_PLUGIN_SMOKE_DIR}) : {};
+  const deepseekCredentials=new DeepSeekCredentials({userData:app.getPath('userData'),encryption:safeStorage});
+  const deepseek=new DeepSeekService({credentials:deepseekCredentials});
+  deepseek.openSettings=createDeepSeekDialog({root:rootDirectory,credentials:deepseekCredentials,service:deepseek,getTheme:()=>extensionService?.settings});
+  const localConnections=new LocalConnectionStore({userData:app.getPath('userData'),encryption:safeStorage});
+  const localService=new LocalService({connections:localConnections});
+  localService.openSettings=createLocalServiceDialog({root:rootDirectory,service:localService,getTheme:()=>extensionService?.settings});
   extensionService = new ExtensionService({
     ...pluginTestOptions,
+    deepseek,
+    localService,
     directory: path.join(app.isPackaged ? path.join(process.resourcesPath, "app.asar.unpacked") : rootDirectory, "electron", "extensions"),
     userData: app.getPath("userData"),
     onUpdate: snapshot => {
       extensionOverlay?.update(snapshot);
-      if (settingsWindow && !settingsWindow.isDestroyed()) settingsWindow.webContents.send("features:state", snapshot);
+      petCompanionBridge?.update(snapshot);
+      for(const window of BrowserWindow.getAllWindows())if(/\/(?:deepseek|local-service)-settings\.html$/.test(window.webContents.getURL()))applyCredentialTheme(window,snapshot.settings);
+      if (settingsWindow && !settingsWindow.isDestroyed()) {settingsWindow.setBackgroundColor(themeVariables(snapshot.settings.theme,snapshot.settings.customTheme)["--page-bg"]);settingsWindow.webContents.send("features:state", snapshot);}
     },
     onEvent: event => extensionOverlay?.event(event)
   });
   extensionOverlay = createExtensionOverlay({ root: rootDirectory, service: extensionService,
     getPet: () => mainWindow, getDragging: () => dragging,
-    setInteraction: value => { featureInteraction = value; }, openSettings: createSettingsWindow,
+    setInteraction: value => { featureInteraction = value; }, openSettings: () => { createSettingsWindow();const target=settingsWindow;if(!target||target.isDestroyed())return;const show=()=>target.webContents.send('features:navigate');if(target.webContents.isLoading())target.webContents.once('did-finish-load',show);else show(); },
     testing: !app.isPackaged && Boolean(process.env.V311_SMOKE_DIR || process.env.V321_SMOKE_DIR || process.env.ZIP_PLUGIN_SMOKE_DIR) });
+  petCompanionBridge=createPetCompanionBridge({service:extensionService,getPet:()=>mainWindow,
+    setInteraction:value=>{companionInteraction=value;},
+    openSettings:id=>{createSettingsWindow();const target=settingsWindow;if(!target||target.isDestroyed())return;const show=()=>target.webContents.send('features:navigate',id);if(target.webContents.isLoading())target.webContents.once('did-finish-load',show);else show();}});
   const settingsSender = event => settingsWindow && event.sender === settingsWindow.webContents;
   const pluginPackages=new PluginPackages({userData:app.getPath("userData"),makeProvider:bundle=>createSandboxProvider({root:rootDirectory,bundle})});
   try{for(const definition of await pluginPackages.load({builtinIds:[...extensionService.records.keys()]}))extensionService.addDefinition(definition);}
@@ -1162,7 +1227,7 @@ app.whenReady().then(async () => {
       const chosen=await dialog.showOpenDialog(settingsWindow,{title:"导入插件 ZIP",properties:["openFile"],filters:[{name:"桌宠插件",extensions:["zip"]}]});
       if(chosen.canceled)return {ok:false,cancelled:true};const bundle=await pluginPackages.inspect(chosen.filePaths[0]),replacing=pluginPackages.installed.some(entry=>entry.id===bundle.manifest.id);
       if(extensionService.records.get(bundle.manifest.id)?.origin==='builtin')throw new Error('该插件已内置，无需导入；请在管理器启用或禁用');
-      const labels={"codex.read":"读取本机 Codex 额度和任务状态（含任务名称；不读取凭据、不修改任务）","weather.read":"受控天气查询（向 Open-Meteo 发送城市或坐标，不提供任意联网）","storage.own":"保存本插件的数据（独立空间，512 KB 配额）","ui.reminders":"角色字幕提醒（遵循隐私与专注设置）"};
+      const labels={"net.local":"连接你另行授权的本地服务路径，读取信息、提交操作并接收事件（令牌由宿主保管）","ai.deepseek":"使用你配置的 DeepSeek 密钥发送对话（按账户计费；插件不能读取密钥）","codex.read":"读取本机 Codex 额度和任务状态（含任务名称；不读取凭据、不修改任务）","weather.read":"受控天气查询（向 Open-Meteo 发送城市或坐标，不提供任意联网）","storage.own":"保存本插件的数据（独立空间，512 KB 配额）","ui.reminders":"角色字幕提醒（遵循隐私与专注设置）"};
       const confirmation=await dialog.showMessageBox(settingsWindow,{type:"question",title:"确认插件权限",message:(replacing?"替换并启用：":"安装并启用：")+bundle.manifest.name,
         detail:"ID："+bundle.manifest.id+"\n版本："+bundle.manifest.version+"\n\n请求权限：\n"+bundle.manifest.permissions.map(p=>labels[p]??p).join("\n")+"\n\n来源：本机 ZIP，未验证发布者签名。只导入可信来源。插件在受限环境运行，不开放任意网络、Node.js、系统文件或其他插件数据；天气查询仅在声明并授权时通过固定服务接口完成。"+(replacing?"\n替换会保留原有数据与配置。":""),buttons:["安装并启用","取消"],defaultId:1,cancelId:1,noLink:true});
       if(confirmation.response!==0)return {ok:false,cancelled:true};const snapshot=await pluginPackages.install(bundle,extensionService);return {ok:true,snapshot};
@@ -1216,7 +1281,7 @@ app.whenReady().then(async () => {
   physicsTimer = setInterval(updatePhysics, 16);
 
   tray = new Tray(createTrayIcon());
-  tray.setToolTip("Spine 桌宠工坊");
+  tray.setToolTip("SpinePet");
   tray.on("click", () => {
     if (!mainWindow) return;
     if (mainWindow.isVisible()) mainWindow.hide();
@@ -1233,6 +1298,7 @@ app.whenReady().then(async () => {
 app.on("before-quit", () => {
   extensionService?.stop();
   extensionOverlay?.stop();
+  petCompanionBridge?.stop();
   clearInterval(physicsTimer);
   clearInterval(dragTimer);
   monitorProcess?.kill();

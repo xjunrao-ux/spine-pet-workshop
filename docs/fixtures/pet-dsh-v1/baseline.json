@@ -1,0 +1,132 @@
+{
+  "format": "pet-dsh-design-baseline/1",
+  "createdOn": "2026-10-21",
+  "designVersion": "1.0.0",
+  "petHost": "4.2.2",
+  "pluginApi": 1,
+  "bridgePackage": "1.0.0",
+  "protocol": "pet-dsh/1",
+  "protocolRevision": "1.0.0",
+  "alignment": {
+    "protocolBytesEqual": true,
+    "schemaBytesEqual": true
+  },
+  "currentServiceCapabilities": {
+    "required": [
+      "sessions.list",
+      "session.snapshot",
+      "message.send",
+      "events.follow",
+      "requests.lookup"
+    ],
+    "defaultOptional": [
+      "session.cancel"
+    ],
+    "optIn": [
+      "message.steer"
+    ],
+    "notImplemented": [
+      "interaction.answer",
+      "persona.update",
+      "pet.tools"
+    ]
+  },
+  "evidenceNote": "服务版本及能力依据仓库源码。DSH TEST_REPORT 是既有报告；本生成器不运行其测试、不连接真实服务、不调用模型。",
+  "sources": [
+    {
+      "path": "package.json",
+      "bytes": 4637,
+      "sha256": "eeeba7b7e991990995ad76350a63e00bff34b64a065d3d7af631b5c55d4c27d7"
+    },
+    {
+      "path": "docs/DSH_BRIDGE_PROTOCOL.md",
+      "bytes": 13101,
+      "sha256": "4fc69bca3c52a1edea214a4065a2ac66ef0cd616dd65fcf3ee73058b5f68ab34"
+    },
+    {
+      "path": "docs/LOCAL_SERVICE_API.md",
+      "bytes": 6589,
+      "sha256": "bf0c14ec2fde843aef5240ed4538af6f9af521b204b290b0accb7b17609c4dee"
+    },
+    {
+      "path": "docs/schemas/dsh-bridge-v1.schema.json",
+      "bytes": 14925,
+      "sha256": "4d5ff0b68cc3086942dbab6f1286347ce8706d4f1b3f90555a0191e39d268c7d"
+    },
+    {
+      "path": "electron/plugins/contracts.mjs",
+      "bytes": 13109,
+      "sha256": "9cfcb1eb7165b28d41fac018a3cd98aacdce40d420075850ad24905729437b2a"
+    },
+    {
+      "path": "electron/plugins/local-service.mjs",
+      "bytes": 14950,
+      "sha256": "00fa889c029259f4c88c94f35dff3971d0068d104488c80fbfc3c7ef9d5dba5c"
+    },
+    {
+      "path": "src/plugins/renderer.ts",
+      "bytes": 8891,
+      "sha256": "c5bb6f96e24822283cd23ace79f07399c92ab89c027b7fd34352149d7deacc19"
+    },
+    {
+      "path": "dsh-pet-bridge/package.json",
+      "bytes": 1636,
+      "sha256": "527a0e04eb642808165a52d62dc13440b9f01709b8f319bdf5a12379464805bf"
+    },
+    {
+      "path": "dsh-pet-bridge/COMPATIBILITY.md",
+      "bytes": 11686,
+      "sha256": "487af44358f8a4142cdebfbdc1c2dbae40749fe4e37ab703d475f74517843ca7"
+    },
+    {
+      "path": "dsh-pet-bridge/TEST_REPORT.md",
+      "bytes": 14184,
+      "sha256": "50e631c2b1420e3da4b3ed1a00fea32aaed08338a542d7314a7b801154eca11b"
+    },
+    {
+      "path": "dsh-pet-bridge/src/index.js",
+      "bytes": 23785,
+      "sha256": "a600707a0ea70b0c14d2789a167b75a67639b620d6e09919a18cde7d02dad143"
+    },
+    {
+      "path": "dsh-pet-bridge/src/http-server.js",
+      "bytes": 14263,
+      "sha256": "295a2ebe6bee964a697b15968b66368fb269841688d5609744b00ac3e3fdf5a0"
+    },
+    {
+      "path": "dsh-pet-bridge/src/auth.js",
+      "bytes": 12144,
+      "sha256": "0abb6e83d905c49223b00c1ba9a02d8a16ae9e54289ed31b30b8d491085957f2"
+    },
+    {
+      "path": "dsh-pet-bridge/src/config.js",
+      "bytes": 11618,
+      "sha256": "c59ed2fd58d126da843c917070019527657258509d2d0192a60f2c8d427916b5"
+    },
+    {
+      "path": "dsh-pet-bridge/src/dsh-adapter.js",
+      "bytes": 34055,
+      "sha256": "481880cc410fe3098fb9653e184917f32c933e537163ca5e09bf9410b34a8e40"
+    },
+    {
+      "path": "dsh-pet-bridge/src/event-hub.js",
+      "bytes": 11565,
+      "sha256": "f5ec7f5a9088d501ca3068e35fd6db0ddc381c953d68e7e66546de9cc6f5180f"
+    },
+    {
+      "path": "dsh-pet-bridge/src/request-journal.js",
+      "bytes": 16509,
+      "sha256": "8fca16fe79d60747dd8d6d2f8cb7e2afeeecb5cb4df93bd18db05534d997eb95"
+    },
+    {
+      "path": "dsh-pet-bridge/src/session-projection.js",
+      "bytes": 11802,
+      "sha256": "3b6f7d776e17f8d415af662dd3e7732ee0d016c7a89a2b9ce17cf29808a0b959"
+    },
+    {
+      "path": "dsh-pet-bridge/src/wire.js",
+      "bytes": 13791,
+      "sha256": "42d15d530ff016e1b50487880c509d4fff065b7a17ed373c614b5fffe4b9f0d0"
+    }
+  ]
+}

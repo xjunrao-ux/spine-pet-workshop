@@ -2,6 +2,12 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("desktopPet", {
   isElectron: true,
+  companion: {
+    get:()=>ipcRenderer.invoke('pet:companion-get'),
+    hover:value=>ipcRenderer.send('pet:companion-hover',value),
+    onState:callback=>{const listener=(_e,state)=>callback(state);ipcRenderer.on('pet:companion-state',listener);return()=>ipcRenderer.removeListener('pet:companion-state',listener);}
+  },
+  reportStatus: (state, message) => ipcRenderer.send("pet:render-status", state, message),
   getCharacterConfig: () => ipcRenderer.invoke("pet:get-character-config"),
   showContextMenu: () => ipcRenderer.send("pet:show-context-menu"),
   beginDrag: () => ipcRenderer.send("pet:drag-start"),

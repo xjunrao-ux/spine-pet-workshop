@@ -1,3 +1,4 @@
+import { applyTheme } from './features/themes';
 import './extensions.css';
 import { featureIcon } from './features/icons';
 import type { FeatureBridge, PluginSnapshot as FeatureSnapshot, PluginId as ModuleId, PluginEvent as FeatureEvent, CommandButton } from './plugins/types';
@@ -10,7 +11,10 @@ const track=document.querySelector<HTMLElement>('#capsule-track')!;
 const toast=document.querySelector<HTMLButtonElement>('#event-toast')!;
 let state: FeatureSnapshot, selected: ModuleId|null=null, hover=false, pinned=false;
 let event: FeatureEvent|null=null, toastTimer=0, previewTimer=0, readTimer=0, busy=false, operationError='', trackSignature='', cardModule: ModuleId|null=null;
-let renderedBody='', pageIndex=0;
+let renderedBody='', pageIndex=0, appliedProfile='';
+const panelProfile=()=>'conversation'===plugin(selected)?.manifest.presentation?.panel?'conversation' as const:'compact' as const;
+let dragGesture:{x:number;y:number;pointer:number;handle:HTMLElement}|null=null;
+let composing=false;
 let contextMenu:HTMLElement|null=null,contextAnchor:HTMLElement|null=null;
 let resizeGesture: {edge:string;x:number;y:number;width:number;height:number}|null=null, resizeRevision=0;
 const viewed=new Map<string,{pluginId:string;pageId:string;readKey:string}>(), eventQueue: FeatureEvent[]=[];
@@ -50,7 +54,7 @@ function visible(element:HTMLElement,value:boolean){
   }
   requestAnimationFrame(regions);
 }
-function available():ModuleId[]{return visiblePlugins(state.plugins).map(p=>p.id);}
+function available():ModuleId[]{return visiblePlugins(state.plugins).filter(p=>p.manifest.presentation?.panel!=='bubble').map(p=>p.id);}
 function pruneEvents(){
   const keep=(item:FeatureEvent)=>{
     const source=plugin(item.pluginId);if(!source?.enabled) return false;
@@ -98,7 +102,7 @@ function restoreDrafts(body:HTMLElement,drafts:ReturnType<typeof formDrafts>){
   body.querySelectorAll<HTMLFormElement>('[data-command-form]').forEach(form=>{const values=drafts.forms.get(form.dataset.formId!);if(!values)return;
     form.querySelectorAll<HTMLInputElement|HTMLTextAreaElement>('[name]').forEach(input=>{
       if(Object.hasOwn(values,input.name))input.value=values[input.name];
-      if(focused&&focused.id===form.dataset.formId&&focused.name===input.name){input.focus();if(focused.start!==null&&focused.end!==null)try{input.setSelectionRange(focused.start,focused.end);}catch{}}
+      if(focused&&focused.id===form.dataset.formId&&focused.name===input.name){input.focus({preventScroll:true});if(focused.start!==null&&focused.end!==null)try{input.setSelectionRange(focused.start,focused.end);}catch{}}
     });
   });
 }
@@ -106,8 +110,10 @@ function render(){
   if(!state) return;
   document.body.classList.toggle('reduce-motion',state.settings.reducedMotion);
   if(!resizeGesture){
-    card.style.width=(state.settings.cardWidth??282)+'px';
-    card.style.height=(state.settings.cardHeight??285)+'px';
+    const profile=panelProfile(),width=profile==='conversation'?(state.settings.aiCardWidth??420):(state.settings.cardWidth??282),height=profile==='conversation'?(state.settings.aiCardHeight??500):(state.settings.cardHeight??285);
+    card.style.width=width+'px';card.style.height=height+'px';
+    card.classList.toggle('conversation-panel',profile==='conversation');
+    if(appliedProfile!==profile){appliedProfile=profile;void applySize(width,height,false,'');}
   }
   const entries=available();
   if(selected && !entries.includes(selected)){stopPaging();clearTimeout(readTimer);selected=null;pinned=false;api.pin(false);}
@@ -126,8 +132,9 @@ function render(){
     button.title=(p?.manifest.menuLabel??p?.manifest.name??'插件')+(unread?' · 有新消息':'');
   });
   capsule.classList.toggle('no-features',!entries.length);
-  visible(capsule,hover || Boolean(selected));visible(card,Boolean(selected));
-  if(selected){
+  visible(capsule,hover || Boolean(selected));visible(card,Boolean(selected)&&plugin(selected)?.manifest.presentation?.panel!=='bubble');
+  applyTheme(state.settings.theme,state.settings.customTheme);
+  if(selected&&plugin(selected)?.manifest.presentation?.panel!=='bubble'){
     if(cardModule!==selected){
       cardModule=selected;renderedBody='';
       card.innerHTML='<header class="card-heading"><div class="heading-label"><span class="heading-icon">'+svg(plugin(selected)!.manifest.icon)+'</span><div><strong>'+esc(plugin(selected)!.manifest.menuLabel??plugin(selected)!.manifest.name)+'</strong><small id="card-mode"></small></div></div><div class="heading-actions"><button class="icon-button" data-pin aria-label="固定卡片">'+svg('pin')+'</button><button class="icon-button" data-close aria-label="关闭卡片">'+svg('close')+'</button></div></header><div id="card-body" class="card-body"></div><footer class="pager-hint"><span>左右翻页</span><nav class="page-navigation" aria-label="页面导航"><button type="button" class="page-arrow" data-page-step="-1" aria-label="上一页" title="上一页">'+svg('chevron-left')+'</button><span id="page-counter" aria-live="polite"></span><button type="button" class="page-arrow" data-page-step="1" aria-label="下一页" title="下一页">'+svg('chevron-right')+'</button></nav></footer>'+
@@ -138,22 +145,25 @@ function render(){
     card.querySelector('[data-pin]')!.setAttribute('aria-pressed',String(pinned));
     const body=card.querySelector<HTMLElement>('#card-body')!;
     const html=renderPages(plugin(selected)!,busy||plugin(selected)!.runtime!=='active');
-    if(renderedBody!==html && !resizeGesture){
+    if(renderedBody!==html && !resizeGesture && !composing){
       closeContextMenu();
       const pages=[...body.querySelectorAll<HTMLElement>('.feature-page')];
       const oldKey=renderedBody?pages[pageIndex]?.dataset.page:undefined;
-      const offsets=new Map(pages.map(p=>[p.dataset.page,p.querySelector('.page-content')?.scrollTop??0]));
+      const offsets=new Map(pages.map(p=>{const content=p.querySelector<HTMLElement>('.page-content')!;return [p.dataset.page,{top:content.scrollTop,follow:p.classList.contains('has-footer')&&Boolean(p.querySelector('[data-chat-log]'))&&content.scrollHeight-content.clientHeight-content.scrollTop<28}];}));
+      const chatOffsets=new Map(pages.map(p=>{const log=p.querySelector<HTMLElement>('[data-chat-log]');return [p.dataset.page,log?{top:log.scrollTop,follow:log.scrollHeight-log.clientHeight-log.scrollTop<28}:null];}));
       const drafts=formDrafts(body);body.innerHTML=html;renderedBody=html;
       const next=[...body.querySelectorAll<HTMLElement>('.feature-page')];
       const key=oldKey??plugin(selected)?.preferredPageId;
       const found=next.findIndex(p=>p.dataset.page===key);
       pageIndex=found>=0?found:Math.min(pageIndex,Math.max(0,next.length-1));
-      next.forEach(p=>{p.querySelector('.page-content')!.scrollTop=offsets.get(p.dataset.page)??0;});
+      next.forEach(p=>{const content=p.querySelector<HTMLElement>('.page-content')!,offset=offsets.get(p.dataset.page);content.scrollTop=p.classList.contains('has-footer')&&p.querySelector('[data-chat-log]')&&(!offset||offset.follow)?content.scrollHeight:offset?.top??0;});
+      next.forEach(p=>{const log=p.querySelector<HTMLElement>('[data-chat-log]'),offset=chatOffsets.get(p.dataset.page);if(log)log.scrollTop=!offset||offset.follow?log.scrollHeight:offset.top;});
       body.scrollTo({left:pageIndex*body.clientWidth,top:0,behavior:'instant'});
       restoreDrafts(body,drafts);
       pageChanged();
     }
-    pageHeading();
+    pageHeading();renderTabs();
+    card.querySelectorAll<HTMLElement>('.task-strip .plugin-text').forEach(line=>{const travel=Math.min(0,line.parentElement!.clientWidth-line.scrollWidth);line.style.setProperty('--travel',travel+'px');line.classList.toggle('is-overflow',travel<0);});
     let error=card.querySelector<HTMLElement>('.operation-error');if(!error){error=document.createElement('div');error.className='error operation-error';card.querySelector('.card-heading')!.after(error);}error.textContent=operationError;error.classList.toggle('hidden',!operationError);
   }
   if(!state.settings.subtitles || state.settings.quiet || state.locked || (event && !plugin(event.pluginId)?.enabled)){
@@ -167,6 +177,14 @@ function scrollEdges(){
 }
 track.addEventListener('scroll',scrollEdges,{passive:true});
 
+function renderTabs(){
+  const source=plugin(selected);if(!source)return;
+  let tabs=card.querySelector<HTMLElement>('.plugin-tabs');
+  if(source.manifest.presentation?.navigation!=='tabs'){tabs?.remove();card.classList.remove('has-tabs');return;}
+  if(!tabs){tabs=document.createElement('nav');tabs.className='plugin-tabs';tabs.setAttribute('aria-label','待办分类');card.querySelector('.card-heading')!.after(tabs);}
+  tabs.innerHTML=source.pages.map((page,index)=>page.navigationHidden?'':'<button type="button" data-tab-index="'+index+'" aria-selected="'+(index===pageIndex)+'">'+esc(page.title)+'</button>').join('');
+  card.classList.add('has-tabs');
+}
 function pageHeading(){
   const page=card.querySelectorAll<HTMLElement>('.feature-page')[pageIndex];if(!page) return;
   card.querySelector('.card-heading strong')!.textContent=page.dataset.title??'';
@@ -180,7 +198,7 @@ function pageChanged(){
   const counter=card.querySelector('#page-counter');if(counter) counter.textContent=(pageIndex+1)+' / '+pages.length;
   pages.forEach((page,i)=>{page.inert=i!==pageIndex;page.setAttribute('aria-hidden',String(i!==pageIndex));});
   card.querySelectorAll<HTMLButtonElement>('[data-page-step]').forEach(button=>{button.disabled=Number(button.dataset.pageStep)<0?pageIndex===0:pageIndex>=pages.length-1;});
-  pageHeading();clearTimeout(readTimer);
+  pageHeading();renderTabs();clearTimeout(readTimer);
   const shown=pages[pageIndex],source=plugin(selected),item=source?.pages.find(p=>p.id===shown?.dataset.page && p.readKey===shown?.dataset.readKey);
   if(item?.readKey && item.unread && source){
     const module=selected,epoch=source.epoch,key=item.readKey;
@@ -250,7 +268,7 @@ window.addEventListener('blur',()=>closeContextMenu());
 async function applySize(width:number,height:number,save=false,edge=''){
   const revision=++resizeRevision;
   try{
-    const size=await api.resize(width,height,save,edge);
+    const size=await api.resize(width,height,save,edge,panelProfile());
     if(revision!==resizeRevision) return;
     card.style.width=size.width+'px';card.style.height=size.height+'px';
     const body=card.querySelector<HTMLElement>('#card-body');body?.scrollTo({left:pageIndex*body.clientWidth,top:0,behavior:'instant'});regions();
@@ -267,8 +285,8 @@ card.addEventListener('pointerdown',e=>{
 window.addEventListener('pointermove',e=>{
   const g=resizeGesture;if(!g) return;
   const dx=e.screenX-g.x,dy=e.screenY-g.y;
-  const width=Math.max(240,Math.min(560,g.width+(g.edge.includes('e')?dx:g.edge.includes('w')?-dx:0)));
-  const height=Math.max(230,Math.min(640,g.height+(g.edge.includes('s')?dy:g.edge.includes('n')?-dy:0)));
+  const width=Math.max(panelProfile()==='conversation'?320:240,Math.min(560,g.width+(g.edge.includes('e')?dx:g.edge.includes('w')?-dx:0)));
+  const height=Math.max(panelProfile()==='conversation'?360:230,Math.min(640,g.height+(g.edge.includes('s')?dy:g.edge.includes('n')?-dy:0)));
   card.style.width=width+'px';card.style.height=height+'px';void applySize(width,height,false,g.edge);
 });
 function finishResize(cancel=false){
@@ -306,8 +324,11 @@ async function runCommand(command:string,payload:Record<string,unknown>,formId?:
   }
 }
 card.addEventListener('focusin',event=>{if((event.target as Element).closest('[data-command-form]')&&selected&&!pinned){pinned=true;api.pin(true);render();}});
+card.addEventListener('compositionstart',event=>{if((event.target as Element).closest('.chat-composer'))composing=true;});
+card.addEventListener('compositionend',()=>{composing=false;requestAnimationFrame(()=>render());});
+card.addEventListener('keydown',event=>{if(event.key==='Enter'&&(event.isComposing||composing)&&(event.target as Element).closest('.chat-composer'))event.preventDefault();});
 card.addEventListener('submit',event=>{
-  const form=(event.target as Element).closest<HTMLFormElement>('[data-command-form]');if(!form)return;event.preventDefault();if(!form.reportValidity())return;
+  const form=(event.target as Element).closest<HTMLFormElement>('[data-command-form]');if(!form)return;event.preventDefault();if(form.dataset.pending==='true'||composing||!form.reportValidity())return;
   const payload:Record<string,unknown>=JSON.parse(form.dataset.basePayload??'{}');
   for(const input of form.querySelectorAll<HTMLInputElement|HTMLTextAreaElement>('[name]')){
     const value=input.value;if(input.dataset.fieldType==='datetime'&&value){const date=new Date(value);if(!Number.isFinite(date.getTime())){operationError='截止时间格式无效';render();return;}payload[input.name]=date.toISOString();}else payload[input.name]=value;
@@ -318,6 +339,7 @@ document.addEventListener('click',async e=>{
   const button=(e.target as Element).closest<HTMLButtonElement>('button');if(!button) return;
   clearTimeout(previewTimer);
   if(button.disabled)return;
+  if(button.dataset.tabIndex!==undefined){goToPage(Number(button.dataset.tabIndex));return;}
   if(button.dataset.pageStep){goToPage(pageIndex+Number(button.dataset.pageStep));return;}
   if(button.dataset.module){const id=button.dataset.module as ModuleId;open(id,!(pinned && selected===id));}
   if(button.hasAttribute('data-pin') && selected){pinned=!pinned;api.pin(pinned);render();}
@@ -356,6 +378,10 @@ api.onEvent(value=>{
   if(event?.id===value.id || eventQueue.some(item=>item.id===value.id)) return;
   if(eventQueue.length>=4) eventQueue.shift();eventQueue.push(value);if(!event) showNextEvent();
 });
+document.addEventListener('pointerdown',e=>{const handle=(e.target as Element).closest<HTMLElement>('[data-drag-handle],.card-heading');if(!handle||e.button!==0||(e.target as Element).closest('button,input,textarea'))return;e.preventDefault();pinned=true;api.pin(true);handle.setPointerCapture(e.pointerId);dragGesture={x:e.screenX,y:e.screenY,pointer:e.pointerId,handle};api.move?.(0,0,'start');document.body.classList.add('dragging-overlay');});
+window.addEventListener('pointermove',e=>{if(dragGesture)api.move?.(e.screenX-dragGesture.x,e.screenY-dragGesture.y,'move');});
+function finishDrag(e:PointerEvent){if(!dragGesture)return;api.move?.(e.screenX-dragGesture.x,e.screenY-dragGesture.y,'end');dragGesture=null;document.body.classList.remove('dragging-overlay');}
+window.addEventListener('pointerup',finishDrag);window.addEventListener('pointercancel',finishDrag);
 setInterval(()=>{
   const source=plugin(selected);if(!source) return;
   for(const block of source.pages.flatMap(page=>timelineBlocks(page.blocks))){

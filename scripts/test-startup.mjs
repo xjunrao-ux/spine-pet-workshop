@@ -22,7 +22,7 @@ test('startup is off by default and reading never writes Windows settings', () =
 test('enable and disable use matching executable and arguments, verified by OS state', () => {
   const f = fixture(); assert.equal(f.api.set(true).enabled, true); assert.equal(f.api.set(false).enabled, false);
   assert.deepEqual(f.writes.map(x => x.openAtLogin), [true, false]);
-  assert.equal(f.writes[0].name, 'SpinePetWorkshop'); assert.equal(f.writes[0].path, '"' + f.executable + '"');
+  assert.equal(f.writes[0].name, 'SpinePet'); assert.equal(f.writes[0].path, '"' + f.executable + '"');
   assert.deepEqual(f.writes[0].args, ['--autostart']); assert.deepEqual(f.reads[0], { path: '"' + f.executable + '"', args: ['--autostart'] });
 });
 test('portable startup points at the outer portable executable, not temporary Electron', () => {
@@ -30,7 +30,7 @@ test('portable startup points at the outer portable executable, not temporary El
   assert.equal(f.api.set(true).ok, true); assert.equal(f.writes[0].path, '"' + portable + '"');
 });
 test('Windows-disabled launch entry is reflected and can be re-enabled explicitly', () => {
-  const f = fixture(); f.setLogin({openAtLogin: false, executableWillLaunchAtLogin: false, launchItems: [{name: 'SpinePetWorkshop', scope: 'user', path: f.executable, args: ['--autostart'], enabled: false}]});
+  const f = fixture(); f.setLogin({openAtLogin: false, executableWillLaunchAtLogin: false, launchItems: [{name: 'SpinePet', scope: 'user', path: f.executable, args: ['--autostart'], enabled: false}]});
   assert.equal(f.api.get().enabled, false); assert.equal(f.api.set(true).enabled, true);
 });
 test('custom entry remains enabled even when default openAtLogin is false', () => {
@@ -40,7 +40,7 @@ test('custom entry remains enabled even when default openAtLogin is false', () =
 });
 test('default or other entries never enable the pet switch', () => {
   const f = fixture();
-  const entry = { name: 'SpinePetWorkshop', scope: 'user', path: f.executable, args: ['--autostart'], enabled: true };
+  const entry = { name: 'SpinePet', scope: 'user', path: f.executable, args: ['--autostart'], enabled: true };
   for (const changed of [{name: 'other-app'}, {scope: 'machine'}, {path: path.resolve('other.exe')}]) {
     f.setLogin({openAtLogin: true, executableWillLaunchAtLogin: true, launchItems: [{...entry, ...changed}]});
     assert.equal(f.api.get().enabled, false);
@@ -58,4 +58,10 @@ test('non-boolean input and rejected OS changes return errors', () => {
   const f = fixture(); assert.equal(f.api.set({enabled: true}).ok, false); assert.equal(f.writes.length, 0);
   f.app.setLoginItemSettings = () => {}; assert.equal(f.api.set(true).ok, false);
   f.app.setLoginItemSettings = () => {throw new Error('denied');}; assert.equal(f.api.set(true).ok, false);
+});
+
+test('legacy startup entry can be read and migrated on an explicit switch change',()=>{
+ const f=fixture();f.setLogin({launchItems:[{name:'SpinePetWorkshop',scope:'user',path:f.executable,enabled:true}]});
+ assert.equal(f.api.get().enabled,true);assert.equal(f.writes.length,0);
+ assert.equal(f.api.set(true).ok,true);assert.deepEqual(f.writes.map(x=>[x.name,x.enabled]),[['SpinePetWorkshop',false],['SpinePet',true]]);
 });

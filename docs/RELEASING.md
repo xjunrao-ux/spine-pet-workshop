@@ -1,94 +1,57 @@
 # 正式发布流程
 
-## v3.2.3 社区插件附件
+当前版本为 v5.1.2，产品名 SpinePet。发布必须对应同一份 main 提交、vX.Y.Z 标签、二进制、插件和校验清单；已发布版本不覆盖。
 
-新增社区条目后运行 `pnpm community:generate`、`pnpm community:check` 和 `pnpm test:community`。
-本版发布计数器、天气、Codex 三个 ZIP；打包后用 `node scripts/community-catalog.mjs --archives release/v3.2.3` 核对每个完整附件的摘要和清单，不执行插件代码。
-调用下文发布脚本时，在 `-PluginArchives` 中传入这三个附件。目录条目指向 v3.2.3 固定下载地址，上传完成后核对下载文件摘要。
-社区目录 PR 可以独立审核合并，不要求每次重发 EXE；宿主正式版本仍按下面流程验收与标记。
+## 1. 准备与验收
 
-公共 main 和正式标签只保存验收后的版本。日常测试提交留在本地 dev/v3。
+在开发分支完成改动，更新 package.json、界面版本、README、CHANGELOG、ROADMAP、版本使用说明、RELEASE 和 VALIDATION 文档。运行 [开发文档](DEVELOPMENT.md) 中与本版有关的 Node、Electron 与打包检查。
 
-版本提交使用 `release: vX.Y.Z`，产物自动输出到 `release/vX.Y.Z/`。每次可交付修订递增版本号，不使用 `-pages`、`-polish` 等测试后缀替代版本；已发布版本不覆盖。发布脚本默认读取当前版本目录。
+公共源码不包含 .local、artifacts、node_modules、第三方模型/音频、缓存、用户资料和旧研究目录。保留可重跑的测试与关键版本结果。
 
-## 发布准备
+## 2. 整理 main
 
-1. 在 dev/v3 完成验证并提交修改。
-2. 确定正式版本号，例如 3.0.0。
-3. 确认功能范围、使用说明、素材来源、安装版和便携版的运行结果。
-4. 检查没有把依赖、缓存、用户数据、密钥或内部研究文件纳入正式源码。
-
-## 整理正式提交
-
-使用 main 的独立工作区整理正式快照，开发目录保持在 dev/v3。可复用已有 main 工作区；不要普通合并公开研究历史：
+复用现有的 main 工作区，确认其没有用户改动。先 fetch public/main 并确认与远端一致，再将开发分支 squash 到 main，检查文件列表后提交 release: vX.Y.Z。不要直接把开发分支或含内部研究提交的历史推送到公共仓库。
 
 ```powershell
-git -C <main工作区> merge --squash dev/v3
+git merge --squash dev/v3
+git diff --cached --stat
+git diff --cached --check
+# 检查源码、凭据/素材排除与文档后提交
+git commit -m "release: v5.1.2"
 ```
 
-squash 会带入开发分支的最终文件内容，仍需检查是否含实验目录。把已经成熟的功能放入 electron/src/scripts，未完成探针不要进入正式提交；v3 目录的研究原件继续保留在开发分支或本地备份。
+在正式工作区安装锁定依赖，准备本地构建素材后重建。运行 pnpm package:win、pnpm test:packaged 和 scripts/Test-ReleaseBinaries.ps1。安装版版本和内容结构、便携/解包程序的隔离启动均需核对；不要用真实用户安装目录或个人配置执行测试。
 
-更新 package.json、README、CHANGELOG、ROADMAP、版本使用说明和 RELEASE 文档，然后构建和检查：
+## 3. 插件与额外附件
+
+用 package:* 命令生成五个桌宠 ZIP，复制到正式版本目录。社区条目的版本、固定标签下载 URL、权限及完整 ZIP SHA-256 必须与附件一致：
 
 ```powershell
-pnpm install --frozen-lockfile
-pnpm build
-pnpm package:win
-git diff --cached
-git status --short
+pnpm community:generate
+pnpm community:check
+node scripts/community-catalog.mjs --archives release/v5.1.2
 ```
 
-选定正式文件并提交：
+DSH 桥是单独 TGZ，在 dsh-pet-bridge 目录运行 node scripts/pack.mjs --out ../release/v5.1.2。保留白名单检查，不把令牌、运行配置、日志或测试 Profile 放入包。
+
+## 4. 上传和公开
+
+GitHub 账户与 public 远端必须与目标仓库匹配。脚本只允许 main，拒绝未提交改动、研究历史或不完整附件。安装包名称从 package.json 的发行规则读取；使用说明优先选择精确版本文件。
 
 ```powershell
-git add electron src assets public docs scripts .github .githooks
-git add community examples CONTRIBUTING.md
-git add package.json pnpm-lock.yaml pnpm-workspace.yaml README.md CHANGELOG.md ROADMAP.md
-git commit -m "release: v3.0.0"
+& scripts/Publish-Release.ps1 -Version 5.1.2 -PluginArchives @(
+  'release/v5.1.2/Weather-Plugin-v1.2.0.zip',
+  'release/v5.1.2/Codex-Plugin-v1.1.0.zip',
+  'release/v5.1.2/DeepSeek-Plugin-v1.1.0.zip',
+  'release/v5.1.2/DSH-Pet-Plugin-v1.1.0.zip',
+  'release/v5.1.2/Hello-Counter-v1.0.0.zip'
+) -AdditionalAssets @('release/v5.1.2/local-dsh-pet-bridge-1.0.0.tgz')
 ```
 
-发布前应保证 main 工作区干净。不要使用普通合并把所有内部测试提交带入公共历史。
+脚本先生成所有自定义附件的 SHA256SUMS 和离线使用说明，再原子推送 main 与指定标签；创建 draft、上传完整附件后公开为 latest。构建始终 --publish never。若上传中断，先检查已有 draft 和附件，不覆盖同版本 Release 或重复创建标签。
 
-## 上传源码和 Release
+## 5. 发布后确认
 
-登录 GitHub CLI 后，在 main 调用发布脚本：
+核对远端 main/tag 指向、Release 非草稿与 latest 状态、每个附件名称/体积/SHA-256、源码测试工作流与 README 下载链接。GitHub 自动源码归档不含第三方本地素材；正式安装包才是普通用户的运行入口。
 
-```powershell
-gh auth status
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Publish-Release.ps1 -Version 3.0.0
-```
-
-脚本检查当前分支、package 版本、工作区、研究文件和安装包，创建正式标签，推送 main 与这个标签。先建立 draft 并上传全部 EXE、可选 ZIP、SHA-256 和版本说明，附件齐全后再公开并设为 latest。构建脚本使用 --publish never，打包本身不会自动发布。
-
-已存在的 Release 或版本标签不会被覆盖。修复已发布软件时使用新的修订号。
-
-## 推送保护
-
-仓库使用 .githooks/pre-push。初始化已配置：
-
-```powershell
-git config core.hooksPath .githooks
-```
-
-新克隆的维护者也需要运行这条命令。钩子只允许向 public 推送 main 和 vX.Y.Z 正式标签，并拒绝包含 v3 研究历史的推送。
-
-只推送明确的正式分支和标签；不要使用 --all、--mirror 或 --tags。本地钩子是维护约定，不能替代代码审查。
-
-## 版本对应关系
-
-每次发布固定对应一份源码提交、一个标签、安装包和校验文件。v2.1.0 历史标签保留；固定角色系列发行 v2.1.1，工坊系列发行 v2.2.4。中间测试包不公开。
-
-## v3.2.2：插件附件与图片检查
-
-发布前运行 pnpm test:release、实际 Electron 沙盒/UI 回归、角色导入测试及 scripts/test-packaged-release.mjs。检查安装版与便携版版本、归档资源及隔离启动。截图只发布隔离演示或不含账号/网络信息的局部；原始资料保留本机。
-
-将两个插件 ZIP 复制到 release/v3.2.2/，在正式工作区调用：
-
-```powershell
-& scripts/Publish-Release.ps1 -Version 3.2.2 -PluginArchives @(
-  "release/v3.2.2/Weather-Plugin-v1.1.0.zip",
-  "release/v3.2.2/Codex-Plugin-v1.1.0.zip"
-)
-```
-
-脚本用 inspectPluginZip 校验每个附件，校验值包括 EXE 与 ZIP。公开后核对 Release 标签/提交、附件名称/体积/摘要、latest 标识和 GitHub Actions 构建。上传失败时先检查已有 draft，不覆盖旧 Release 或同版本产物。
+清理临时产物时先写清单、解析绝对路径并验证位于项目内，保护原始素材、用户目录、备份及活动 Git 工作区。保留本次正式 EXE、ZIP、校验文件、关键截图和版本验收摘要。

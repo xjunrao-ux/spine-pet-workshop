@@ -82,7 +82,7 @@ export class CodexService {
         if (turn) this.recordTurn(message.params.threadId, turn, false);
       }
     });
-    await this.request('initialize', { clientInfo: { name: 'spine-pet-workshop', title: 'Spine 桌宠工坊', version: '3.2.2' }, capabilities: { experimentalApi: true } });
+    await this.request('initialize', { clientInfo: { name: 'spine-pet-workshop', title: 'SpinePet', version: '4.3.1' }, capabilities: { experimentalApi: true } });
     if (this.child !== connectedChild || !this.running) throw new Error('Connection cancelled');
     connectedChild.stdin.write(JSON.stringify({ method: 'initialized' }) + '\n');
     this.state.connected = true;

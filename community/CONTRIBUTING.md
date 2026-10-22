@@ -24,7 +24,7 @@
 | sourceUrl | HTTPS GitHub 仓库或固定版本源码页面 |
 | downloadUrl | HTTPS GitHub 固定 Release 的 `.zip` 附件，不支持任意网站或 latest 链接 |
 | sha256 | 完整 ZIP 的 64 位小写 SHA-256；不是宿主安装缓存 hash |
-| permissions | 与 ZIP 清单完全一致；当前外部可用独立存储、提醒、天气及 Codex 只读四种权限 |
+| permissions | 与 ZIP 清单完全一致；支持 storage.own、ui.reminders、weather.read、codex.read、ai.deepseek（需 v4.1.1+）及 net.local（需 v4.2.2+），填写实际验证的最低宿主版本 |
 | license | 源码中明确说明的许可；不得把未获许可的代码或素材声明为开源 |
 
 源码仓库与下载仓库可以不同，但 PR 中必须说明原因和作者关系。不要把令牌、账号或私人资料放在条目、截图或 ZIP 中。

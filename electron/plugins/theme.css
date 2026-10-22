@@ -1,0 +1,10 @@
+:root {
+ color-scheme:dark; --ink:#edf1f6; --muted:#a6b1c0; --accent:#aebdce; --on-accent:#17202b;
+ --surface-opacity:.86; --surface-rgb:36,42,51; --page-bg:#1b2028;
+ --glass:rgba(var(--surface-rgb),var(--surface-opacity)); --panel:rgb(var(--surface-rgb));
+ --stroke:color-mix(in srgb,var(--accent) 22%,transparent);
+ --hover:color-mix(in srgb,var(--accent) 10%,transparent);
+ --accent-soft:color-mix(in srgb,var(--accent) 16%,var(--panel));
+ --accent-end:color-mix(in srgb,var(--accent) 85%,var(--ink));
+ --enter-duration:160ms; --exit-duration:220ms;
+}

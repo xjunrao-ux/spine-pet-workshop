@@ -8,7 +8,7 @@ import { normalizeMediaState, notificationChannels } from '../electron/extension
 
 test('pet voice sessions are filtered, external players and NetEase fallback remain',()=>{
   const result=normalizeMediaState({currentId:'local.spine.desktop.pet.workshop',sessions:[
-    {id:'local.spine.desktop.pet.workshop'}, {id:'SpinePetWorkshop.exe'},
+    {id:'local.spine.desktop.pet.workshop'}, {id:'SpinePetWorkshop.exe'}, {id:'SpinePet.exe'}, {id:'SpinePet'},
     {id:'QQMusic.exe',status:'Playing'},{id:'app-command:cloudmusic',fallback:true},{id:'MSEdge'}]});
   assert.equal(result.sessions.length,3);assert.equal(result.currentId,'QQMusic.exe');
   assert.equal(result.sessions[1].name,'网易云音乐');

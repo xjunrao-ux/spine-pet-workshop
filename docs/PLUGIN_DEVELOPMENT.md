@@ -1,10 +1,10 @@
 # Spine 桌宠工坊插件开发规范与接入手册
 
-文档版本：1.4.0 · 更新日期：2026-10-17 · 对应宿主：v3.2.3 正式版（兼容 v3.2.2 API v1） · 插件 API：v1 · ZIP 包格式：v1。
+文档版本：1.7.0 · 更新日期：2026-10-22 · 对应宿主：v5.1.2 正式版（兼容已有 API v1 插件） · 插件 API：v1 · ZIP 包格式：v1。
 
 本手册面向独立插件作者。目标是：不修改主程序、不加入内置注册表，只编写自己的插件源码，打包为 ZIP，由用户在角色管理器导入，使用同一套菜单、左右分页、设置、存储和角色提醒。
 
-> API v1 已有可运行实现，但仍处于开发验证期，并非永久冻结的 SDK。v3.1.2 正式版不支持 ZIP 导入；早期仅有内置插件的 v3.2.1 测试包也不支持。请使用 v3.2.2 或包含相同接口的宿主构建，在“角色管理器 → 扩展 → 导入插件 ZIP”安装。本文以现有代码为准，不把未来规划写成已开放接口。
+> API v1 已完成本版验收；后续新增能力仍需逐项检查，不承诺永久冻结的 SDK。v3.1.2 正式版不支持 ZIP 导入；早期仅有内置插件的 v3.2.1 测试包也不支持。请使用 v3.2.2 或包含相同接口的宿主构建，在“角色管理器 → 扩展 → 导入插件 ZIP”安装。本文以现有代码为准，不把未来规划写成已开放接口。
 
 新手入口：[JavaScript 计数器快速入门](PLUGIN_QUICKSTART.md) · [插件安装使用手册](PLUGIN_USAGE.md) · [GitHub 社区目录](../community/README.md) · [PR 投稿规范](../community/CONTRIBUTING.md)。
 
@@ -40,7 +40,9 @@
 | Codex 额度与任务状态 | 已开放受控 `codex.read` 只读订阅，需新版宿主；Codex 功能现以独立 ZIP 交付 |
 | 图片文件、封面上传、自定义 SVG 图标 | 外部资源接口未开放；可使用宿主预置图标 |
 | 受控天气 API（weather.read） | v3.2.2 已支持 |
-| 任意网络、AI API、数据库连接、系统文件、进程与 shell | 未开放 |
+| 受控 DeepSeek API（ai.deepseek）与聊天组件 | v4.1.1 新增，见下文；旧宿主不支持 |
+| 通用本地服务（net.local） | v4.2.2 新增；用户授权 loopback 根路径、宿主注入加密令牌、异步 HTTP JSON 与 SSE；见 [接口手册](LOCAL_SERVICE_API.md) |
+| 任意网络、其他 AI API、数据库连接、系统文件、进程与 shell | 未开放 |
 | 自定义 HTML/CSS、DOM、独立窗口 | 未开放 |
 | 插件市场、远程安装、自动更新、签名验证、插件间通信 | 未实现 |
 
@@ -294,7 +296,7 @@ ZIP 中其他文件只参与归档校验，不会成为插件可访问的静态�
 | `icon` | string / 是 | 宿主预置图标名，见下表 |
 | `entryVisibility` | string / 是 | `when-enabled` 或 `when-available` |
 | `description` | string / 否 | 最多 1000 字符，默认空字符串 |
-| `permissions` | string[] / 是 | 可为空数组；外部支持下表四个权限 |
+| `permissions` | string[] / 是 | 可为空数组；外部支持下表五个权限，注意宿主版本 |
 | `compatibilityNotes` | string[] / 否 | 最多 20 条，每条最多 2000 字符，显示在管理器 |
 | `settingsSchema` | object[] / 否 | 最多 30 项，默认空数组；见第 8 节 |
 | `commands` | object[] / 否 | 最多 40 项，默认空数组；见第 7 节 |
@@ -315,12 +317,13 @@ ZIP 中其他文件只参与归档校验，不会成为插件可访问的静态�
 | `ui.reminders` | `context.emit`，经宿主策略处理的字幕 | 请求拒绝 |
 | `codex.read` | `context.codex.subscribe`，本机额度与任务元数据只读流 | 不提供 codex 对象；主进程也会拒绝越权订阅 |
 | `weather.read` | `context.weather.search/forecast`，固定 Open-Meteo 城市/天气查询 | 请求拒绝 |
+| `ai.deepseek` | `context.deepseek`，使用宿主保存的本插件密钥发送 DeepSeek 对话，需 v4.1.1 | 不提供 deepseek 对象；宿主拒绝越权请求 |
 
 仅展示内容和执行纯内存逻辑可使用 `permissions: []`。不得申请 `media.read`、`media.control`、`notifications.read`，这些声明会使外部包在执行前被拒绝。Codex 权限允许看到任务名称，必须告知用户读写范围；它不是凭据、任务控制或模型调用权限。
 
 ### 4.3 图标与入口显隐
 
-可用图标：`music`、`notifications`、`codex`、`note`、`clock`、`cloud`、`close`、`play`、`pause`、`next`、`previous`、`checklist`、`check`、`undo`、`trash`、`plus`、`edit`。
+可用图标：`music`、`notifications`、`codex`、`note`、`clock`、`cloud`、`close`、`play`、`pause`、`next`、`previous`、`checklist`、`check`、`undo`、`trash`、`plus`、`edit`。v4.1.1 新增 `chat`。
 
 - `when-enabled`：启用即保留入口，即便没有条目。适合待办、便签、计时器。
 - `when-available`：启用且快照 `available: true` 才展示；失败或不兼容时仍可显示问题入口。
@@ -451,6 +454,17 @@ export async function activate(context) {
 
 ## 6. 菜单页面与声明式组件
 
+### v4.1.1：DeepSeek 受控能力
+
+独立示例见 [DeepSeek 对话插件](../examples/deepseek-plugin/README.md)，清单需声明 `ai.deepseek`。该权限授权插件以用户账户付费调用模型，导入时必须明确提示用户；它不开放任意网络或本机执行。
+
+- `await context.deepseek.subscribe(callback)`：返回取消订阅函数。事件为 `connection {configured,error}`，以及带 `requestId` 的 `delta {text}`、`done {text,finishReason,usage}`、`error/cancelled {text,message}`。`text` 为累积文本，非逐字符差量。每次激活最多一个 AI 订阅。
+- `await context.deepseek.configure()`：打开宿主专用凭据窗口并立即返回；Key 不传给插件。窗口支持加密保存、测试 `/models` 和移除 Key。禁用插件关闭窗口并撤销访问。
+- `await context.deepseek.start({requestId,model,messages})`：立即返回请求 ID，后续从订阅接收结果。请求只允许这三个字段；模型支持 `deepseek-flash`、`deepseek-v4-pro`；最多 42 条 system/user/assistant 消息，单条最多 16000 字符，总计最多 70000 字符，system 只允许位于首条、末条必须是 user。每个插件同时最多一个请求。
+- `await context.deepseek.cancel()`：取消当前请求。禁用/卸载或退出宿主也会取消。网络请求使用固定官方 HTTPS 目标、拒绝重定向、120 秒超时、非思考模式和 2048 输出 token 上限；回复文本最多 16000 字符。不会自动重试付费请求。
+
+长生成不能直接占用 `execute`；先启动并返回，再从订阅更新页面。凭据在宿主内按插件身份隔离保存，插件无法读取明文 Key。聊天历史、人格和记忆由插件通过 `storage.own` 管理，仍受 512 KB 配额约束。
+
 ### 6.1 内容快照
 
 <!-- example:snapshot:start -->
@@ -510,9 +524,10 @@ export async function activate(context) {
 | type | 必需字段 | 可选字段 / 说明 |
 | --- | --- | --- |
 | `text` | `text: string`，最多 4000 字符 | `tone: normal/muted/error`、`strong: boolean`、`multiline: boolean`、`ellipsis: boolean` |
+| `chat`（v4.1.1） | `messages: [{id,role,content,state}]`，最多 24 条 | role 为 user/assistant；state 为 complete/partial/streaming；id 最多 100、content 最多 16000 字符，按文本转义显示 |
 | `group` | `layout: row/column`、`children: Block[]`，最多 50 个 | `appearance`、`contextActions`，见下文；递归深度从顶层 0 开始不得超过 8 |
 | `button` | `commandId`、`label`、`icon`、`enabled: boolean`、建议显式 `payload: {}` | label/commandId 各最多 100 字符；`variant: icon/text`、`primary: boolean` |
-| `form` | `id` 非空、`commandId`、`submitLabel`、`fields` | id/commandId/submitLabel 各最多 100 字符；`payload: {}`、`enabled: boolean`；最多 12 个字段 |
+| `form` | `id` 非空、`commandId`、`submitLabel`、`fields` | id/commandId/submitLabel 各最多 100 字符；`payload: {}`、`enabled: boolean`；最多 12 个字段；本次 v4.1.1 新增 `variant: composer`，限定一个 text 字段，呈现为单行输入与发送箭头 |
 | `list` | `items: [{label, status}]`，最多 100 项 | label 最多 500、status 最多 100 字符；`emptyText`；item.id 可作作者标识，当前无点击行为 |
 | `status` | `icon`、`title`、`description` | title 最多 200、description 最多 4000 字符，适合空状态 |
 | `time` | `label` 最多 200 字符、`value: ISO string/null` | null 显示未知；宿主以本机格式显示日期 |
@@ -526,6 +541,8 @@ export async function activate(context) {
 group 可选 contextActions 为最多 10 个标准 button 块，字段和命令权限规则与普通按钮一致；只允许按钮，禁止任意菜单 HTML。宿主将它们渲染为项目右键菜单，也支持 Shift+F10/菜单键，方向键选择与 Esc 关闭。点击菜单项通过同一 execute 通道执行；点击外部、切页、关闭和内容替换会收起菜单。待办在右侧只声明完成/撤回，其余操作由 contextActions 声明。旧宿主不支持该呈现，需使用本次构建。
 
 文本不会当 HTML 或 Markdown 执行。按钮的 `icon` 变体默认只展示图标，label 用作提示和无障碍名称；`text` 变体同时显示文字。不支持图片 URL、自定义字体、输入框占位字段、富文本编辑器或表格组件。
+
+页面可声明 `footer: Block[]`（最多 12 块），由宿主放在内容滚动区之外、页面底部，适合固定输入区。`form` 的 `composer` 呈现使用字段 label 作为无障碍名称；`pending: true` 时保持输入可编辑但不提交，`stopAction` 可声明一个标准 button，替换右侧发送按钮。草稿与光标在流式更新时保留，中文输入法组词期间暂缓替换输入节点。使用这些新字段的插件需要更新本次 v4.1.1 主程序。
 
 表单字段规范：
 
@@ -882,7 +899,7 @@ Get-FileHash -Algorithm SHA256 -LiteralPath "release/plugins/Your-Plugin-v1.2.0.
 
 需求超出当前能力时，建议向维护者提交：业务目标、最小权限、输入/输出 JSON 示例、隐私边界、取消与超时、资源预算、版本兼容和测试计划。
 
-新能力应先在宿主提供受控适配器，再让插件声明权限调用。不得自行添加通用 exec、任意文件路径、任意 IPC 或网络代理。v3.2.3 的社区收录格式见 [schema.json](../community/schema.json)，它不扩展运行 API。未来可以讨论授权网络域名、插件资源接口、数据迁移、签名、应用内市场、SDK 类型与脚手架；这些仍不属于已开放接口。
+新能力应先在宿主提供受控适配器，再让插件声明权限调用。不得自行添加通用 exec、任意文件路径、任意 IPC 或任意网络代理。v4.2.2 的 net.local 只访问用户在可信窗口授权的数字 loopback 地址及路径，协议与业务由插件实现，详见 [本地服务接口](LOCAL_SERVICE_API.md)；DSH 业务共同声明见 [pet-dsh/1](DSH_BRIDGE_PROTOCOL.md)，桌宠端可运行示例见 [DSH 插件](../examples/dsh-pet-plugin/README.md)，真实用户会话仍须授权连接。v3.2.3 的社区收录格式见 [schema.json](../community/schema.json)，它不扩展运行 API。授权远程网络域名、插件资源接口、数据迁移、签名、应用内市场、SDK 类型与脚手架仍未开放。
 
 维护者处理新组件时应：新增通用契约 → 校验 → 通用渲染 → 声明式示例 → 回归测试 → 更新本手册。不要只让某一个插件特例成功而破坏独立性。
 
@@ -927,3 +944,17 @@ Get-FileHash -Algorithm SHA256 -LiteralPath "release/plugins/Your-Plugin-v1.2.0.
 | [ZIP 验收记录](design/zip-plugin-todo-validation.md) / [架构方案](design/v3.2.1-plugin-architecture.md) | 当前验收与架构背景；历史规划不等于外部已开放能力 |
 
 文档修订记录：1.3.0 新增 cloud 图标、左右分页、group.contextActions 与项目右键菜单。1.2.0 待办内置及右侧操作、Codex 外置与 codex.read 只读订阅，补充身份兼容。1.1.0 新增受控 weather.read 与独立天气插件，保留 Worker 的直接联网限制。1.0.0 为首版公开接口手册。后续接口改动必须同步修改字段说明、完整示例和回归测试。
+
+## 2026-10-22：管理器设置与面板呈现
+
+API v1 增量：manifest.presentation.panel 可为 compact、conversation、bubble，navigation 可为 pages、tabs。未声明时沿用紧凑面板。插件快照可额外提供 settingsPages，结构与 pages 一致、最多 20 页，统一由角色管理器渲染；设置页也经过完整组件校验。不要把配置表单继续放在桌宠 pages 中。设置命令仍需声明参数与权限，可用 managerOnly 限制来源。
+
+conversation 使用独立 aiCardWidth/aiCardHeight，不修改普通 cardWidth/cardHeight。bubble 使用已有聊天消息与 composer 作为悬停输入及回复气泡，不新增任意 HTML、网络或跨插件能力。tabs 允许页面通过 navigationHidden 隐藏新增/编辑页标签，仍可由命令 navigateTo 进入。
+
+新增受限 appearance：task-row、task-content、task-actions、task-toggle、task-progress、task-create、session-card、session-heading、task-strip。新增 deepseek 图标。新版插件须配本轮更新宿主；旧插件未声明这些字段时保持原布局。
+
+## v4.3.1 宿主呈现更新
+
+SpinePet 支持固定模板与自定义十六进制主题，所有声明式页面由宿主统一渲染。插件无需自行注入 CSS。
+
+声明 `presentation.panel = "bubble"` 的聊天插件由独立、可拖动的透明输入窗口呈现 composer，回复仍由角色原气泡显示；透明度和窗口位置由宿主外观设置管理，不增加插件权限。已有 DeepSeek v1.1.0 ZIP 可沿用。配置/模型状态位于管理器，不再常驻输入框；操作错误可临时提示。具体入口见 [v4.3.1](versions/v4.3.1.md)。

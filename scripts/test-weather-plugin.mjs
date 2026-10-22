@@ -24,8 +24,8 @@ async function fixture(t,{stored=null,weather=fakeWeatherAdapter(),failWrite=fal
 test('weather ZIP validates, uses only supported components, and declares all form/button commands',async t=>{
   const source=await readFile(new URL('../examples/weather-plugin/provider.js',import.meta.url),'utf8');
   const bundle=inspectPluginZip(createZip({'plugin.json':JSON.stringify(manifest),'provider.js':source}));assert.equal(bundle.manifest.id,manifest.id);assert.doesNotMatch(source,/\bfetch\s*\(|\bimport\s/);
-  const {instance}=await fixture(t);const snapshot=validateSnapshot(instance.getSnapshot());assert.equal(snapshot.pages.length,4);
-  for(const page of snapshot.pages) for(const block of page.blocks) if(['form','button'].includes(block.type)){const command=manifest.commands.find(c=>c.id === block.commandId);assert.ok(command);if(block.type === 'button') validatePayload(command,block.payload);else for(const field of block.fields) assert.equal(command.fields[field.key].type,'string');}
+  const {instance}=await fixture(t);const snapshot=validateSnapshot(instance.getSnapshot());assert.equal(snapshot.pages.length,3);assert.equal(snapshot.settingsPages.length,1);
+  for(const page of [...snapshot.pages,...snapshot.settingsPages??[]]) for(const block of page.blocks) if(['form','button'].includes(block.type)){const command=manifest.commands.find(c=>c.id === block.commandId);assert.ok(command);if(block.type === 'button') validatePayload(command,block.payload);else for(const field of block.fields) assert.equal(command.fields[field.key].type,'string');}
 });
 
 test('adapter fixes destinations and options, normalizes data and caches without aliasing',async()=>{
@@ -51,7 +51,7 @@ test('adapter aborts slow fetches and revokes requests on scope shutdown',async(
 });
 
 test('city search, selection, background refresh, units and persistence work independently',async t=>{
-  const {instance,backing,config}=await fixture(t);await instance.execute('searchCity',{name:'上海'});await until(()=>instance.getSnapshot().pages[3].blocks.some(b=>b.commandId==='selectCity'));
+  const {instance,backing,config}=await fixture(t);await instance.execute('searchCity',{name:'上海'});await until(()=>instance.getSnapshot().settingsPages[0].blocks.some(b=>b.commandId==='selectCity'));
   assert.deepEqual(await instance.execute('selectCity',{id:'123'}),{navigateTo:'current'});await until(()=>backing.get('state')?.weather);
   let snapshot=validateSnapshot(instance.getSnapshot());assert.match(snapshot.pages[0].blocks[1].text,/22.0 ℃/);assert.equal(snapshot.pages[2].blocks.find(b=>b.type==='list').items.length,2);
   config.unit='℉';instance.onSettingsChanged();assert.match(instance.getSnapshot().pages[0].blocks[1].text,/71.6 ℉/);
@@ -84,7 +84,7 @@ test('switching locations ignores late responses; stopping ignores all late publ
 test('weather permission is enforced by the host and leases cancel on disable',async t=>{
   const userData=await mkdtemp(path.join(os.tmpdir(),'pet-weather-')),options=createTestOptions();options.broker.weather=fakeWeatherAdapter();
   let context;const noGrant={...manifest,id:'test.weather-denied',permissions:[],commands:[]};const host=new PluginHost({...options,userData,definitions:[{manifest:noGrant,activate:c=>{context=c;return {getSnapshot:()=>({available:true,status:'ready',pages:[]}),dispose(){}};}}]});t.after(()=>host.stop());await host.start();await assert.rejects(context.weather.search({name:'上海'}));
-  await host.installDefinition({manifest,activate,origin:'external',grantedPermissions:manifest.permissions});assert.equal(host.records.get(manifest.id).runtime,'active');await host.execute(manifest.id,'setCoordinates',{name:'上海',latitude:'31.23',longitude:'121.47'});await until(()=>host.records.get(manifest.id).snapshot.status==='ready');
+  await host.installDefinition({manifest,activate,origin:'external',grantedPermissions:manifest.permissions});assert.equal(host.records.get(manifest.id).runtime,'active');await host.execute(manifest.id,'setCoordinates',{name:'上海',latitude:'31.23',longitude:'121.47'},{source:'manager'});await until(()=>host.records.get(manifest.id).snapshot.status==='ready');
   await host.setSettings({plugins:{[manifest.id]:{enabled:false}}});assert.equal(host.records.get(manifest.id).runtime,'disabled');await host.setSettings({plugins:{[manifest.id]:{enabled:true}}});assert.equal(host.records.get(manifest.id).runtime,'active');
 });
 

@@ -71,7 +71,7 @@ export class PluginHost {
       storage:{get:async key=>{requireLive();if(!record.allowed.includes('storage.own'))throw new Error('Storage permission denied');const value=await this.storage.get(record.manifest.id,key);requireLive();return value;},
         set:async(key,value)=>{requireLive();if(!record.allowed.includes('storage.own'))throw new Error('Storage permission denied');await this.storage.set(record.manifest.id,key,value,requireLive);}},
       fail:()=>{if(live())void this.deactivate(record).then(()=>{record.runtime='failed';record.error='外部插件停止响应或运行失败，可重启或卸载';this.publish();});},
-      capabilities:this.broker.scope(record.allowed,{live,register,onError:()=>{
+      capabilities:this.broker.scope(record.allowed,{live,register,pluginId:record.manifest.id,onError:()=>{
         if(!live()) return;record.error='插件处理平台数据失败，可在角色管理器重启';record.snapshot={available:true,status:'error',message:record.error,pages:[]};this.publish();
       }}),
       assets:{put:(slot,data)=>{
@@ -86,6 +86,8 @@ export class PluginHost {
       emit:event=>{if(live()){if(!record.allowed.includes('ui.reminders'))throw new Error('Reminder permission denied');this.emit(record,event);}},
       onCleanup:register};
     context.weather=context.capabilities.weather;
+    context.deepseek=context.capabilities.deepseek;
+    context.localService=context.capabilities.localService;
     try {
       const activation=Promise.resolve().then(()=>record.activate(context));
       activation.then(instance=>{if(!live()) return Promise.resolve().then(()=>instance?.dispose?.()).catch(()=>{});}).catch(()=>{});
@@ -106,6 +108,8 @@ export class PluginHost {
       config:structuredClone(this.store.data.plugins[record.manifest.id].config),
       unread:record.snapshot.pages.filter(page=>page.readKey && !this.store.isRead(record.manifest.id,page.readKey)).length,
       pages:record.snapshot.pages.map(page=>({...page,unread:Boolean(page.readKey && !this.store.isRead(record.manifest.id,page.readKey))})),assets:Object.fromEntries(record.assets)}));
+    const order=new Map((this.settings.pluginOrder??[]).map((id,index)=>[id,index]));
+    plugins.sort((a,b)=>(order.get(a.id)??Infinity)-(order.get(b.id)??Infinity));
     return structuredClone({settings:this.settings,locked:this.locked,settingsError:this.settingsError??null,packageError:this.packageError??null,plugins});
   }
   publish() {
@@ -127,7 +131,9 @@ export class PluginHost {
     const operation=this.queue.then(async()=>{
       if(this.readOnly) throw new Error(this.settingsError);
       if(!input || typeof input!=='object' || Array.isArray(input)) throw new Error('Invalid settings');
-      const next=structuredClone(this.store.data);next.global=sanitizeGlobals({...next.global,...input.global});
+      const next=structuredClone(this.store.data),globals={...next.global,...input.global};
+      if(input.global?.customTheme&&typeof input.global.customTheme==='object'&&!Array.isArray(input.global.customTheme))globals.customTheme={...next.global.customTheme,...input.global.customTheme};
+      next.global=sanitizeGlobals(globals);
       if(input.plugins && (typeof input.plugins!=='object' || Array.isArray(input.plugins))) throw new Error('Invalid plugin patch');
       for(const [id,patch] of Object.entries(input.plugins??{})) {
         const record=this.records.get(id);if(!record || !patch || typeof patch!=='object' || Array.isArray(patch)) throw new Error('Unknown plugin');
@@ -138,7 +144,10 @@ export class PluginHost {
           saved.config={...saved.config,...sanitizeConfig(record.manifest,{...saved.config,...patch.config})};
         }
       }
-      await this.store.save(next);this.broker.configure(this.settings);
+      await this.store.save(next);
+      // Pure presentation changes must not reconfigure providers or touch their state.
+      if(!Object.keys(input.plugins??{}).length&&Object.keys(input.global??{}).every(key=>['theme','customTheme','pluginOrder','companionOpacity','companionPosition'].includes(key))){this.publish();return this.snapshot();}
+      this.broker.configure(this.settings);
       for(const record of this.records.values()) {
         await this.sync(record);
         if(record.instance) {try{await record.instance.onSettingsChanged?.(structuredClone(next.plugins[record.manifest.id].config));this.refresh(record);}catch{record.error='插件设置更新失败';}}

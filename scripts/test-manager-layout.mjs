@@ -1,0 +1,131 @@
+import {app,BrowserWindow,dialog,screen} from 'electron';
+import {mkdir,mkdtemp,writeFile,readFile,cp} from 'node:fs/promises';
+import path from 'node:path';
+import assert from 'node:assert/strict';
+import {THEME_PRESETS} from '../electron/plugins/themes.mjs';
+const directory=path.resolve('.local/v5.1.2-manager');await mkdir(directory,{recursive:true});
+const profile=await mkdtemp(path.join(directory,'profile-'));app.setPath('userData',profile);process.env.PET_TEST_PROFILE=profile;
+delete process.env.VITE_DEV_SERVER_URL;
+await writeFile(path.join(profile,'feature-settings.json'),JSON.stringify({schemaVersion:2,global:{theme:'graphite'},plugins:{'workshop.music':{enabled:false,configVersion:1,config:{}},'workshop.notifications':{enabled:false,configVersion:1,config:{}}}}));
+for(let i=1;i<=5;i++){
+ const id='layout-fixture-'+i,root=path.join(profile,'characters',id);await mkdir(root,{recursive:true});
+ await cp(path.resolve('public/models/amiya'),path.join(root,'model'),{recursive:true});
+ await writeFile(path.join(root,'character.json'),JSON.stringify({id,name:i===1?'阿米娅 · 排版测试':'测试角色 '+i,modelFile:'build_char_002_amiya.skel',atlasFile:'build_char_002_amiya.atlas',voiceCount:0,animations:{}}));
+}
+app.disableHardwareAcceleration();app.commandLine.appendSwitch('mute-audio');
+app.on('browser-window-created',(_event,w)=>w.setOpacity(0));
+dialog.showMessageBox=async()=>({response:0});
+dialog.showOpenDialog=async()=>({canceled:false,filePaths:[path.resolve('public/models/amiya')]});
+const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+async function until(fn,label){for(let i=0;i<200;i++){if(await fn())return;await delay(50);}throw Error('Timeout: '+label);}
+const checks=[],check=label=>{checks.push(label);console.log('PASS',label);};
+const watchdog=setTimeout(()=>{console.error('Manager validation timeout');app.exit(1);},120000);
+await import('../electron/main.mjs');
+void (async()=>{
+ let error=null;
+ try {
+  await until(()=>BrowserWindow.getAllWindows().some(w=>w.webContents.getURL().endsWith('/settings.html')&&!w.webContents.isLoading()),'manager bootstrap');
+  const manager=BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/settings.html'));
+  const js=code=>manager.webContents.executeJavaScript(code);
+  const pet=BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith("/index.html"));
+  const errors=[];manager.webContents.on('console-message',(event)=>{if(event.level==='error')errors.push(event.message);});
+  const initial=manager.getBounds(),workArea=screen.getPrimaryDisplay().workAreaSize;
+  assert.ok(initial.width<=Math.max(760,workArea.width)&&initial.height<=Math.max(620,workArea.height));
+  manager.setContentSize(1280,800);
+  async function click(selector){
+   const at=await js('(()=>{const e=document.querySelector('+JSON.stringify(selector)+');e.scrollIntoView({block:"nearest"});const r=e.getBoundingClientRect();return {x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)}})()');
+   manager.webContents.sendInputEvent({type:'mouseDown',button:'left',clickCount:1,...at});manager.webContents.sendInputEvent({type:'mouseUp',button:'left',clickCount:1,...at});await delay(80);
+  }
+  async function capture(name){await delay(120);await writeFile(path.join(directory,name+'.png'),(await manager.webContents.capturePage()).toPNG());}
+  await until(()=>js('document.querySelectorAll(".character-card").length===6'),'all existing characters');
+  await until(()=>js('document.querySelectorAll(".character-thumbnail").length>=2'),'real model thumbnails');
+  assert.equal(await js('document.scrollingElement.scrollHeight<=innerHeight'),true);
+  assert.equal(await js('getComputedStyle(document.querySelector(".character-grid")).gridTemplateColumns.split(" ").length>=2'),true);
+  await until(()=>js('document.querySelector("#current-pet-status").dataset.state==="ready"'), 'pet model ready');
+  assert.equal(await js('document.querySelector("#current-pet-name").textContent'),'阿米娅');
+  assert.equal(await js('getComputedStyle(document.querySelector(".status-dot")).backgroundColor'),'rgb(66, 173, 125)');
+  pet.hide();await until(()=>js('document.querySelector("#current-pet-status").dataset.state==="hidden"'), 'hidden status pushed');
+  assert.equal(await js('getComputedStyle(document.querySelector(".status-dot")).backgroundColor'),'rgb(224, 100, 100)');
+  await capture('pet-hidden');
+  pet.showInactive();await until(()=>js('document.querySelector("#current-pet-status").dataset.state==="ready"'), 'visible status pushed');
+  pet.emit('unresponsive');await until(()=>js('document.querySelector("#current-pet-status").dataset.state==="error"'), 'unresponsive status');
+  pet.emit('responsive');await until(()=>js('document.querySelector("#current-pet-status").dataset.state==="ready"'), 'responsive recovery');
+  check('current character badge follows actual hide/show and unresponsive/recovery events with fixed signal colors');
+  await capture('graphite-library');await writeFile(path.join(directory,'portrait.png'),Buffer.from((await js('document.querySelector(".character-thumbnail").src')).split(',')[1],'base64')); check('real model portraits render in a responsive grid with no document scrolling');
+  await click('[data-settings="layout-fixture-1"]');
+  await until(()=>js('!document.querySelector("#save-character-parameters").disabled'),'inspector data loaded');
+  await until(()=>js('!document.querySelector("#library-preview .preview-animations").disabled'),'inspector model');
+  assert.equal(await js('document.querySelector("#character-settings").parentElement.id'), 'settings-app');
+  assert.equal(await js('document.querySelectorAll("#library-parameters .parameter-row").length'),6);
+  assert.equal(await js('(()=>{const a=document.querySelector(".app-workspace").getBoundingClientRect(),b=document.querySelector("#character-settings").getBoundingClientRect();return Math.abs(a.right-b.left)<2&&b.width===360})()'),true);
+  await capture('graphite-inspector');
+  await js('(()=>{const e=document.querySelector("#library-parameters input[type=number][data-parameter=audioStartOffsetMs]");e.value="120";e.dispatchEvent(new Event("input",{bubbles:true}));})()');
+  await click('#save-character-parameters');
+  await until(async()=>JSON.parse(await readFile(path.join(profile,'characters/layout-fixture-1/character.json'),'utf8')).parameters?.audioStartOffsetMs===120,'parameter persistence');
+  await click('[data-page="features"]');assert.equal(await js('getComputedStyle(document.querySelector("#character-settings")).display'), 'none');
+  await click('[data-page="characters"]');
+  assert.equal(await js('document.querySelector("#library-parameters input[type=number][data-parameter=audioStartOffsetMs]").value'),'120');
+  await click('#close-character-settings');assert.equal(await js('document.activeElement.dataset.settings'),'layout-fixture-1');
+  check('inspector preserves all six parameters, saves real profile data and restores context across navigation');
+  await click('[data-page="features"]');
+  assert.deepEqual(await js('[...document.querySelectorAll("#page-features > article, #page-features > .feature-modules")].slice(0,3).map(e=>e.id)'),['theme-settings','startup-settings','interaction-settings']);
+  for(const theme of THEME_PRESETS){
+   await click('[data-theme-choice="'+theme.id+'"]');
+   await until(()=>js('document.documentElement.dataset.theme==='+JSON.stringify(theme.id)),'theme '+theme.id);
+   await until(async()=>JSON.parse(await readFile(path.join(profile,'feature-settings.json'),'utf8')).global.theme===theme.id,'saved theme '+theme.id);
+   assert.deepEqual(await js('[...document.querySelectorAll(".import-button")].map(e=>getComputedStyle(e).backgroundColor)'),Array(3).fill('rgb(216, 76, 86)'));
+  }
+  await js('(()=>{const e=document.querySelector("[data-custom-color=accent]");e.value="#cb6d93";e.dispatchEvent(new Event("input",{bubbles:true}));e.dispatchEvent(new Event("change",{bubbles:true}));})()');
+  await until(async()=>JSON.parse(await readFile(path.join(profile,'feature-settings.json'),'utf8')).global.customTheme.accent==='#cb6d93','custom theme save');
+  await click('[data-page="characters"]');await click('[data-settings="layout-fixture-1"]');await capture('custom-inspector');
+  await click('[data-page="features"]');await click('[data-theme-choice="ocean"]');await click('[data-page="characters"]');await capture('ocean-inspector');
+  check('every existing theme and custom accent still apply and persist through the original settings controls');
+  manager.setContentSize(760,620);await delay(150);
+  assert.equal(await js('(()=>{const r=document.querySelector("#character-settings").getBoundingClientRect();return r.left>=184&&r.right<=innerWidth&&r.bottom<=innerHeight})()'),true);
+  assert.equal(await js('document.scrollingElement.scrollWidth<=innerWidth'),true);
+  await js('document.querySelector(".drawer-content").scrollTop=10000');
+  assert.equal(await js('document.querySelector(".drawer-content").scrollTop>0'),true);
+  assert.equal(await js('(()=>{const r=document.querySelector("#save-character-parameters").getBoundingClientRect();return r.top>0&&r.bottom<=innerHeight})()'),true);
+  await capture('compact-inspector');await click('#close-character-settings');
+  await click('#open-import');assert.equal(await js('document.body.dataset.settingsPage'),'import');
+  assert.equal(await js('!!document.querySelector("[data-page=help]")'),false);
+  assert.equal(await js('document.querySelector(".material-copy strong").textContent'),'获取角色素材与查看导入教程');
+  assert.equal(await js('document.querySelector(".material-entry").getBoundingClientRect().height>=100'),true);
+  await capture('material-entry');
+  await click('#import-guide summary');
+  assert.equal(await js('document.querySelector("#import-guide").open'),true);
+  assert.equal(await js('document.querySelectorAll("#import-guide [data-url]").length'),4);
+  await capture('import-guide');
+  await js('document.querySelector("#character-name").value="UI 回归导入"');await click('#choose-model-folder');
+  await until(()=>js('document.querySelector("#model-file").options.length>0'),'selected real model');
+  await click('#import-submit');
+  await until(()=>js('document.body.dataset.settingsPage==="characters"&&document.querySelectorAll(".character-card").length===7'),'original import flow');
+  await until(()=>js('document.querySelector("#current-pet-status").dataset.state==="ready"&&document.querySelector("#current-pet-name").textContent==="UI 回归导入"'),'import updates active pet badge');
+  await click('[data-activate="builtin-amiya"]');
+  await until(()=>js('document.querySelector(".character-card.active").dataset.characterId==="builtin-amiya"'),'original character switch');
+  await js('void (window.confirm=()=>true)');await click('[data-delete="layout-fixture-5"]');
+  await until(()=>js('document.querySelectorAll(".character-card").length===6'), 'original delete flow');
+  await writeFile(path.join(profile,'characters/layout-fixture-2/model/build_char_002_amiya.skel'),'invalid spine fixture');
+  await click('[data-activate="layout-fixture-2"]');
+  await until(()=>js('document.querySelector("#current-pet-status").dataset.state==="error"'), 'real model error pushed');
+  assert.equal(await js('document.querySelector("#current-pet-name").textContent'),'测试角色 2');
+  assert.equal(await js('document.querySelector("#current-pet-message").textContent.includes("模型加载失败")'),true);
+  assert.equal(await js('document.querySelector(".app-sidebar").getBoundingClientRect().width'),184);
+  assert.equal(await js('document.querySelector(".app-shell").scrollLeft'),0);
+  const brand=await js('(()=>{const e=document.querySelector(".brand-header"),r=e.getBoundingClientRect();return {top:r.top,height:r.height,appScroll:document.querySelector(".app-shell").scrollTop,bodyScroll:document.body.scrollTop}})()');
+  assert.ok(brand.top>=0&&brand.height>40&&brand.appScroll===0&&brand.bodyScroll===0);
+  await capture('pet-model-error');
+  await click('[data-activate="builtin-amiya"]');
+  await until(()=>js('document.querySelector("#current-pet-status").dataset.state==="ready"'), 'valid model recovery');
+  check('badge updates the active character name on import and reports real model failure and recovery');
+  await click('[data-page="features"]');
+  await js('(()=>{const e=document.querySelector("[data-feature-setting=reducedMotion]");e.checked=true;e.dispatchEvent(new Event("change",{bubbles:true}));})()');
+  await until(()=>js('document.body.classList.contains("reduce-motion")'), 'app motion preference');
+  await click('[data-page="extensions"]');
+  assert.equal(await js('document.querySelectorAll("[data-plugin-shift],.plugin-sort-buttons").length'),0);
+  await capture('compact-plugins');
+  check('compact drawer scrolls independently with a reachable save footer; original import, activation and deletion complete; motion preference is respected');
+  assert.deepEqual(errors,[]);check('manager completed without renderer console errors');
+ } catch(e){error=String(e.stack??e);console.error(error);}
+ finally{await writeFile(path.join(directory,'checks.json'),JSON.stringify({ok:!error,checks,error},null,2));clearTimeout(watchdog);app.exit(error?1:0);}
+})();

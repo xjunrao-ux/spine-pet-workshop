@@ -1,3 +1,4 @@
+import {settingsHaveFocus} from '../ui-focus.mjs';
 import { BrowserWindow, ipcMain, screen } from 'electron';
 import path from 'node:path';
 
@@ -12,14 +13,14 @@ export function createExtensionOverlay({ root, service, getPet, getDragging, set
   const url=process.env.VITE_DEV_SERVER_URL;
   if(url) void window.loadURL(`${url}/extensions.html`); else void window.loadFile(path.join(root,'dist','extensions.html'));
   let regions=[],ready=false,hovered=false,pinned=false,hoverSince=0,lastInside=0,capturing=false;
-  let toastUntil=0,hideAt=0,blocked=false,blockedRegions=[],anchor=null,testCursor=null,resizing=false;
+  let toastUntil=0,hideAt=0,blocked=false,blockedRegions=[],anchor=null,testCursor=null,resizing=false,activeProfile='compact',manualAnchor=false,dragStart=null;
   const trusted=event=>event.sender===window.webContents;
   const send=(name,value)=>{if(ready && !window.isDestroyed()) window.webContents.send(name,value);};
   const capture=(value,force=false)=>{if(capturing===value && !force) return;capturing=value;if(!window.isDestroyed()) window.setIgnoreMouseEvents(!value,{forward:true});};
   const resize=(width,height,edge='')=>{
     const old=window.getBounds(), area=screen.getDisplayMatching(old).workArea;
-    const w=Math.round(Math.max(240,Math.min(560,area.width-38,width)));
-    const h=Math.round(Math.max(230,Math.min(640,area.height-170,height)));
+    const w=Math.round(Math.max(activeProfile==='conversation'?320:240,Math.min(560,area.width-38,width)));
+    const h=Math.round(Math.max(activeProfile==='conversation'?360:230,Math.min(640,area.height-170,height)));
     if(WIDTH!==w+38 || HEIGHT!==h+170){
       WIDTH=w+38;HEIGHT=h+170;
       const nextX=old.x+(edge.includes('w')?old.width-WIDTH:edge.includes('e')?0:(old.width-WIDTH)/2);
@@ -48,12 +49,22 @@ export function createExtensionOverlay({ root, service, getPet, getDragging, set
     if(trusted(event) && Array.isArray(data)) regions=data.slice(0,8).filter(r=>['x','y','width','height'].every(k=>Number.isFinite(r[k])) && r.width>0 && r.height>0);
   });
   ipcMain.on('extensions:pinned',(event,value)=>{if(trusted(event)) pinned=Boolean(value);});
-  ipcMain.handle('extensions:resize',async(event,width,height,save,edge='')=>{
+  ipcMain.handle('extensions:resize',async(event,width,height,save,edge='',profile='compact')=>{
     if(!trusted(event) || !Number.isFinite(width) || !Number.isFinite(height)) throw new Error('Invalid size');
-    resizing=save!==true;
+    activeProfile=profile==='conversation'?'conversation':'compact';
+    resizing=save!==true&&Boolean(edge);
     const size=resize(width,height,/^(?:n|s|e|w|ne|nw|se|sw)$/.test(edge)?edge:'');
-    if(save===true) await service.setSettings({global:{cardWidth:size.width,cardHeight:size.height}});
+    if(save===true) await service.setSettings({global:activeProfile==='conversation'?{aiCardWidth:size.width,aiCardHeight:size.height}:{cardWidth:size.width,cardHeight:size.height}});
     return size;
+  });
+  ipcMain.on('extensions:move',(event,dx,dy,phase)=>{
+    if(!trusted(event)||!Number.isFinite(dx)||!Number.isFinite(dy)||Math.abs(dx)>20000||Math.abs(dy)>20000||!['start','move','end'].includes(phase))return;
+    if(phase==='start'){dragStart=window.getBounds();manualAnchor=true;pinned=true;capture(true);return;}
+    if(!dragStart)return;
+    const area=screen.getDisplayMatching(window.getBounds()).workArea;
+    const x=Math.round(Math.max(area.x,Math.min(area.x+area.width-WIDTH,dragStart.x+dx))),y=Math.round(Math.max(area.y,Math.min(area.y+area.height-HEIGHT,dragStart.y+dy)));
+    anchor={x,y};window.setBounds({x,y,width:WIDTH,height:HEIGHT},false);
+    if(phase==='end')dragStart=null;
   });
   ipcMain.on('extensions:close-menu',event=>{if(trusted(event)) reset();});
   ipcMain.handle('extensions:snapshot',event=>{if(!trusted(event)) throw new Error('Invalid sender');return service.snapshot();});
@@ -72,7 +83,7 @@ export function createExtensionOverlay({ root, service, getPet, getDragging, set
   const tick=()=>{
     if(!ready || window.isDestroyed()) return;
     const pet=getPet();
-    if(!pet || pet.isDestroyed() || !pet.isVisible() || getDragging() || service.state.locked){
+    if(!pet || pet.isDestroyed() || !pet.isVisible() || getDragging() || service.state.locked || settingsHaveFocus()){
       if(hovered || pinned || window.isVisible()) reset(false,true);
       anchor=null;return;
     }
@@ -86,7 +97,7 @@ export function createExtensionOverlay({ root, service, getPet, getDragging, set
       y:Math.max(area.y,Math.min(area.y+area.height-HEIGHT,bounds.y+bounds.height*.12-HEIGHT))};
     if(!anchor || !window.isVisible()) anchor={...target};
     // Stationary click targets while reading; the pet's gravity is never paused.
-    if(!inSurface && !pinned && (!hideAt || now>=hideAt)){
+    if(!manualAnchor && !dragStart && !inSurface && !pinned && (!hideAt || now>=hideAt)){
       const blend=service.state.settings.reducedMotion?1:.4;
       anchor.x+=(target.x-anchor.x)*blend;anchor.y+=(target.y-anchor.y)*blend;
     }
@@ -102,7 +113,7 @@ export function createExtensionOverlay({ root, service, getPet, getDragging, set
       hoverSince=0;
       if(!pinned && hovered && now-lastInside>EXIT_DELAY){showHover(false);send('extensions:close',null);hideAt=now+FADE_OUT;}
     }
-    setInteraction(!blocked && (inSurface || pinned));capture(!blocked && inSurface);
+    setInteraction(!blocked && (inSurface || pinned || Boolean(dragStart)));capture(!blocked && (inSurface || Boolean(dragStart)));
     const wanted=hovered || pinned || now<toastUntil;
     if(wanted){hideAt=0;if(!window.isVisible()){window.showInactive();window.moveTop();}}
     else if(window.isVisible()){
@@ -112,8 +123,8 @@ export function createExtensionOverlay({ root, service, getPet, getDragging, set
   };
   const timer=setInterval(tick,32);
   return {window,
-    update(snapshot){if(!resizing) resize(snapshot.settings.cardWidth??282,snapshot.settings.cardHeight??285);send('extensions:state',snapshot);if(!snapshot.settings.subtitles || snapshot.settings.quiet) toastUntil=0;},
-    event(event){toastUntil=Math.min(Date.now()+22500,Math.max(Date.now(),toastUntil)+4500);send('extensions:event',event);},
+    update(snapshot){if(!resizing) resize(activeProfile==='conversation'?(snapshot.settings.aiCardWidth??420):(snapshot.settings.cardWidth??282),activeProfile==='conversation'?(snapshot.settings.aiCardHeight??500):(snapshot.settings.cardHeight??285));send('extensions:state',snapshot);if(!snapshot.settings.subtitles || snapshot.settings.quiet) toastUntil=0;},
+    event(event){if(service.snapshot().plugins.find(p=>p.id===event.pluginId)?.manifest.presentation?.panel==='bubble')return;toastUntil=Math.min(Date.now()+22500,Math.max(Date.now(),toastUntil)+4500);send('extensions:event',event);},
     ...(testing?{setTestCursor(cursor){testCursor=cursor;},inspect(){return {hovered,pinned,capturing,blocked,regions:regions.length,visible:window.isVisible()};}}:{}),
     stop(){clearInterval(timer);capture(false);setInteraction(false);if(!window.isDestroyed()) window.destroy();}
   };

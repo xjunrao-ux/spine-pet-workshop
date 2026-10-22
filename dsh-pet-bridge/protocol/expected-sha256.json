@@ -1,0 +1,13 @@
+{
+  "note": "SHA-256 of the handed-off protocol bytes, copied verbatim into protocol/. Verified against DSH-Creator-Pet-Bridge-Development-v1.0.0.zip MANIFEST.json and again by scripts/pack.mjs. These digests identify the baseline; they are not a publisher signature.",
+  "source": "release/handoffs/DSH-Creator-Pet-Bridge-Development-v1.0.0.zip",
+  "manifestCreatedOn": "2026-10-21",
+  "guideVersion": "1.0.0",
+  "protocol": "pet-dsh/1",
+  "protocolRevision": "1.0.0",
+  "files": {
+    "protocol/DSH_BRIDGE_PROTOCOL.md": "4fc69bca3c52a1edea214a4065a2ac66ef0cd616dd65fcf3ee73058b5f68ab34",
+    "protocol/LOCAL_SERVICE_API.md": "bf0c14ec2fde843aef5240ed4538af6f9af521b204b290b0accb7b17609c4dee",
+    "protocol/schemas/dsh-bridge-v1.schema.json": "4d5ff0b68cc3086942dbab6f1286347ce8706d4f1b3f90555a0191e39d268c7d"
+  }
+}

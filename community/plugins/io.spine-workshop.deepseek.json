@@ -1,0 +1,19 @@
+{
+  "id": "io.spine-workshop.deepseek",
+  "name": "DeepSeek 对话",
+  "author": "xjunrao-ux",
+  "description": "悬停桌宠即可简短聊天，回复通过气泡显示；API、人设和记忆在角色管理器配置。",
+  "version": "1.1.0",
+  "apiVersion": 1,
+  "minHostVersion": "5.1.2",
+  "category": "其他",
+  "sourceUrl": "https://github.com/xjunrao-ux/spine-pet-workshop/tree/v5.1.2/examples/deepseek-plugin",
+  "downloadUrl": "https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v5.1.2/DeepSeek-Plugin-v1.1.0.zip",
+  "sha256": "6e4a493e9410412dd7b55dfbae94cc54ba1ff7612fc75d9bb460e97a7f6081d1",
+  "permissions": [
+    "ai.deepseek",
+    "storage.own",
+    "ui.reminders"
+  ],
+  "license": "UNLICENSED"
+}

@@ -2,7 +2,9 @@ import { WeatherAdapter } from './weather-adapter.mjs';
 import { WindowsAdapter } from './windows-adapter.mjs';
 import { CodexService } from '../extensions/codex-service.mjs';
 export class CapabilityBroker {
-  constructor({directory,windows,codexFactory,weather}={}) {
+  constructor({directory,windows,codexFactory,weather,deepseek,localService}={}) {
+    this.localService=localService;
+    this.deepseek=deepseek;
     this.weather=weather??new WeatherAdapter();
     this.windows=windows??new WindowsAdapter({directory});this.windows.onLock=value=>this.onLock?.(value);
     this.codexFactory=codexFactory??((state,event,pid)=>new CodexService(state,event,pid));this.codexSubscribers=new Set();this.codexState={running:false,connected:false,tasks:[]};
@@ -17,13 +19,30 @@ export class CapabilityBroker {
     onState(structuredClone(this.codexState));
     return ()=>{this.codexSubscribers.delete(entry);if(!this.codexSubscribers.size) {this.releaseProbe?.();this.releaseProbe=null;this.codex?.stop();this.codex=null;this.codexState={running:false,connected:false,tasks:[]};}};
   }
-  scope(permissions,{live,register,onError}) {
+  scope(permissions,{live,register,onError,pluginId}) {
     const allowed=new Set(permissions),check=permission=>{if(!live() || !allowed.has(permission)) throw new Error('Capability denied');};
     const weatherController=new AbortController();register(()=>weatherController.abort());
     const weatherCall=async(method,params)=>{check('weather.read');const value=await this.weather[method](params,weatherController.signal);check('weather.read');return value;};
     const guarded=callback=>value=>{if(!live()) return;try{callback(value);}catch{onError?.();}};
     const scopedSubscribe=(permission,kind,callback)=>{check(permission);const release=this.windows.acquire(kind,guarded(callback));register(release);return release;};
+    const aiController=new AbortController();register(()=>{aiController.abort();this.deepseek?.cancel(pluginId);});
+    const ai=()=>{check('ai.deepseek');if(!this.deepseek)throw new Error('AI 服务不可用');return this.deepseek;};
+    const localController=new AbortController();register(()=>{localController.abort();this.localService?.cancelAll(pluginId);});
+    const local=()=>{check('net.local');if(!this.localService)throw new Error('本地通信服务不可用');return this.localService;};
     return Object.freeze({
+      localService:Object.freeze({
+        configure:()=>local().configure(pluginId,localController.signal),
+        status:async()=>{const value=await local().status(pluginId);check('net.local');return value;},
+        subscribe:callback=>{const release=local().subscribe(pluginId,guarded(callback));register(release);return release;},
+        request:params=>local().request(pluginId,params,{signal:localController.signal}),
+        stream:params=>local().stream(pluginId,params,{signal:localController.signal}),
+        cancel:params=>local().cancel(pluginId,params)
+      }),
+      deepseek:Object.freeze({
+        subscribe:callback=>{const release=ai().subscribe(pluginId,guarded(callback));register(release);return release;},
+        configure:()=>ai().configure(pluginId,aiController.signal),
+        start:params=>ai().start(pluginId,params),cancel:()=>ai().cancel(pluginId)
+      }),
       weather:Object.freeze({search:params=>weatherCall('search',params),forecast:params=>weatherCall('forecast',params)}),
       media:Object.freeze({subscribe:callback=>scopedSubscribe('media.read','media',callback),control:(action,sessionId,signal)=>{
         check('media.control');if(!['play','pause','toggle','next','previous'].includes(action)) throw new Error('Invalid media operation');
@@ -36,5 +55,5 @@ export class CapabilityBroker {
       codex:Object.freeze({subscribe:(state,event)=>{check('codex.read');const release=this.subscribeCodex(guarded(state),guarded(event));register(release);return release;}})
     });
   }
-  stop() {this.codexSubscribers.clear();this.releaseProbe?.();this.releaseProbe=null;this.codex?.stop();this.codex=null;this.windows.stop();}
+  stop() {this.localService?.stop();this.deepseek?.stop();this.codexSubscribers.clear();this.releaseProbe?.();this.releaseProbe=null;this.codex?.stop();this.codex=null;this.windows.stop();}
 }

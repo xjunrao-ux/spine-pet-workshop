@@ -41,7 +41,7 @@ export async function activate(context) {
     const loading=fetching !== null, expired=Boolean(stale()), notice=weatherError || (expired ? '缓存已过期，请刷新后再参考。' : '');
     const currentBlocks=[txt(loc ? [...new Set([loc.name,loc.region,loc.country].filter(Boolean))].join(' · ') : '先选择要查看的城市','normal')];
     if(c) currentBlocks.push(txt(temperature(c.temperature)+' · '+condition(c.code),'normal',true),txt('体感 '+temperature(c.feelsLike)+'　湿度 '+value(c.humidity,'%')),txt('风速 '+value(c.wind,' km/h')+'　'+(c.isDay === null ? '昼夜未知' : c.isDay ? '白天' : '夜间')),{type:'time',label:'天气数据时间',value:c.time},{type:'time',label:'获取时间',value:w.fetchedAt});
-    else currentBlocks.push(status(loc ? '等待天气数据' : '尚未设置城市',loc ? '点击刷新查询天气；离线时可稍后重试。' : '用右下角箭头打开“城市设置”，搜索城市或输入经纬度。'));
+    else currentBlocks.push(status(loc ? '等待天气数据' : '尚未设置城市',loc ? '点击刷新查询天气；离线时可稍后重试。' : '请到角色管理器 → 扩展 → 天气中搜索城市或输入经纬度。'));
     if(notice) currentBlocks.push(txt(notice,'error'));
     if(loading) currentBlocks.push(txt('正在查询天气…','muted'));
     currentBlocks.push(button('refresh',loading ? '查询中…' : '刷新天气',{},Boolean(loc)&&!loading),txt('Open-Meteo · 当前天气为模型估算；预报随模型更新。','muted'));
@@ -59,10 +59,10 @@ export async function activate(context) {
       {key:'latitude',type:'text',label:'纬度（-90 至 90）',required:true,maxLength:30,value:loc ? String(loc.latitude) : ''},
       {key:'longitude',type:'text',label:'经度（-180 至 180）',required:true,maxLength:30,value:loc ? String(loc.longitude) : ''}
     ]},txt('查询将把输入的城市或坐标发送给 Open-Meteo。免费服务用于非商业用途；城市资料来自 GeoNames。','muted'));
-    return {available:true,status:weatherError || expired ? 'degraded' : w ? 'ready' : 'waiting',message:weatherError || (loc ? loc.name+(loading ? ' · 查询中' : expired ? ' · 缓存过期' : ' · 天气') : '请选择城市'),...(w ? {updatedAt:w.fetchedAt} : {}),preferredPageId:loc ? 'current' : 'location',pages:[
+    return {available:true,status:weatherError || expired ? 'degraded' : w ? 'ready' : 'waiting',message:weatherError || (loc ? loc.name+(loading ? ' · 查询中' : expired ? ' · 缓存过期' : ' · 天气') : '请选择城市'),...(w ? {updatedAt:w.fetchedAt} : {}),preferredPageId:'current',pages:[
       {id:'current',title:'当前天气',icon:'cloud',subtitle:loc?.name ?? '等待设置',blocks:currentBlocks},
       {id:'hourly',title:'未来 24 小时',icon:'cloud',subtitle:loc?.name ?? '等待设置',blocks:hourlyBlocks},
-      {id:'daily',title:'7 天天气预报',icon:'cloud',subtitle:loc?.name ?? '等待设置',blocks:dailyBlocks},
+      {id:'daily',title:'7 天天气预报',icon:'cloud',subtitle:loc?.name ?? '等待设置',blocks:dailyBlocks}],settingsPages:[
       {id:'location',title:'城市设置',icon:'edit',blocks:setupBlocks}
     ]};
   }

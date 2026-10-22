@@ -1,4 +1,5 @@
 import "./settings.css";
+import { CharacterThumbnails } from "./character-thumbnails";
 import { initializeFeatureSettings } from "./features/settings";
 import { createParameterEditor } from "./parameter-editor";
 import { CharacterPreview, VoiceAudition } from "./character-preview";
@@ -14,14 +15,37 @@ interface AudioRow {
 
 type VoiceConfigKind = "metadata" | "subtitles";
 
-const previewPage = new URLSearchParams(window.location.search).get("preview");
+const requestedPreviewPage = new URLSearchParams(window.location.search).get("preview");
+const previewPage = requestedPreviewPage === "help" ? "import" : requestedPreviewPage;
+if (requestedPreviewPage === "help") document.querySelector<HTMLDetailsElement>("#import-guide")!.open = true;
 if (previewPage) {
+  document.body.dataset.settingsPage = previewPage;
   document.querySelectorAll<HTMLElement>(".tab").forEach((tab) => tab.classList.toggle("active", tab.dataset.page === previewPage));
   document.querySelectorAll<HTMLElement>(".page").forEach((page) => page.classList.toggle("active", page.id === `page-${previewPage}`));
 }
 
 if (!window.petSettings) throw new Error("角色管理器只能在桌宠应用中运行");
 const api = window.petSettings;
+let petStatusRevision = 0;
+function renderPetStatus(status: PetDisplayStatus) {
+  const badge = document.querySelector<HTMLElement>("#current-pet-status")!;
+  badge.dataset.state = status.state;
+  badge.title = `${status.name} · ${status.message}`;
+  document.querySelector<HTMLElement>("#current-pet-name")!.textContent = status.name;
+  document.querySelector<HTMLElement>("#current-pet-message")!.textContent = status.message;
+}
+api.onPetStatus?.(status => { petStatusRevision++; renderPetStatus(status); });
+async function refreshPetStatus() {
+  const revision = petStatusRevision;
+  try {
+    const status = await api.getPetStatus?.();
+    if (status && revision === petStatusRevision) renderPetStatus(status);
+  } catch {
+    if (revision === petStatusRevision) renderPetStatus({name: "桌宠状态", visible: false, state: "error", message: "暂时无法读取状态"});
+  }
+}
+void refreshPetStatus();
+window.addEventListener("focus", () => void refreshPetStatus());
 const audition = new VoiceAudition();
 const importPreview = new CharacterPreview(document.querySelector<HTMLElement>("#import-preview")!);
 const libraryPreview = new CharacterPreview(document.querySelector<HTMLElement>("#library-preview")!);
@@ -63,7 +87,9 @@ async function openCharacterSettings(id: string) {
   const controls = document.querySelector<HTMLElement>("#library-voice-controls")!;
   controls.replaceChildren(); panel.classList.remove("hidden"); save.disabled = true;
   status.textContent = "正在读取角色设置…";
-  panel.scrollIntoView({behavior: "smooth", block: "start"});
+  panel.querySelector<HTMLElement>(".drawer-content")!.scrollTop = 0;
+  document.querySelector<HTMLElement>("#character-settings-title")!.focus({preventScroll: true});
+  characterList.querySelectorAll<HTMLElement>(".character-card").forEach(card => card.classList.toggle("inspected", card.dataset.characterId === id));
   try {
     const config = await api.getCharacterConfig(id);
     if (generation !== settingsGeneration) return;
@@ -85,8 +111,11 @@ async function openCharacterSettings(id: string) {
 }
 
 document.querySelector("#close-character-settings")!.addEventListener("click", () => {
+  const returnId = editingCharacterId;
   settingsGeneration++; editingCharacterId = undefined; audition.stop(); libraryPreview.clear();
   document.querySelector("#character-settings")!.classList.add("hidden");
+  characterList.querySelectorAll(".inspected").forEach(card => card.classList.remove("inspected"));
+  characterList.querySelector<HTMLButtonElement>(`[data-settings="${returnId}"]`)?.focus({preventScroll: true});
 });
 document.querySelector("#reset-character-parameters")!.addEventListener("click", () => {
   libraryParameters.set({ ...libraryParameters.get(), ...normalizeParameters() });
@@ -141,6 +170,7 @@ document.querySelector<HTMLButtonElement>("#prepare-voice-preview")!.addEventLis
 const tabs = [...document.querySelectorAll<HTMLButtonElement>(".tab")];
 const pages = [...document.querySelectorAll<HTMLElement>(".page")];
 const characterList = document.querySelector<HTMLElement>("#character-list")!;
+const thumbnails = new CharacterThumbnails(characterList, api);
 const refreshButton = document.querySelector<HTMLButtonElement>("#refresh-characters")!;
 const form = document.querySelector<HTMLFormElement>("#import-form")!;
 const characterName = document.querySelector<HTMLInputElement>("#character-name")!;
@@ -168,11 +198,12 @@ const customVoiceConfig: Record<VoiceConfigKind, { path: string; name: string } 
 };
 
 function switchPage(name: string) {
-  document.body.classList.toggle('utility-page', name === 'features' || name === 'extensions');
+  document.body.dataset.settingsPage = name;
   audition.stop();
   tabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.page === name));
   pages.forEach((page) => page.classList.toggle("active", page.id === `page-${name}`));
-  window.scrollTo({ top: 0, behavior: 'instant' });
+  document.querySelector<HTMLElement>(`#page-${name}`)?.scrollTo({top: 0, behavior: 'instant'});
+  tabs.forEach(tab => { if (tab.dataset.page === name) tab.setAttribute('aria-current', 'page'); else tab.removeAttribute('aria-current'); });
 }
 
 tabs.forEach((tab) => tab.addEventListener("click", () => switchPage(tab.dataset.page ?? "characters")));
@@ -183,24 +214,33 @@ function escapeHtml(value: string) {
   })[character] ?? character);
 }
 
+let characterListGeneration = 0;
 async function loadCharacters() {
+  const generation = ++characterListGeneration;
+  thumbnails.clear();
   characterList.innerHTML = '<div class="empty-state">正在读取角色库…</div>';
   try {
     const characters = await api.listCharacters();
+    if (generation !== characterListGeneration) return;
     characterList.innerHTML = characters.map((character) => `
-      <article class="character-card ${character.active ? "active" : ""}">
-        <div class="character-mark">${escapeHtml(character.name.slice(0, 1).toUpperCase())}</div>
+      <article class="character-card ${character.active ? "active" : ""} ${editingCharacterId === character.id ? "inspected" : ""}" data-character-id="${escapeHtml(character.id)}">
+        <div class="card-preview" data-thumbnail="${escapeHtml(character.id)}">
+          <span class="character-mark" aria-hidden="true">${escapeHtml(character.name.slice(0, 1).toUpperCase())}</span>
+          <small class="thumbnail-status">正在生成预览…</small>
+          ${character.active ? '<span class="status-tag">使用中</span>' : ""}
+        </div>
         <div class="character-meta">
-          <div class="character-title"><h3>${escapeHtml(character.name)}</h3>${character.active ? '<span>使用中</span>' : ""}</div>
+          <div class="character-title"><h3 title="${escapeHtml(character.name)}">${escapeHtml(character.name)}</h3></div>
           <p>${character.builtin ? "内置示例角色" : escapeHtml(character.modelFile)} · ${character.voiceCount} 条语音</p>
         </div>
         <div class="character-actions">
-          <button data-settings="${character.id}">设置</button>
-          ${character.active ? "" : `<button data-activate="${character.id}">应用</button>`}
-          ${character.builtin ? "" : `<button class="danger" data-delete="${character.id}" data-name="${escapeHtml(character.name)}">删除</button>`}
+          <button data-settings="${escapeHtml(character.id)}">设置</button>
+          ${character.active ? "" : `<button data-activate="${escapeHtml(character.id)}">应用</button>`}
+          ${character.builtin ? "" : `<button class="danger" data-delete="${escapeHtml(character.id)}" data-name="${escapeHtml(character.name)}">删除</button>`}
         </div>
       </article>
-    `).join("");
+    `).join("") || '<div class="empty-state">还没有角色，点击右上角“导入角色”开始。</div>';
+    thumbnails.observe();
     characterList.querySelectorAll<HTMLButtonElement>("[data-settings]").forEach(button => {
       button.addEventListener("click", () => void openCharacterSettings(button.dataset.settings!));
     });
@@ -223,6 +263,7 @@ async function loadCharacters() {
       });
     });
   } catch (error) {
+    if (generation !== characterListGeneration) return;
     characterList.innerHTML = `<div class="empty-state error">读取失败：${escapeHtml(String(error))}</div>`;
   }
 }
@@ -389,6 +430,13 @@ document.querySelectorAll<HTMLButtonElement>("[data-url]").forEach((button) => {
 });
 refreshButton.addEventListener("click", () => void loadCharacters());
 
+document.querySelector("#open-import")!.addEventListener("click", () => switchPage("import"));
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape" && document.body.dataset.settingsPage === "characters" && !document.querySelector("#character-settings")!.classList.contains("hidden")) {
+    document.querySelector<HTMLButtonElement>("#close-character-settings")!.click();
+  }
+});
+switchPage(previewPage ?? "characters");
 void loadCharacters();
 initializeFeatureSettings();
 window.addEventListener("beforeunload", () => audition.stop());

@@ -1,0 +1,22 @@
+# dsh-pet-bridge bundle patch layer (pet-dsh/1).
+#
+# This file is loaded as a *bundle* layer when `@local/dsh-pet-bridge` is listed in a
+# profile's package.json `dsh.profile.bundles`, and it is also the row an operator can
+# copy into a profile's own `cordis.patch.yml` for the "insert" install path.
+#
+# Defaults are deliberately empty: the bridge has no authorized client and no
+# authorized session until `scripts/pet-bridge-admin.mjs` registers one in
+# `~/.dsh/pet-bridge/clients.json`. Nothing is shared by default.
+- insert:
+    - id: dsh-pet-bridge
+      name: '@local/dsh-pet-bridge'
+      config:
+        host: 127.0.0.1
+        # 0 lets the OS assign a free loopback port; the actual address is logged and
+        # written to <dataDir>/runtime.json (never contains a token).
+        port: 0
+        basePath: /pet-bridge/v1/
+        # Optional capability gates. session.cancel is verified against a real DSH
+        # agent; message.steer stays off until the operator turns it on.
+        enableCancel: true
+        enableSteer: false

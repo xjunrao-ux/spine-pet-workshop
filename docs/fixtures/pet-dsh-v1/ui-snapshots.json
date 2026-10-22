@@ -1,0 +1,2577 @@
+{
+  "format": "pet-dsh-ui-design/1",
+  "notRuntime": true,
+  "states": [
+    {
+      "id": "unconfigured",
+      "snapshot": {
+        "available": true,
+        "status": "waiting",
+        "message": "尚未配置 DSH 连接",
+        "preferredPageId": "connection",
+        "pages": [
+          {
+            "id": "chat",
+            "title": "DSH 对话",
+            "icon": "chat",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "尚未配置 DSH 连接",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "status",
+                "icon": "chat",
+                "title": "连接已有 DSH 会话",
+                "description": "先配置连接，再明确选择一个授权会话。"
+              }
+            ],
+            "footer": []
+          },
+          {
+            "id": "task",
+            "title": "当前任务",
+            "icon": "checklist",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "暂无正在执行的活动",
+                "tone": "normal",
+                "multiline": true
+              }
+            ]
+          },
+          {
+            "id": "sessions",
+            "title": "授权会话",
+            "icon": "note",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "仅展示此次连接获得授权的会话；选择后才会绑定。",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "group",
+                "layout": "row",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "仓库检查 · spine-pet-workshop · 可用",
+                    "tone": "normal",
+                    "multiline": true
+                  },
+                  {
+                    "type": "button",
+                    "commandId": "selectSession",
+                    "label": "选择",
+                    "payload": {
+                      "sessionId": "session-A",
+                      "bindingEpoch": 3
+                    },
+                    "enabled": false,
+                    "icon": "play",
+                    "variant": "text"
+                  }
+                ]
+              },
+              {
+                "type": "group",
+                "layout": "row",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "历史会话 · unavailable",
+                    "tone": "normal",
+                    "multiline": true
+                  },
+                  {
+                    "type": "button",
+                    "commandId": "selectSession",
+                    "label": "只读查看",
+                    "payload": {
+                      "sessionId": "session-old",
+                      "bindingEpoch": 3
+                    },
+                    "enabled": false,
+                    "icon": "play",
+                    "variant": "text"
+                  }
+                ]
+              },
+              {
+                "type": "button",
+                "commandId": "loadSessions",
+                "label": "刷新会话",
+                "payload": {},
+                "enabled": false,
+                "icon": "undo",
+                "variant": "text"
+              }
+            ]
+          },
+          {
+            "id": "connection",
+            "title": "连接与隐私",
+            "icon": "edit",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "尚未配置",
+                "tone": "normal",
+                "multiline": true
+              },
+              {
+                "type": "button",
+                "commandId": "configure",
+                "label": "配置连接",
+                "payload": {},
+                "enabled": true,
+                "icon": "edit",
+                "variant": "text"
+              },
+              {
+                "type": "group",
+                "layout": "row",
+                "children": [
+                  {
+                    "type": "button",
+                    "commandId": "connect",
+                    "label": "连接",
+                    "payload": {},
+                    "enabled": false,
+                    "icon": "play",
+                    "variant": "text"
+                  },
+                  {
+                    "type": "button",
+                    "commandId": "disconnect",
+                    "label": "断开",
+                    "payload": {},
+                    "enabled": false,
+                    "icon": "pause",
+                    "variant": "text"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "断开只关闭桌宠网络，DSH 中的任务可能继续。",
+                "tone": "normal",
+                "multiline": true
+              },
+              {
+                "type": "text",
+                "text": "人格同步、桌宠审批和日程工具：当前服务未支持。",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "button",
+                "commandId": "requestClearCache",
+                "label": "清理本机显示缓存",
+                "payload": {},
+                "enabled": true,
+                "icon": "trash",
+                "variant": "text"
+              }
+            ]
+          },
+          {
+            "id": "persona",
+            "title": "本机资料",
+            "icon": "note",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "仅本机保存；当前资料不会发送给 DSH，也不会改变 DSH 回答。",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "form",
+                "id": "dsh-persona-1",
+                "commandId": "savePersona",
+                "submitLabel": "保存本机资料",
+                "payload": {},
+                "enabled": true,
+                "fields": [
+                  {
+                    "key": "persona",
+                    "type": "textarea",
+                    "label": "人设",
+                    "maxLength": 2000,
+                    "value": "说话简洁，喜欢解释代码。"
+                  },
+                  {
+                    "key": "memory",
+                    "type": "textarea",
+                    "label": "手工记忆",
+                    "maxLength": 4000,
+                    "value": "偏好中文交流。"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "selecting",
+      "snapshot": {
+        "available": true,
+        "status": "waiting",
+        "message": "已连接，请选择授权会话",
+        "preferredPageId": "sessions",
+        "pages": [
+          {
+            "id": "chat",
+            "title": "DSH 对话",
+            "icon": "chat",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "已连接，请选择授权会话",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "status",
+                "icon": "chat",
+                "title": "连接已有 DSH 会话",
+                "description": "先配置连接，再明确选择一个授权会话。"
+              }
+            ],
+            "footer": []
+          },
+          {
+            "id": "task",
+            "title": "当前任务",
+            "icon": "checklist",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "暂无正在执行的活动",
+                "tone": "normal",
+                "multiline": true
+              }
+            ]
+          },
+          {
+            "id": "sessions",
+            "title": "授权会话",
+            "icon": "note",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "仅展示此次连接获得授权的会话；选择后才会绑定。",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "group",
+                "layout": "row",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "仓库检查 · spine-pet-workshop · 可用",
+                    "tone": "normal",
+                    "multiline": true
+                  },
+                  {
+                    "type": "button",
+                    "commandId": "selectSession",
+                    "label": "选择",
+                    "payload": {
+                      "sessionId": "session-A",
+                      "bindingEpoch": 3
+                    },
+                    "enabled": true,
+                    "icon": "play",
+                    "variant": "text"
+                  }
+                ]
+              },
+              {
+                "type": "group",
+                "layout": "row",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "历史会话 · unavailable",
+                    "tone": "normal",
+                    "multiline": true
+                  },
+                  {
+                    "type": "button",
+                    "commandId": "selectSession",
+                    "label": "只读查看",
+                    "payload": {
+                      "sessionId": "session-old",
+                      "bindingEpoch": 3
+                    },
+                    "enabled": true,
+                    "icon": "play",
+                    "variant": "text"
+                  }
+                ]
+              },
+              {
+                "type": "button",
+                "commandId": "loadSessions",
+                "label": "刷新会话",
+                "payload": {},
+                "enabled": true,
+                "icon": "undo",
+                "variant": "text"
+              }
+            ]
+          },
+          {
+            "id": "connection",
+            "title": "连接与隐私",
+            "icon": "edit",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "服务地址：http://127.0.0.1:3080/pet-bridge/v1/",
+                "tone": "normal",
+                "multiline": true
+              },
+              {
+                "type": "button",
+                "commandId": "configure",
+                "label": "配置连接",
+                "payload": {},
+                "enabled": true,
+                "icon": "edit",
+                "variant": "text"
+              },
+              {
+                "type": "group",
+                "layout": "row",
+                "children": [
+                  {
+                    "type": "button",
+                    "commandId": "connect",
+                    "label": "连接",
+                    "payload": {},
+                    "enabled": true,
+                    "icon": "play",
+                    "variant": "text"
+                  },
+                  {
+                    "type": "button",
+                    "commandId": "disconnect",
+                    "label": "断开",
+                    "payload": {},
+                    "enabled": false,
+                    "icon": "pause",
+                    "variant": "text"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "断开只关闭桌宠网络，DSH 中的任务可能继续。",
+                "tone": "normal",
+                "multiline": true
+              },
+              {
+                "type": "text",
+                "text": "协议 pet-dsh/1 · 桥 1.0.0 · Harness 0.1.1-rc.2",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "text",
+                "text": "人格同步、桌宠审批和日程工具：当前服务未支持。",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "button",
+                "commandId": "requestClearCache",
+                "label": "清理本机显示缓存",
+                "payload": {},
+                "enabled": true,
+                "icon": "trash",
+                "variant": "text"
+              }
+            ]
+          },
+          {
+            "id": "persona",
+            "title": "本机资料",
+            "icon": "note",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "仅本机保存；当前资料不会发送给 DSH，也不会改变 DSH 回答。",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "form",
+                "id": "dsh-persona-1",
+                "commandId": "savePersona",
+                "submitLabel": "保存本机资料",
+                "payload": {},
+                "enabled": true,
+                "fields": [
+                  {
+                    "key": "persona",
+                    "type": "textarea",
+                    "label": "人设",
+                    "maxLength": 2000,
+                    "value": "说话简洁，喜欢解释代码。"
+                  },
+                  {
+                    "key": "memory",
+                    "type": "textarea",
+                    "label": "手工记忆",
+                    "maxLength": 4000,
+                    "value": "偏好中文交流。"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "ready",
+      "snapshot": {
+        "available": true,
+        "status": "ready",
+        "message": "已连接 · 会话已同步",
+        "preferredPageId": "chat",
+        "pages": [
+          {
+            "id": "chat",
+            "title": "DSH 对话",
+            "icon": "chat",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "已连接 · 会话已同步",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "text",
+                "text": "会话：仓库检查 · 工作区：spine-pet-workshop",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "chat",
+                "messages": [
+                  {
+                    "id": "user-01",
+                    "role": "user",
+                    "content": "分析仓库测试失败的原因",
+                    "state": "complete"
+                  },
+                  {
+                    "id": "assistant-01",
+                    "role": "assistant",
+                    "content": "测试入口已经确认，下一步检查失败用例。",
+                    "state": "complete"
+                  }
+                ]
+              }
+            ],
+            "footer": [
+              {
+                "type": "form",
+                "variant": "composer",
+                "id": "dsh-compose-3",
+                "commandId": "send",
+                "submitLabel": "发送",
+                "payload": {
+                  "sessionId": "session-A",
+                  "bindingEpoch": 3
+                },
+                "enabled": true,
+                "pending": false,
+                "fields": [
+                  {
+                    "key": "text",
+                    "type": "text",
+                    "label": "发送给当前 DSH 会话",
+                    "required": true,
+                    "maxLength": 4000,
+                    "value": ""
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "task",
+            "title": "当前任务",
+            "icon": "checklist",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "暂无正在执行的活动",
+                "tone": "normal",
+                "multiline": true
+              },
+              {
+                "type": "button",
+                "commandId": "refresh",
+                "label": "重新同步",
+                "payload": {
+                  "sessionId": "session-A",
+                  "bindingEpoch": 3
+                },
+                "enabled": true,
+                "icon": "undo",
+                "variant": "text"
+              }
+            ]
+          },
+          {
+            "id": "sessions",
+            "title": "授权会话",
+            "icon": "note",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "仅展示此次连接获得授权的会话；选择后才会绑定。",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "group",
+                "layout": "row",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "仓库检查 · spine-pet-workshop · 可用",
+                    "tone": "normal",
+                    "multiline": true
+                  },
+                  {
+                    "type": "button",
+                    "commandId": "selectSession",
+                    "label": "选择",
+                    "payload": {
+                      "sessionId": "session-A",
+                      "bindingEpoch": 3
+                    },
+                    "enabled": true,
+                    "icon": "play",
+                    "variant": "text"
+                  }
+                ]
+              },
+              {
+                "type": "group",
+                "layout": "row",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "历史会话 · unavailable",
+                    "tone": "normal",
+                    "multiline": true
+                  },
+                  {
+                    "type": "button",
+                    "commandId": "selectSession",
+                    "label": "只读查看",
+                    "payload": {
+                      "sessionId": "session-old",
+                      "bindingEpoch": 3
+                    },
+                    "enabled": true,
+                    "icon": "play",
+                    "variant": "text"
+                  }
+                ]
+              },
+              {
+                "type": "button",
+                "commandId": "loadSessions",
+                "label": "刷新会话",
+                "payload": {},
+                "enabled": true,
+                "icon": "undo",
+                "variant": "text"
+              }
+            ]
+          },
+          {
+            "id": "connection",
+            "title": "连接与隐私",
+            "icon": "edit",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "服务地址：http://127.0.0.1:3080/pet-bridge/v1/",
+                "tone": "normal",
+                "multiline": true
+              },
+              {
+                "type": "button",
+                "commandId": "configure",
+                "label": "配置连接",
+                "payload": {},
+                "enabled": true,
+                "icon": "edit",
+                "variant": "text"
+              },
+              {
+                "type": "group",
+                "layout": "row",
+                "children": [
+                  {
+                    "type": "button",
+                    "commandId": "connect",
+                    "label": "连接",
+                    "payload": {},
+                    "enabled": true,
+                    "icon": "play",
+                    "variant": "text"
+                  },
+                  {
+                    "type": "button",
+                    "commandId": "disconnect",
+                    "label": "断开",
+                    "payload": {},
+                    "enabled": true,
+                    "icon": "pause",
+                    "variant": "text"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "断开只关闭桌宠网络，DSH 中的任务可能继续。",
+                "tone": "normal",
+                "multiline": true
+              },
+              {
+                "type": "text",
+                "text": "协议 pet-dsh/1 · 桥 1.0.0 · Harness 0.1.1-rc.2",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "text",
+                "text": "人格同步、桌宠审批和日程工具：当前服务未支持。",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "button",
+                "commandId": "requestClearCache",
+                "label": "清理本机显示缓存",
+                "payload": {},
+                "enabled": true,
+                "icon": "trash",
+                "variant": "text"
+              }
+            ]
+          },
+          {
+            "id": "persona",
+            "title": "本机资料",
+            "icon": "note",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "仅本机保存；当前资料不会发送给 DSH，也不会改变 DSH 回答。",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "form",
+                "id": "dsh-persona-1",
+                "commandId": "savePersona",
+                "submitLabel": "保存本机资料",
+                "payload": {},
+                "enabled": true,
+                "fields": [
+                  {
+                    "key": "persona",
+                    "type": "textarea",
+                    "label": "人设",
+                    "maxLength": 2000,
+                    "value": "说话简洁，喜欢解释代码。"
+                  },
+                  {
+                    "key": "memory",
+                    "type": "textarea",
+                    "label": "手工记忆",
+                    "maxLength": 4000,
+                    "value": "偏好中文交流。"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "running",
+      "snapshot": {
+        "available": true,
+        "status": "ready",
+        "message": "DSH 正在执行",
+        "preferredPageId": "chat",
+        "pages": [
+          {
+            "id": "chat",
+            "title": "DSH 对话",
+            "icon": "chat",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "DSH 正在执行",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "text",
+                "text": "会话：仓库检查 · 工作区：spine-pet-workshop",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "chat",
+                "messages": [
+                  {
+                    "id": "user-01",
+                    "role": "user",
+                    "content": "分析仓库测试失败的原因",
+                    "state": "complete"
+                  },
+                  {
+                    "id": "assistant-01",
+                    "role": "assistant",
+                    "content": "测试入口已经确认，下一步检查失败用例。",
+                    "state": "complete"
+                  },
+                  {
+                    "id": "preview-1",
+                    "role": "assistant",
+                    "content": "正在检查测试配置…",
+                    "state": "streaming"
+                  }
+                ]
+              }
+            ],
+            "footer": [
+              {
+                "type": "form",
+                "variant": "composer",
+                "id": "dsh-compose-3",
+                "commandId": "send",
+                "submitLabel": "发送",
+                "payload": {
+                  "sessionId": "session-A",
+                  "bindingEpoch": 3
+                },
+                "enabled": false,
+                "pending": true,
+                "stopAction": {
+                  "type": "button",
+                  "commandId": "requestCancel",
+                  "label": "停止当前活动",
+                  "payload": {
+                    "sessionId": "session-A",
+                    "bindingEpoch": 3,
+                    "activityId": "activity-A"
+                  },
+                  "enabled": true,
+                  "icon": "pause",
+                  "variant": "text"
+                },
+                "fields": [
+                  {
+                    "key": "text",
+                    "type": "text",
+                    "label": "发送给当前 DSH 会话",
+                    "required": true,
+                    "maxLength": 4000,
+                    "value": ""
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "task",
+            "title": "当前任务",
+            "icon": "checklist",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "活动 activity-A 正在执行",
+                "tone": "normal",
+                "multiline": true
+              },
+              {
+                "type": "progress",
+                "value": null
+              },
+              {
+                "type": "list",
+                "items": [
+                  {
+                    "label": "检查项目配置",
+                    "status": "进行中"
+                  }
+                ]
+              },
+              {
+                "type": "button",
+                "commandId": "requestCancel",
+                "label": "停止当前活动",
+                "payload": {
+                  "sessionId": "session-A",
+                  "bindingEpoch": 3,
+                  "activityId": "activity-A"
+                },
+                "enabled": true,
+                "icon": "pause",
+                "variant": "text"
+              },
+              {
+                "type": "button",
+                "commandId": "refresh",
+                "label": "重新同步",
+                "payload": {
+                  "sessionId": "session-A",
+                  "bindingEpoch": 3
+                },
+                "enabled": true,
+                "icon": "undo",
+                "variant": "text"
+              }
+            ]
+          },
+          {
+            "id": "sessions",
+            "title": "授权会话",
+            "icon": "note",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "仅展示此次连接获得授权的会话；选择后才会绑定。",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "group",
+                "layout": "row",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "仓库检查 · spine-pet-workshop · 可用",
+                    "tone": "normal",
+                    "multiline": true
+                  },
+                  {
+                    "type": "button",
+                    "commandId": "selectSession",
+                    "label": "选择",
+                    "payload": {
+                      "sessionId": "session-A",
+                      "bindingEpoch": 3
+                    },
+                    "enabled": true,
+                    "icon": "play",
+                    "variant": "text"
+                  }
+                ]
+              },
+              {
+                "type": "group",
+                "layout": "row",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "历史会话 · unavailable",
+                    "tone": "normal",
+                    "multiline": true
+                  },
+                  {
+                    "type": "button",
+                    "commandId": "selectSession",
+                    "label": "只读查看",
+                    "payload": {
+                      "sessionId": "session-old",
+                      "bindingEpoch": 3
+                    },
+                    "enabled": true,
+                    "icon": "play",
+                    "variant": "text"
+                  }
+                ]
+              },
+              {
+                "type": "button",
+                "commandId": "loadSessions",
+                "label": "刷新会话",
+                "payload": {},
+                "enabled": true,
+                "icon": "undo",
+                "variant": "text"
+              }
+            ]
+          },
+          {
+            "id": "connection",
+            "title": "连接与隐私",
+            "icon": "edit",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "服务地址：http://127.0.0.1:3080/pet-bridge/v1/",
+                "tone": "normal",
+                "multiline": true
+              },
+              {
+                "type": "button",
+                "commandId": "configure",
+                "label": "配置连接",
+                "payload": {},
+                "enabled": true,
+                "icon": "edit",
+                "variant": "text"
+              },
+              {
+                "type": "group",
+                "layout": "row",
+                "children": [
+                  {
+                    "type": "button",
+                    "commandId": "connect",
+                    "label": "连接",
+                    "payload": {},
+                    "enabled": true,
+                    "icon": "play",
+                    "variant": "text"
+                  },
+                  {
+                    "type": "button",
+                    "commandId": "disconnect",
+                    "label": "断开",
+                    "payload": {},
+                    "enabled": true,
+                    "icon": "pause",
+                    "variant": "text"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "断开只关闭桌宠网络，DSH 中的任务可能继续。",
+                "tone": "normal",
+                "multiline": true
+              },
+              {
+                "type": "text",
+                "text": "协议 pet-dsh/1 · 桥 1.0.0 · Harness 0.1.1-rc.2",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "text",
+                "text": "人格同步、桌宠审批和日程工具：当前服务未支持。",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "button",
+                "commandId": "requestClearCache",
+                "label": "清理本机显示缓存",
+                "payload": {},
+                "enabled": true,
+                "icon": "trash",
+                "variant": "text"
+              }
+            ]
+          },
+          {
+            "id": "persona",
+            "title": "本机资料",
+            "icon": "note",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "仅本机保存；当前资料不会发送给 DSH，也不会改变 DSH 回答。",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "form",
+                "id": "dsh-persona-1",
+                "commandId": "savePersona",
+                "submitLabel": "保存本机资料",
+                "payload": {},
+                "enabled": true,
+                "fields": [
+                  {
+                    "key": "persona",
+                    "type": "textarea",
+                    "label": "人设",
+                    "maxLength": 2000,
+                    "value": "说话简洁，喜欢解释代码。"
+                  },
+                  {
+                    "key": "memory",
+                    "type": "textarea",
+                    "label": "手工记忆",
+                    "maxLength": 4000,
+                    "value": "偏好中文交流。"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "waiting-approval",
+      "snapshot": {
+        "available": true,
+        "status": "ready",
+        "message": "DSH 等待审批",
+        "preferredPageId": "chat",
+        "pages": [
+          {
+            "id": "chat",
+            "title": "DSH 对话",
+            "icon": "chat",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "DSH 等待审批",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "text",
+                "text": "会话：仓库检查 · 工作区：spine-pet-workshop",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "chat",
+                "messages": [
+                  {
+                    "id": "user-01",
+                    "role": "user",
+                    "content": "分析仓库测试失败的原因",
+                    "state": "complete"
+                  },
+                  {
+                    "id": "assistant-01",
+                    "role": "assistant",
+                    "content": "测试入口已经确认，下一步检查失败用例。",
+                    "state": "complete"
+                  },
+                  {
+                    "id": "preview-1",
+                    "role": "assistant",
+                    "content": "正在检查测试配置…",
+                    "state": "streaming"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "请在 DSH 界面处理审批；当前服务未开放桌宠审批按钮。",
+                "tone": "normal",
+                "multiline": true
+              }
+            ],
+            "footer": [
+              {
+                "type": "form",
+                "variant": "composer",
+                "id": "dsh-compose-3",
+                "commandId": "send",
+                "submitLabel": "发送",
+                "payload": {
+                  "sessionId": "session-A",
+                  "bindingEpoch": 3
+                },
+                "enabled": false,
+                "pending": true,
+                "stopAction": {
+                  "type": "button",
+                  "commandId": "requestCancel",
+                  "label": "停止当前活动",
+                  "payload": {
+                    "sessionId": "session-A",
+                    "bindingEpoch": 3,
+                    "activityId": "activity-A"
+                  },
+                  "enabled": true,
+                  "icon": "pause",
+                  "variant": "text"
+                },
+                "fields": [
+                  {
+                    "key": "text",
+                    "type": "text",
+                    "label": "发送给当前 DSH 会话",
+                    "required": true,
+                    "maxLength": 4000,
+                    "value": ""
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "task",
+            "title": "当前任务",
+            "icon": "checklist",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "等待 DSH 审批",
+                "tone": "normal",
+                "multiline": true
+              },
+              {
+                "type": "progress",
+                "value": null
+              },
+              {
+                "type": "list",
+                "items": [
+                  {
+                    "label": "检查项目配置",
+                    "status": "进行中"
+                  }
+                ]
+              },
+              {
+                "type": "button",
+                "commandId": "requestCancel",
+                "label": "停止当前活动",
+                "payload": {
+                  "sessionId": "session-A",
+                  "bindingEpoch": 3,
+                  "activityId": "activity-A"
+                },
+                "enabled": true,
+                "icon": "pause",
+                "variant": "text"
+              },
+              {
+                "type": "button",
+                "commandId": "refresh",
+                "label": "重新同步",
+                "payload": {
+                  "sessionId": "session-A",
+                  "bindingEpoch": 3
+                },
+                "enabled": true,
+                "icon": "undo",
+                "variant": "text"
+              }
+            ]
+          },
+          {
+            "id": "sessions",
+            "title": "授权会话",
+            "icon": "note",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "仅展示此次连接获得授权的会话；选择后才会绑定。",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "group",
+                "layout": "row",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "仓库检查 · spine-pet-workshop · 可用",
+                    "tone": "normal",
+                    "multiline": true
+                  },
+                  {
+                    "type": "button",
+                    "commandId": "selectSession",
+                    "label": "选择",
+                    "payload": {
+                      "sessionId": "session-A",
+                      "bindingEpoch": 3
+                    },
+                    "enabled": true,
+                    "icon": "play",
+                    "variant": "text"
+                  }
+                ]
+              },
+              {
+                "type": "group",
+                "layout": "row",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "历史会话 · unavailable",
+                    "tone": "normal",
+                    "multiline": true
+                  },
+                  {
+                    "type": "button",
+                    "commandId": "selectSession",
+                    "label": "只读查看",
+                    "payload": {
+                      "sessionId": "session-old",
+                      "bindingEpoch": 3
+                    },
+                    "enabled": true,
+                    "icon": "play",
+                    "variant": "text"
+                  }
+                ]
+              },
+              {
+                "type": "button",
+                "commandId": "loadSessions",
+                "label": "刷新会话",
+                "payload": {},
+                "enabled": true,
+                "icon": "undo",
+                "variant": "text"
+              }
+            ]
+          },
+          {
+            "id": "connection",
+            "title": "连接与隐私",
+            "icon": "edit",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "服务地址：http://127.0.0.1:3080/pet-bridge/v1/",
+                "tone": "normal",
+                "multiline": true
+              },
+              {
+                "type": "button",
+                "commandId": "configure",
+                "label": "配置连接",
+                "payload": {},
+                "enabled": true,
+                "icon": "edit",
+                "variant": "text"
+              },
+              {
+                "type": "group",
+                "layout": "row",
+                "children": [
+                  {
+                    "type": "button",
+                    "commandId": "connect",
+                    "label": "连接",
+                    "payload": {},
+                    "enabled": true,
+                    "icon": "play",
+                    "variant": "text"
+                  },
+                  {
+                    "type": "button",
+                    "commandId": "disconnect",
+                    "label": "断开",
+                    "payload": {},
+                    "enabled": true,
+                    "icon": "pause",
+                    "variant": "text"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "断开只关闭桌宠网络，DSH 中的任务可能继续。",
+                "tone": "normal",
+                "multiline": true
+              },
+              {
+                "type": "text",
+                "text": "协议 pet-dsh/1 · 桥 1.0.0 · Harness 0.1.1-rc.2",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "text",
+                "text": "人格同步、桌宠审批和日程工具：当前服务未支持。",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "button",
+                "commandId": "requestClearCache",
+                "label": "清理本机显示缓存",
+                "payload": {},
+                "enabled": true,
+                "icon": "trash",
+                "variant": "text"
+              }
+            ]
+          },
+          {
+            "id": "persona",
+            "title": "本机资料",
+            "icon": "note",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "仅本机保存；当前资料不会发送给 DSH，也不会改变 DSH 回答。",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "form",
+                "id": "dsh-persona-1",
+                "commandId": "savePersona",
+                "submitLabel": "保存本机资料",
+                "payload": {},
+                "enabled": true,
+                "fields": [
+                  {
+                    "key": "persona",
+                    "type": "textarea",
+                    "label": "人设",
+                    "maxLength": 2000,
+                    "value": "说话简洁，喜欢解释代码。"
+                  },
+                  {
+                    "key": "memory",
+                    "type": "textarea",
+                    "label": "手工记忆",
+                    "maxLength": 4000,
+                    "value": "偏好中文交流。"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "offline-unknown",
+      "snapshot": {
+        "available": true,
+        "status": "degraded",
+        "message": "连接已断开，远端任务状态未知",
+        "preferredPageId": "chat",
+        "pages": [
+          {
+            "id": "chat",
+            "title": "DSH 对话",
+            "icon": "chat",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "连接已断开，远端任务状态未知",
+                "tone": "error",
+                "multiline": true
+              },
+              {
+                "type": "text",
+                "text": "会话：仓库检查 · 工作区：spine-pet-workshop",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "chat",
+                "messages": [
+                  {
+                    "id": "user-01",
+                    "role": "user",
+                    "content": "分析仓库测试失败的原因",
+                    "state": "complete"
+                  },
+                  {
+                    "id": "assistant-01",
+                    "role": "assistant",
+                    "content": "测试入口已经确认，下一步检查失败用例。",
+                    "state": "complete"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "上次收到的活动状态为 running，仅供参考。断开连接不会停止 DSH。",
+                "tone": "normal",
+                "multiline": true
+              },
+              {
+                "type": "button",
+                "commandId": "lookupRequest",
+                "label": "查询发送结果",
+                "payload": {
+                  "wireRequestId": "pet.send-01"
+                },
+                "enabled": false,
+                "icon": "play",
+                "variant": "text"
+              }
+            ],
+            "footer": [
+              {
+                "type": "form",
+                "variant": "composer",
+                "id": "dsh-compose-3",
+                "commandId": "send",
+                "submitLabel": "发送",
+                "payload": {
+                  "sessionId": "session-A",
+                  "bindingEpoch": 3
+                },
+                "enabled": false,
+                "pending": false,
+                "fields": [
+                  {
+                    "key": "text",
+                    "type": "text",
+                    "label": "发送给当前 DSH 会话",
+                    "required": true,
+                    "maxLength": 4000,
+                    "value": ""
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "task",
+            "title": "当前任务",
+            "icon": "checklist",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "状态未知，请重新连接。",
+                "tone": "normal",
+                "multiline": true
+              },
+              {
+                "type": "button",
+                "commandId": "refresh",
+                "label": "重新同步",
+                "payload": {
+                  "sessionId": "session-A",
+                  "bindingEpoch": 3
+                },
+                "enabled": false,
+                "icon": "undo",
+                "variant": "text"
+              }
+            ]
+          },
+          {
+            "id": "sessions",
+            "title": "授权会话",
+            "icon": "note",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "仅展示此次连接获得授权的会话；选择后才会绑定。",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "group",
+                "layout": "row",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "仓库检查 · spine-pet-workshop · 可用",
+                    "tone": "normal",
+                    "multiline": true
+                  },
+                  {
+                    "type": "button",
+                    "commandId": "selectSession",
+                    "label": "选择",
+                    "payload": {
+                      "sessionId": "session-A",
+                      "bindingEpoch": 3
+                    },
+                    "enabled": true,
+                    "icon": "play",
+                    "variant": "text"
+                  }
+                ]
+              },
+              {
+                "type": "group",
+                "layout": "row",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "历史会话 · unavailable",
+                    "tone": "normal",
+                    "multiline": true
+                  },
+                  {
+                    "type": "button",
+                    "commandId": "selectSession",
+                    "label": "只读查看",
+                    "payload": {
+                      "sessionId": "session-old",
+                      "bindingEpoch": 3
+                    },
+                    "enabled": true,
+                    "icon": "play",
+                    "variant": "text"
+                  }
+                ]
+              },
+              {
+                "type": "button",
+                "commandId": "loadSessions",
+                "label": "刷新会话",
+                "payload": {},
+                "enabled": true,
+                "icon": "undo",
+                "variant": "text"
+              }
+            ]
+          },
+          {
+            "id": "connection",
+            "title": "连接与隐私",
+            "icon": "edit",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "服务地址：http://127.0.0.1:3080/pet-bridge/v1/",
+                "tone": "normal",
+                "multiline": true
+              },
+              {
+                "type": "button",
+                "commandId": "configure",
+                "label": "配置连接",
+                "payload": {},
+                "enabled": true,
+                "icon": "edit",
+                "variant": "text"
+              },
+              {
+                "type": "group",
+                "layout": "row",
+                "children": [
+                  {
+                    "type": "button",
+                    "commandId": "connect",
+                    "label": "连接",
+                    "payload": {},
+                    "enabled": true,
+                    "icon": "play",
+                    "variant": "text"
+                  },
+                  {
+                    "type": "button",
+                    "commandId": "disconnect",
+                    "label": "断开",
+                    "payload": {},
+                    "enabled": false,
+                    "icon": "pause",
+                    "variant": "text"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "断开只关闭桌宠网络，DSH 中的任务可能继续。",
+                "tone": "normal",
+                "multiline": true
+              },
+              {
+                "type": "text",
+                "text": "协议 pet-dsh/1 · 桥 1.0.0 · Harness 0.1.1-rc.2",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "text",
+                "text": "人格同步、桌宠审批和日程工具：当前服务未支持。",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "button",
+                "commandId": "requestClearCache",
+                "label": "清理本机显示缓存",
+                "payload": {},
+                "enabled": true,
+                "icon": "trash",
+                "variant": "text"
+              }
+            ]
+          },
+          {
+            "id": "persona",
+            "title": "本机资料",
+            "icon": "note",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "仅本机保存；当前资料不会发送给 DSH，也不会改变 DSH 回答。",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "form",
+                "id": "dsh-persona-1",
+                "commandId": "savePersona",
+                "submitLabel": "保存本机资料",
+                "payload": {},
+                "enabled": true,
+                "fields": [
+                  {
+                    "key": "persona",
+                    "type": "textarea",
+                    "label": "人设",
+                    "maxLength": 2000,
+                    "value": "说话简洁，喜欢解释代码。"
+                  },
+                  {
+                    "key": "memory",
+                    "type": "textarea",
+                    "label": "手工记忆",
+                    "maxLength": 4000,
+                    "value": "偏好中文交流。"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "incompatible",
+      "snapshot": {
+        "available": true,
+        "status": "error",
+        "message": "服务缺少必需能力 requests.lookup",
+        "preferredPageId": "connection",
+        "pages": [
+          {
+            "id": "chat",
+            "title": "DSH 对话",
+            "icon": "chat",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "服务缺少必需能力 requests.lookup",
+                "tone": "error",
+                "multiline": true
+              },
+              {
+                "type": "status",
+                "icon": "chat",
+                "title": "连接已有 DSH 会话",
+                "description": "先配置连接，再明确选择一个授权会话。"
+              }
+            ],
+            "footer": []
+          },
+          {
+            "id": "task",
+            "title": "当前任务",
+            "icon": "checklist",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "暂无正在执行的活动",
+                "tone": "normal",
+                "multiline": true
+              }
+            ]
+          },
+          {
+            "id": "sessions",
+            "title": "授权会话",
+            "icon": "note",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "仅展示此次连接获得授权的会话；选择后才会绑定。",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "group",
+                "layout": "row",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "仓库检查 · spine-pet-workshop · 可用",
+                    "tone": "normal",
+                    "multiline": true
+                  },
+                  {
+                    "type": "button",
+                    "commandId": "selectSession",
+                    "label": "选择",
+                    "payload": {
+                      "sessionId": "session-A",
+                      "bindingEpoch": 3
+                    },
+                    "enabled": false,
+                    "icon": "play",
+                    "variant": "text"
+                  }
+                ]
+              },
+              {
+                "type": "group",
+                "layout": "row",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "历史会话 · unavailable",
+                    "tone": "normal",
+                    "multiline": true
+                  },
+                  {
+                    "type": "button",
+                    "commandId": "selectSession",
+                    "label": "只读查看",
+                    "payload": {
+                      "sessionId": "session-old",
+                      "bindingEpoch": 3
+                    },
+                    "enabled": false,
+                    "icon": "play",
+                    "variant": "text"
+                  }
+                ]
+              },
+              {
+                "type": "button",
+                "commandId": "loadSessions",
+                "label": "刷新会话",
+                "payload": {},
+                "enabled": false,
+                "icon": "undo",
+                "variant": "text"
+              }
+            ]
+          },
+          {
+            "id": "connection",
+            "title": "连接与隐私",
+            "icon": "edit",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "服务地址：http://127.0.0.1:3080/pet-bridge/v1/",
+                "tone": "normal",
+                "multiline": true
+              },
+              {
+                "type": "button",
+                "commandId": "configure",
+                "label": "配置连接",
+                "payload": {},
+                "enabled": true,
+                "icon": "edit",
+                "variant": "text"
+              },
+              {
+                "type": "group",
+                "layout": "row",
+                "children": [
+                  {
+                    "type": "button",
+                    "commandId": "connect",
+                    "label": "连接",
+                    "payload": {},
+                    "enabled": true,
+                    "icon": "play",
+                    "variant": "text"
+                  },
+                  {
+                    "type": "button",
+                    "commandId": "disconnect",
+                    "label": "断开",
+                    "payload": {},
+                    "enabled": false,
+                    "icon": "pause",
+                    "variant": "text"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "断开只关闭桌宠网络，DSH 中的任务可能继续。",
+                "tone": "normal",
+                "multiline": true
+              },
+              {
+                "type": "text",
+                "text": "协议 pet-dsh/1 · 桥 1.0.0 · Harness 0.1.1-rc.2",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "text",
+                "text": "人格同步、桌宠审批和日程工具：当前服务未支持。",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "button",
+                "commandId": "requestClearCache",
+                "label": "清理本机显示缓存",
+                "payload": {},
+                "enabled": true,
+                "icon": "trash",
+                "variant": "text"
+              }
+            ]
+          },
+          {
+            "id": "persona",
+            "title": "本机资料",
+            "icon": "note",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "仅本机保存；当前资料不会发送给 DSH，也不会改变 DSH 回答。",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "form",
+                "id": "dsh-persona-1",
+                "commandId": "savePersona",
+                "submitLabel": "保存本机资料",
+                "payload": {},
+                "enabled": true,
+                "fields": [
+                  {
+                    "key": "persona",
+                    "type": "textarea",
+                    "label": "人设",
+                    "maxLength": 2000,
+                    "value": "说话简洁，喜欢解释代码。"
+                  },
+                  {
+                    "key": "memory",
+                    "type": "textarea",
+                    "label": "手工记忆",
+                    "maxLength": 4000,
+                    "value": "偏好中文交流。"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "steer-running",
+      "snapshot": {
+        "available": true,
+        "status": "ready",
+        "message": "追加指令模式 · DSH 正在执行",
+        "preferredPageId": "chat",
+        "pages": [
+          {
+            "id": "chat",
+            "title": "DSH 对话",
+            "icon": "chat",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "追加指令模式 · DSH 正在执行",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "text",
+                "text": "会话：仓库检查 · 工作区：spine-pet-workshop",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "chat",
+                "messages": [
+                  {
+                    "id": "user-01",
+                    "role": "user",
+                    "content": "分析仓库测试失败的原因",
+                    "state": "complete"
+                  },
+                  {
+                    "id": "assistant-01",
+                    "role": "assistant",
+                    "content": "测试入口已经确认，下一步检查失败用例。",
+                    "state": "complete"
+                  },
+                  {
+                    "id": "preview-1",
+                    "role": "assistant",
+                    "content": "正在检查测试配置…",
+                    "state": "streaming"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "新增内容将在后续步骤边界处理。",
+                "tone": "normal",
+                "multiline": true
+              },
+              {
+                "type": "button",
+                "commandId": "requestCancel",
+                "label": "停止当前活动",
+                "payload": {
+                  "sessionId": "session-A",
+                  "bindingEpoch": 3,
+                  "activityId": "activity-A"
+                },
+                "enabled": true,
+                "icon": "pause",
+                "variant": "text"
+              }
+            ],
+            "footer": [
+              {
+                "type": "form",
+                "variant": "composer",
+                "id": "dsh-compose-3",
+                "commandId": "send",
+                "submitLabel": "发送",
+                "payload": {
+                  "sessionId": "session-A",
+                  "bindingEpoch": 3
+                },
+                "enabled": true,
+                "pending": false,
+                "fields": [
+                  {
+                    "key": "text",
+                    "type": "text",
+                    "label": "发送给当前 DSH 会话",
+                    "required": true,
+                    "maxLength": 4000,
+                    "value": ""
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "task",
+            "title": "当前任务",
+            "icon": "checklist",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "活动 activity-A 正在执行",
+                "tone": "normal",
+                "multiline": true
+              },
+              {
+                "type": "progress",
+                "value": null
+              },
+              {
+                "type": "list",
+                "items": [
+                  {
+                    "label": "检查项目配置",
+                    "status": "进行中"
+                  }
+                ]
+              },
+              {
+                "type": "button",
+                "commandId": "requestCancel",
+                "label": "停止当前活动",
+                "payload": {
+                  "sessionId": "session-A",
+                  "bindingEpoch": 3,
+                  "activityId": "activity-A"
+                },
+                "enabled": true,
+                "icon": "pause",
+                "variant": "text"
+              },
+              {
+                "type": "button",
+                "commandId": "refresh",
+                "label": "重新同步",
+                "payload": {
+                  "sessionId": "session-A",
+                  "bindingEpoch": 3
+                },
+                "enabled": true,
+                "icon": "undo",
+                "variant": "text"
+              }
+            ]
+          },
+          {
+            "id": "sessions",
+            "title": "授权会话",
+            "icon": "note",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "仅展示此次连接获得授权的会话；选择后才会绑定。",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "group",
+                "layout": "row",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "仓库检查 · spine-pet-workshop · 可用",
+                    "tone": "normal",
+                    "multiline": true
+                  },
+                  {
+                    "type": "button",
+                    "commandId": "selectSession",
+                    "label": "选择",
+                    "payload": {
+                      "sessionId": "session-A",
+                      "bindingEpoch": 3
+                    },
+                    "enabled": true,
+                    "icon": "play",
+                    "variant": "text"
+                  }
+                ]
+              },
+              {
+                "type": "group",
+                "layout": "row",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "历史会话 · unavailable",
+                    "tone": "normal",
+                    "multiline": true
+                  },
+                  {
+                    "type": "button",
+                    "commandId": "selectSession",
+                    "label": "只读查看",
+                    "payload": {
+                      "sessionId": "session-old",
+                      "bindingEpoch": 3
+                    },
+                    "enabled": true,
+                    "icon": "play",
+                    "variant": "text"
+                  }
+                ]
+              },
+              {
+                "type": "button",
+                "commandId": "loadSessions",
+                "label": "刷新会话",
+                "payload": {},
+                "enabled": true,
+                "icon": "undo",
+                "variant": "text"
+              }
+            ]
+          },
+          {
+            "id": "connection",
+            "title": "连接与隐私",
+            "icon": "edit",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "服务地址：http://127.0.0.1:3080/pet-bridge/v1/",
+                "tone": "normal",
+                "multiline": true
+              },
+              {
+                "type": "button",
+                "commandId": "configure",
+                "label": "配置连接",
+                "payload": {},
+                "enabled": true,
+                "icon": "edit",
+                "variant": "text"
+              },
+              {
+                "type": "group",
+                "layout": "row",
+                "children": [
+                  {
+                    "type": "button",
+                    "commandId": "connect",
+                    "label": "连接",
+                    "payload": {},
+                    "enabled": true,
+                    "icon": "play",
+                    "variant": "text"
+                  },
+                  {
+                    "type": "button",
+                    "commandId": "disconnect",
+                    "label": "断开",
+                    "payload": {},
+                    "enabled": true,
+                    "icon": "pause",
+                    "variant": "text"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "断开只关闭桌宠网络，DSH 中的任务可能继续。",
+                "tone": "normal",
+                "multiline": true
+              },
+              {
+                "type": "text",
+                "text": "协议 pet-dsh/1 · 桥 1.0.0 · Harness 0.1.1-rc.2",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "text",
+                "text": "人格同步、桌宠审批和日程工具：当前服务未支持。",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "button",
+                "commandId": "requestClearCache",
+                "label": "清理本机显示缓存",
+                "payload": {},
+                "enabled": true,
+                "icon": "trash",
+                "variant": "text"
+              }
+            ]
+          },
+          {
+            "id": "persona",
+            "title": "本机资料",
+            "icon": "note",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "仅本机保存；当前资料不会发送给 DSH，也不会改变 DSH 回答。",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "form",
+                "id": "dsh-persona-1",
+                "commandId": "savePersona",
+                "submitLabel": "保存本机资料",
+                "payload": {},
+                "enabled": true,
+                "fields": [
+                  {
+                    "key": "persona",
+                    "type": "textarea",
+                    "label": "人设",
+                    "maxLength": 2000,
+                    "value": "说话简洁，喜欢解释代码。"
+                  },
+                  {
+                    "key": "memory",
+                    "type": "textarea",
+                    "label": "手工记忆",
+                    "maxLength": 4000,
+                    "value": "偏好中文交流。"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirm-cancel",
+      "snapshot": {
+        "available": true,
+        "status": "ready",
+        "message": "确认停止 activity-A",
+        "preferredPageId": "chat",
+        "pages": [
+          {
+            "id": "chat",
+            "title": "DSH 对话",
+            "icon": "chat",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "确认停止 activity-A",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "text",
+                "text": "会话：仓库检查 · 工作区：spine-pet-workshop",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "chat",
+                "messages": [
+                  {
+                    "id": "user-01",
+                    "role": "user",
+                    "content": "分析仓库测试失败的原因",
+                    "state": "complete"
+                  },
+                  {
+                    "id": "assistant-01",
+                    "role": "assistant",
+                    "content": "测试入口已经确认，下一步检查失败用例。",
+                    "state": "complete"
+                  },
+                  {
+                    "id": "preview-1",
+                    "role": "assistant",
+                    "content": "正在检查测试配置…",
+                    "state": "streaming"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "停止 activity-A？仅取消这个活动，DSH 进程会继续运行。",
+                "tone": "normal",
+                "multiline": true
+              },
+              {
+                "type": "group",
+                "layout": "row",
+                "children": [
+                  {
+                    "type": "button",
+                    "commandId": "confirmCancel",
+                    "label": "确认停止",
+                    "payload": {
+                      "sessionId": "session-A",
+                      "bindingEpoch": 3,
+                      "activityId": "activity-A"
+                    },
+                    "enabled": true,
+                    "icon": "pause",
+                    "variant": "text"
+                  },
+                  {
+                    "type": "button",
+                    "commandId": "dismissConfirmation",
+                    "label": "返回",
+                    "payload": {},
+                    "enabled": true,
+                    "icon": "close",
+                    "variant": "text"
+                  }
+                ]
+              }
+            ],
+            "footer": [
+              {
+                "type": "form",
+                "variant": "composer",
+                "id": "dsh-compose-3",
+                "commandId": "send",
+                "submitLabel": "发送",
+                "payload": {
+                  "sessionId": "session-A",
+                  "bindingEpoch": 3
+                },
+                "enabled": false,
+                "pending": true,
+                "stopAction": {
+                  "type": "button",
+                  "commandId": "requestCancel",
+                  "label": "停止当前活动",
+                  "payload": {
+                    "sessionId": "session-A",
+                    "bindingEpoch": 3,
+                    "activityId": "activity-A"
+                  },
+                  "enabled": true,
+                  "icon": "pause",
+                  "variant": "text"
+                },
+                "fields": [
+                  {
+                    "key": "text",
+                    "type": "text",
+                    "label": "发送给当前 DSH 会话",
+                    "required": true,
+                    "maxLength": 4000,
+                    "value": ""
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "task",
+            "title": "当前任务",
+            "icon": "checklist",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "活动 activity-A 正在执行",
+                "tone": "normal",
+                "multiline": true
+              },
+              {
+                "type": "progress",
+                "value": null
+              },
+              {
+                "type": "list",
+                "items": [
+                  {
+                    "label": "检查项目配置",
+                    "status": "进行中"
+                  }
+                ]
+              },
+              {
+                "type": "button",
+                "commandId": "requestCancel",
+                "label": "停止当前活动",
+                "payload": {
+                  "sessionId": "session-A",
+                  "bindingEpoch": 3,
+                  "activityId": "activity-A"
+                },
+                "enabled": true,
+                "icon": "pause",
+                "variant": "text"
+              },
+              {
+                "type": "button",
+                "commandId": "refresh",
+                "label": "重新同步",
+                "payload": {
+                  "sessionId": "session-A",
+                  "bindingEpoch": 3
+                },
+                "enabled": true,
+                "icon": "undo",
+                "variant": "text"
+              }
+            ]
+          },
+          {
+            "id": "sessions",
+            "title": "授权会话",
+            "icon": "note",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "仅展示此次连接获得授权的会话；选择后才会绑定。",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "group",
+                "layout": "row",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "仓库检查 · spine-pet-workshop · 可用",
+                    "tone": "normal",
+                    "multiline": true
+                  },
+                  {
+                    "type": "button",
+                    "commandId": "selectSession",
+                    "label": "选择",
+                    "payload": {
+                      "sessionId": "session-A",
+                      "bindingEpoch": 3
+                    },
+                    "enabled": true,
+                    "icon": "play",
+                    "variant": "text"
+                  }
+                ]
+              },
+              {
+                "type": "group",
+                "layout": "row",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "历史会话 · unavailable",
+                    "tone": "normal",
+                    "multiline": true
+                  },
+                  {
+                    "type": "button",
+                    "commandId": "selectSession",
+                    "label": "只读查看",
+                    "payload": {
+                      "sessionId": "session-old",
+                      "bindingEpoch": 3
+                    },
+                    "enabled": true,
+                    "icon": "play",
+                    "variant": "text"
+                  }
+                ]
+              },
+              {
+                "type": "button",
+                "commandId": "loadSessions",
+                "label": "刷新会话",
+                "payload": {},
+                "enabled": true,
+                "icon": "undo",
+                "variant": "text"
+              }
+            ]
+          },
+          {
+            "id": "connection",
+            "title": "连接与隐私",
+            "icon": "edit",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "服务地址：http://127.0.0.1:3080/pet-bridge/v1/",
+                "tone": "normal",
+                "multiline": true
+              },
+              {
+                "type": "button",
+                "commandId": "configure",
+                "label": "配置连接",
+                "payload": {},
+                "enabled": true,
+                "icon": "edit",
+                "variant": "text"
+              },
+              {
+                "type": "group",
+                "layout": "row",
+                "children": [
+                  {
+                    "type": "button",
+                    "commandId": "connect",
+                    "label": "连接",
+                    "payload": {},
+                    "enabled": true,
+                    "icon": "play",
+                    "variant": "text"
+                  },
+                  {
+                    "type": "button",
+                    "commandId": "disconnect",
+                    "label": "断开",
+                    "payload": {},
+                    "enabled": true,
+                    "icon": "pause",
+                    "variant": "text"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "断开只关闭桌宠网络，DSH 中的任务可能继续。",
+                "tone": "normal",
+                "multiline": true
+              },
+              {
+                "type": "text",
+                "text": "协议 pet-dsh/1 · 桥 1.0.0 · Harness 0.1.1-rc.2",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "text",
+                "text": "人格同步、桌宠审批和日程工具：当前服务未支持。",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "button",
+                "commandId": "requestClearCache",
+                "label": "清理本机显示缓存",
+                "payload": {},
+                "enabled": true,
+                "icon": "trash",
+                "variant": "text"
+              }
+            ]
+          },
+          {
+            "id": "persona",
+            "title": "本机资料",
+            "icon": "note",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "仅本机保存；当前资料不会发送给 DSH，也不会改变 DSH 回答。",
+                "tone": "muted",
+                "multiline": true
+              },
+              {
+                "type": "form",
+                "id": "dsh-persona-1",
+                "commandId": "savePersona",
+                "submitLabel": "保存本机资料",
+                "payload": {},
+                "enabled": true,
+                "fields": [
+                  {
+                    "key": "persona",
+                    "type": "textarea",
+                    "label": "人设",
+                    "maxLength": 2000,
+                    "value": "说话简洁，喜欢解释代码。"
+                  },
+                  {
+                    "key": "memory",
+                    "type": "textarea",
+                    "label": "手工记忆",
+                    "maxLength": 4000,
+                    "value": "偏好中文交流。"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

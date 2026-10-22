@@ -4,13 +4,13 @@
   "id": "example.todo",
   "name": "待办事项",
   "menuLabel": "待办",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "apiVersion": 1,
   "configVersion": 1,
   "entry": "provider.js",
   "icon": "checklist",
   "entryVisibility": "when-enabled",
-  "description": "内置待办：右侧完成或撤回，右键项目编辑、删除，支持截止时间提醒和删除撤销。",
+  "description": "进度、待办与已完成分类，勾选完成、编辑删除和底部新增。保留截止提醒与删除撤销。",
   "permissions": [
     "storage.own",
     "ui.reminders"
@@ -158,5 +158,9 @@
       "id": "cancelEdit",
       "fields": {}
     }
-  ]
+  ],
+  "presentation": {
+    "panel": "compact",
+    "navigation": "tabs"
+  }
 }

@@ -4,7 +4,7 @@
   "id": "local.spine-weather",
   "name": "天气与预报",
   "menuLabel": "天气",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "apiVersion": 1,
   "configVersion": 1,
   "entry": "provider.js",
@@ -16,6 +16,7 @@
     "weather.read"
   ],
   "compatibilityNotes": [
+    "本轮界面版需更新后的宿主；城市选择移动到角色管理器 → 扩展 → 天气设置。",
     "支持 v3.2.2。早期宿主缺少受控天气或云朵图标接口时，请先升级宿主。",
     "只通过宿主查询 Open-Meteo，不提供任意联网或自动定位。免费接口仅用于非商业用途。",
     "当前天气为模型估算。断网保留缓存并标记过期，卸载保留本机数据。"
@@ -58,7 +59,8 @@
           "type": "string",
           "maxLength": 100
         }
-      }
+      },
+      "managerOnly": true
     },
     {
       "id": "selectCity",
@@ -71,7 +73,8 @@
           "type": "string",
           "maxLength": 100
         }
-      }
+      },
+      "managerOnly": true
     },
     {
       "id": "setCoordinates",
@@ -92,7 +95,8 @@
           "type": "string",
           "maxLength": 30
         }
-      }
+      },
+      "managerOnly": true
     },
     {
       "id": "refresh",

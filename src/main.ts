@@ -1,3 +1,4 @@
+import { initializeCompanion } from './features/companion';
 import { Application, Container, FederatedPointerEvent, Point, Rectangle } from "pixi.js";
 import { Spine } from "@pixi-spine/all-3.8";
 import { loadCharacterSpine } from "./spine-loader";
@@ -96,6 +97,14 @@ let voiceEnabled = true;
 let voiceSubtitleVisible = false;
 let characterConfig = FALLBACK_CHARACTER;
 let characterParameters = normalizeParameters();
+let companionSpeaking=false;
+const companion=initializeCompanion((text,streaming)=>{
+  activeVoice?.pause();activeVoice=undefined;voiceSubtitleVisible=false;
+  window.clearTimeout(activeVoiceStopTimer);window.clearTimeout(bubbleTimer);
+  companionSpeaking=true;speechBubble.textContent=text;
+  speechBubble.classList.toggle('long',text.length>=38);speechBubble.classList.remove('hidden');positionSpeechBubble();
+  if(!streaming)bubbleTimer=window.setTimeout(()=>{companionSpeaking=false;speechBubble.classList.add('hidden');},Math.min(60000,Math.max(12000,text.length*110)));
+},()=>{if(companionSpeaking){window.clearTimeout(bubbleTimer);companionSpeaking=false;speechBubble.classList.add('hidden');}});
 
 function positionSpeechBubble() {
   const metrics = speechMetrics(characterParameters, window.innerHeight / 500, speechBubble.classList.contains("long"));
@@ -123,7 +132,7 @@ function findAnimation(action: SemanticAction): string | undefined {
 }
 
 function showSpeech(action: SemanticAction, customText?: string) {
-  if (activeVoice && !activeVoice.paused) return;
+  if (companionSpeaking || (activeVoice && !activeVoice.paused)) return;
   const lines = ACTION_LINES[action];
   speechBubble.textContent = customText ?? lines[Math.floor(Math.random() * lines.length)];
   speechBubble.classList.remove("long");
@@ -134,6 +143,7 @@ function showSpeech(action: SemanticAction, customText?: string) {
 }
 
 function showVoiceSubtitle(text: string) {
+  if(companionSpeaking)return;
   window.clearTimeout(bubbleTimer);
   voiceSubtitleVisible = true;
   speechBubble.textContent = text;
@@ -143,6 +153,7 @@ function showVoiceSubtitle(text: string) {
 }
 
 function hideVoiceSubtitleSoon() {
+  if(companionSpeaking)return;
   window.clearTimeout(bubbleTimer);
   bubbleTimer = window.setTimeout(() => {
     voiceSubtitleVisible = false;
@@ -160,12 +171,13 @@ function scheduleVoiceRotation(delay = 50_000 + Math.random() * 40_000) {
       scheduleVoiceRotation(15_000);
       return;
     }
+    if(companionSpeaking){scheduleVoiceRotation(15_000);return;}
     playRandomVoice();
   }, delay);
 }
 
 function playRandomVoice(fromClick = false) {
-  if (!voiceEnabled || voiceLines.length === 0) return;
+  if (companionSpeaking || !voiceEnabled || voiceLines.length === 0) return;
   if (activeVoice && !fromClick) return;
   const clickPool = voiceLines.filter((line) => CLICK_VOICE_IDS.has(line.id) || ARK_CLICK_VOICE_IDS.has(line.id));
   const pool = fromClick && clickPool.length > 0 ? clickPool : voiceLines;
@@ -429,6 +441,7 @@ function handlePointerUp() {
 }
 
 async function initialize() {
+  window.desktopPet?.reportStatus?.("loading");
   try {
     characterConfig = await window.desktopPet?.getCharacterConfig() ?? FALLBACK_CHARACTER;
   } catch (error) {
@@ -440,20 +453,20 @@ async function initialize() {
   positionSpeechBubble();
   loadingStatus.textContent = `正在载入${characterConfig.name}…`;
 
-  const application = new Application({
-    resizeTo: stageElement,
-    backgroundAlpha: 0,
-    antialias: true,
-    autoDensity: true,
-    resolution: Math.min(window.devicePixelRatio, 2)
-  });
-  pixiApplication = application;
-
-  stageElement.appendChild(application.view as HTMLCanvasElement);
-  application.stage.eventMode = "static";
-  application.stage.hitArea = new Rectangle(0, 0, application.screen.width, application.screen.height);
-
   try {
+    const application = new Application({
+      resizeTo: stageElement,
+      backgroundAlpha: 0,
+      antialias: true,
+      autoDensity: true,
+      resolution: Math.min(window.devicePixelRatio, 2)
+    });
+    pixiApplication = application;
+
+    stageElement.appendChild(application.view as HTMLCanvasElement);
+    application.stage.eventMode = "static";
+    application.stage.hitArea = new Rectangle(0, 0, application.screen.width, application.screen.height);
+
     const spineData = await loadCharacterSpine(characterConfig);
     if (!spineData) throw new Error("Spine loader did not return spineData");
 
@@ -463,6 +476,8 @@ async function initialize() {
     spine.cursor = "grab";
     spine.stateData.defaultMix = 0.42;
     spine.on("pointerdown", handleModelPointerDown);
+    spine.on("pointerover",()=>companion.hover(true));
+    spine.on("pointerout",()=>companion.hover(false));
 
     modelContainer = new Container();
     modelContainer.alpha = 0;
@@ -486,6 +501,7 @@ async function initialize() {
     fitModel(application);
     activeAction = "idle";
     loadingStatus.classList.add("hidden");
+    window.desktopPet?.reportStatus?.("ready");
 
     application.ticker.add(() => {
       if (modelContainer && modelContainer.alpha < 1) {
@@ -509,6 +525,7 @@ async function initialize() {
   } catch (error) {
     console.error(error);
     loadingStatus.textContent = error instanceof Error ? `模型加载失败：${error.message}` : "模型加载失败";
+    window.desktopPet?.reportStatus?.("error", loadingStatus.textContent);
   }
 }
 

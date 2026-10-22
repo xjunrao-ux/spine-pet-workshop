@@ -1,0 +1,125 @@
+{
+  "packageType": "spine-pet-plugin",
+  "packageVersion": 1,
+  "id": "io.spine-workshop.deepseek",
+  "name": "DeepSeek 对话",
+  "menuLabel": "AI 对话",
+  "version": "1.1.0",
+  "apiVersion": 1,
+  "configVersion": 1,
+  "entry": "provider.js",
+  "icon": "chat",
+  "entryVisibility": "when-enabled",
+  "description": "悬停桌宠即可简短聊天，回复通过气泡显示；API、人设和记忆在角色管理器配置。",
+  "permissions": [
+    "ai.deepseek",
+    "storage.own",
+    "ui.reminders"
+  ],
+  "compatibilityNotes": [
+    "需要 v4.1.1 或更新的宿主；旧版没有 ai.deepseek 能力，不能导入本插件。",
+    "仅连接 DeepSeek 官方 API，费用计入你的账户；不依赖 DSH。",
+    "密钥由宿主的专用窗口填写并使用系统加密保存，插件不能读取密钥。",
+    "历史、人设与手工记忆保存在本机；发送消息时会将相关上下文发送至 DeepSeek。",
+    "保留最近 20 条、总计不超过 60000 字符的对话；停止或失败的回复不会作为后续对话上下文。",
+    "到达输出限制时会提示续问；没有工具调用、自动记忆提取或本地文件操作权限。"
+  ],
+  "settingsSchema": [
+    {
+      "key": "model",
+      "type": "enum",
+      "label": "对话模型",
+      "default": "deepseek-flash",
+      "options": [
+        "deepseek-flash",
+        "deepseek-v4-pro"
+      ]
+    },
+    {
+      "key": "notify",
+      "type": "boolean",
+      "label": "回复完成时提醒",
+      "default": true
+    }
+  ],
+  "commands": [
+    {
+      "id": "configure",
+      "permissions": [
+        "ai.deepseek"
+      ],
+      "fields": {}
+    },
+    {
+      "id": "configureManager",
+      "label": "配置 DeepSeek API Key",
+      "managerOnly": true,
+      "permissions": [
+        "ai.deepseek"
+      ],
+      "fields": {}
+    },
+    {
+      "id": "send",
+      "permissions": [
+        "ai.deepseek"
+      ],
+      "fields": {
+        "text": {
+          "type": "string",
+          "maxLength": 4000
+        }
+      }
+    },
+    {
+      "id": "stop",
+      "permissions": [
+        "ai.deepseek"
+      ],
+      "fields": {}
+    },
+    {
+      "id": "retry",
+      "permissions": [
+        "ai.deepseek"
+      ],
+      "fields": {}
+    },
+    {
+      "id": "savePersona",
+      "permissions": [
+        "storage.own"
+      ],
+      "fields": {
+        "persona": {
+          "type": "string",
+          "maxLength": 2000,
+          "allowEmpty": true
+        },
+        "memory": {
+          "type": "string",
+          "maxLength": 4000,
+          "allowEmpty": true
+        }
+      }
+    },
+    {
+      "id": "clear",
+      "fields": {}
+    },
+    {
+      "id": "confirmClear",
+      "permissions": [
+        "storage.own"
+      ],
+      "fields": {}
+    },
+    {
+      "id": "cancelClear",
+      "fields": {}
+    }
+  ],
+  "presentation": {
+    "panel": "bubble"
+  }
+}

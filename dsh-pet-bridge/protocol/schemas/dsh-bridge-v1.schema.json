@@ -1,0 +1,598 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:spine-pet-workshop:pet-dsh:1",
+  "title": "pet-dsh/1 core wire envelopes",
+  "description": "Independent plugin contract; not imported by the generic host. Snapshot and interaction-specific payload semantics are additionally specified in DSH_BRIDGE_PROTOCOL.md.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/info"
+    },
+    {
+      "$ref": "#/$defs/command"
+    },
+    {
+      "$ref": "#/$defs/response"
+    },
+    {
+      "$ref": "#/$defs/event"
+    }
+  ],
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]{1,100}$"
+    },
+    "error": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]{1,79}$"
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "retryable": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "retryable"
+      ],
+      "additionalProperties": false
+    },
+    "info": {
+      "type": "object",
+      "properties": {
+        "protocols": {
+          "type": "array",
+          "contains": {
+            "const": "pet-dsh/1"
+          },
+          "items": {
+            "type": "string"
+          }
+        },
+        "instanceId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "serverVersion": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "dshVersion": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "capabilities": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "limits": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "protocols",
+        "instanceId",
+        "serverVersion",
+        "dshVersion",
+        "capabilities",
+        "limits"
+      ],
+      "additionalProperties": true
+    },
+    "command": {
+      "type": "object",
+      "properties": {
+        "protocol": {
+          "const": "pet-dsh/1"
+        },
+        "instanceId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "requestId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "op": {
+          "enum": [
+            "message.send",
+            "session.cancel",
+            "interaction.answer",
+            "pet.tool.result",
+            "persona.update"
+          ]
+        },
+        "sessionId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "data": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "protocol",
+        "instanceId",
+        "requestId",
+        "op",
+        "sessionId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "op": {
+                "const": "message.send"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "data": {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "enum": [
+                      "followup",
+                      "steer"
+                    ]
+                  },
+                  "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4000
+                  }
+                },
+                "required": [
+                  "mode",
+                  "text"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "op": {
+                "const": "session.cancel"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "data": {
+                "type": "object",
+                "properties": {
+                  "activityId": {
+                    "$ref": "#/$defs/identifier"
+                  }
+                },
+                "required": [
+                  "activityId"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "op": {
+                "const": "interaction.answer"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "data": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "interactionId": {
+                        "$ref": "#/$defs/identifier"
+                      },
+                      "choiceId": {
+                        "$ref": "#/$defs/identifier"
+                      }
+                    },
+                    "required": [
+                      "interactionId",
+                      "choiceId"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "interactionId": {
+                        "$ref": "#/$defs/identifier"
+                      },
+                      "answers": {
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "interactionId",
+                      "answers"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "op": {
+                "const": "pet.tool.result"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "data": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "callId": {
+                        "$ref": "#/$defs/identifier"
+                      },
+                      "ok": {
+                        "const": true
+                      },
+                      "result": {}
+                    },
+                    "required": [
+                      "callId",
+                      "ok",
+                      "result"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "callId": {
+                        "$ref": "#/$defs/identifier"
+                      },
+                      "ok": {
+                        "const": false
+                      },
+                      "error": {
+                        "$ref": "#/$defs/error"
+                      }
+                    },
+                    "required": [
+                      "callId",
+                      "ok",
+                      "error"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "op": {
+                "const": "persona.update"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "data": {
+                "type": "object",
+                "properties": {
+                  "characterId": {
+                    "$ref": "#/$defs/identifier"
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "persona": {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "memory": {
+                    "type": "string",
+                    "maxLength": 4000
+                  }
+                },
+                "required": [
+                  "characterId",
+                  "revision",
+                  "persona",
+                  "memory"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "response": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "protocol": {
+              "const": "pet-dsh/1"
+            },
+            "instanceId": {
+              "$ref": "#/$defs/identifier"
+            },
+            "requestId": {
+              "$ref": "#/$defs/identifier"
+            },
+            "ok": {
+              "const": true
+            },
+            "data": {}
+          },
+          "required": [
+            "protocol",
+            "instanceId",
+            "requestId",
+            "ok",
+            "data"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "protocol": {
+              "const": "pet-dsh/1"
+            },
+            "instanceId": {
+              "$ref": "#/$defs/identifier"
+            },
+            "requestId": {
+              "$ref": "#/$defs/identifier"
+            },
+            "ok": {
+              "const": false
+            },
+            "error": {
+              "$ref": "#/$defs/error"
+            }
+          },
+          "required": [
+            "protocol",
+            "ok",
+            "error"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "event": {
+      "type": "object",
+      "properties": {
+        "protocol": {
+          "const": "pet-dsh/1"
+        },
+        "instanceId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "sessionId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "requestId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "cursor": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "pattern": "^[ -~]+$"
+        },
+        "type": {
+          "enum": [
+            "message.claimed",
+            "assistant.delta",
+            "assistant.message",
+            "tool.started",
+            "tool.finished",
+            "activity.state",
+            "activity.ended",
+            "interaction.requested",
+            "interaction.resolved",
+            "pet.tool.requested",
+            "pet.tool.resolved",
+            "session.changed",
+            "resync.required"
+          ]
+        },
+        "data": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "protocol",
+        "instanceId",
+        "sessionId",
+        "cursor",
+        "type",
+        "data"
+      ],
+      "additionalProperties": true,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "assistant.delta"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "data": {
+                "type": "object",
+                "properties": {
+                  "activityId": {
+                    "$ref": "#/$defs/identifier"
+                  },
+                  "attemptId": {
+                    "$ref": "#/$defs/identifier"
+                  },
+                  "index": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "text": {
+                    "type": "string",
+                    "maxLength": 16000
+                  }
+                },
+                "required": [
+                  "activityId",
+                  "attemptId",
+                  "index",
+                  "text"
+                ],
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "assistant.message"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "data": {
+                "type": "object",
+                "properties": {
+                  "messageId": {
+                    "$ref": "#/$defs/identifier"
+                  },
+                  "turn": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "text": {
+                    "type": "string",
+                    "maxLength": 16000
+                  },
+                  "attemptId": {
+                    "$ref": "#/$defs/identifier"
+                  }
+                },
+                "required": [
+                  "messageId",
+                  "turn",
+                  "text"
+                ],
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "activity.ended"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "data": {
+                "type": "object",
+                "properties": {
+                  "activityId": {
+                    "$ref": "#/$defs/identifier"
+                  },
+                  "outcome": {
+                    "enum": [
+                      "completed",
+                      "failed",
+                      "cancelled",
+                      "interrupted"
+                    ]
+                  }
+                },
+                "required": [
+                  "activityId",
+                  "outcome"
+                ],
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "pet.tool.requested"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "data": {
+                "type": "object",
+                "properties": {
+                  "callId": {
+                    "$ref": "#/$defs/identifier"
+                  },
+                  "activityId": {
+                    "$ref": "#/$defs/identifier"
+                  },
+                  "name": {
+                    "$ref": "#/$defs/identifier"
+                  },
+                  "arguments": {
+                    "type": "object"
+                  },
+                  "expiresAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "callId",
+                  "activityId",
+                  "name",
+                  "arguments",
+                  "expiresAt"
+                ],
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -16,7 +16,7 @@
     "sourceUrl": {"type": "string", "minLength": 1, "maxLength": 500},
     "downloadUrl": {"type": "string", "minLength": 1, "maxLength": 500},
     "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
-    "permissions": {"type": "array", "maxItems": 4, "uniqueItems": true, "items": {"type": "string", "enum": ["storage.own", "ui.reminders", "weather.read", "codex.read"]}},
+    "permissions": {"type": "array", "maxItems": 6, "uniqueItems": true, "items": {"type": "string", "enum": ["storage.own", "ui.reminders", "weather.read", "codex.read", "ai.deepseek", "net.local"]}},
     "license": {"type": "string", "minLength": 1, "maxLength": 100}
   }
 }

@@ -1,4 +1,4 @@
-export const OWN_MEDIA_IDS=['local.spine.desktop.pet.workshop','SpinePetWorkshop.exe','spine-pet-workshop'];
+export const OWN_MEDIA_IDS=['local.spine.desktop.pet.workshop','SpinePetWorkshop.exe','SpinePet.exe','SpinePet','spine-pet-workshop'];
 export function normalizeMediaState(media={}) {
   const sessions=(Array.isArray(media.sessions)?media.sessions:[]).filter(session=>session && typeof session.id==='string' &&
     !OWN_MEDIA_IDS.some(id=>id.toLowerCase()===session.id.toLowerCase()) && !/spine[.\s_-]*(?:desktop[.\s_-]*)?pet[.\s_-]*workshop/i.test(session.id))

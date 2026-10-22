@@ -8,7 +8,20 @@ type PetCommand =
   | { type: "voice-enabled"; enabled: boolean }
   | { type: "parameters"; parameters: PetParameters };
 
+interface PetDisplayStatus {
+  name: string;
+  visible: boolean;
+  state: "loading" | "ready" | "hidden" | "error";
+  message: string;
+}
+
 interface DesktopPetBridge {
+  reportStatus?(state: "loading" | "ready" | "error", message?: string): void;
+  companion?:{
+    get():Promise<import('../electron/plugins/companion.mjs').CompanionState>;
+    hover(value:boolean):void;
+    onState(callback:(state:import('../electron/plugins/companion.mjs').CompanionState)=>void):()=>void;
+  };
   isElectron: boolean;
   getCharacterConfig(): Promise<PetCharacterConfig>;
   showContextMenu(): void;
@@ -98,6 +111,8 @@ interface CharacterImportPayload {
 }
 
 interface PetSettingsBridge {
+  getPetStatus?(): Promise<PetDisplayStatus>;
+  onPetStatus?(callback: (status: PetDisplayStatus) => void): () => void;
   getCharacterConfig(id: string): Promise<PetCharacterConfig>;
   saveParameters(id: string, parameters: PetParameters): Promise<{ok: boolean; parameters?: PetParameters; error?: string}>;
   previewModel(payload: {modelFolder: string; modelFile: string; atlasFile: string}): Promise<PetCharacterConfig>;
@@ -113,7 +128,16 @@ interface PetSettingsBridge {
   openExternal(url: string): Promise<boolean>;
 }
 
+interface ComposerBridge {
+ get():Promise<import('../electron/plugins/companion.mjs').CompanionState>;
+ execute(id:string,epoch:number,command:string,text?:string):Promise<import('./plugins/types').CommandResult>;
+ settings():void;interaction(value:boolean):void;close():void;
+ move(dx:number,dy:number,phase:'start'|'move'|'end'):Promise<{ok:boolean}>;
+ onState(callback:(state:import('../electron/plugins/companion.mjs').CompanionState)=>void):()=>void;
+ onClose(callback:()=>void):()=>void;
+}
 interface Window {
+  petCompanion?:ComposerBridge;
   petFeatures?: import("./features/types").FeatureBridge;
   desktopPet?: DesktopPetBridge;
   petSettings?: PetSettingsBridge;

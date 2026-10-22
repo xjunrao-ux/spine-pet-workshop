@@ -3,56 +3,43 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Spine 桌宠工坊</title>
+    <title>SpinePet</title>
   </head>
-  <body>
-    <main id="settings-app">
-      <header class="hero">
-        <div>
-          <p class="eyebrow">SPINE PET WORKSHOP · v3.2.2</p>
-          <h1>把喜欢的角色<br />放到桌面上。</h1>
-          <p class="intro">导入本地 Spine 3.8 模型与语音，保存后立即切换桌宠。所有素材只保存在你的电脑中。</p>
-        </div>
-        <div class="hero-badge" aria-hidden="true"><span>3.8</span><small>RUNTIME</small></div>
-      </header>
-
+  <body data-settings-page="characters">
+    <div id="settings-app" class="app-shell">
+      <aside class="app-sidebar" aria-label="应用导航">
+        <header class="brand-header">
+          <img class="brand-logo" src="./assets/spinepet-icon.png" alt="" />
+          <div class="brand-meta"><strong>SpinePet</strong><span>桌面角色工坊</span><small>v5.1.2</small></div>
+        </header>
       <nav class="tabs" aria-label="功能导航">
-        <button class="tab active" data-page="characters">角色库</button>
-        <button class="tab" data-page="help">素材与格式</button>
-        <button class="tab" data-page="import">导入角色</button>
-        <button class="tab" data-page="features">功能</button>
-        <button class="tab" data-page="extensions">扩展</button>
+        <button class="tab active" data-page="characters"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>角色库</span></button>
+        <button class="tab" data-page="import"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 15v5h16v-5"/></svg><span>导入角色</span></button>
+        <button class="tab" data-page="features"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m13 2-9 12h7l-1 8 10-13h-7z"/></svg><span>功能</span></button>
+        <button class="tab" data-page="extensions"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><path d="M17.5 3v7M14 6.5h7"/></svg><span>扩展</span></button>
       </nav>
+        <footer class="sidebar-footer"><div id="current-pet-status" class="runtime-badge" data-state="loading" role="status"><span class="status-dot" aria-hidden="true"></span><div><strong id="current-pet-name">正在读取桌宠…</strong><small id="current-pet-message">正在确认显示状态</small></div></div></footer>
+      </aside>
+      <main class="app-workspace" aria-label="管理器工作区">
 
       <section id="page-characters" class="page active">
         <div class="section-heading">
           <div><p class="kicker">CHARACTER LIBRARY</p><h2>我的桌宠</h2></div>
-          <button id="refresh-characters" class="ghost-button">刷新</button>
+          <div class="workspace-actions"><button id="refresh-characters" class="ghost-button" type="button">刷新</button><button id="open-import" class="primary-button import-button" type="button"><span aria-hidden="true">＋</span> 导入角色</button></div>
         </div>
         <div id="character-list" class="character-grid"></div>
-        <article id="character-settings" class="settings-panel hidden">
-          <div class="section-heading"><h3 id="character-settings-title">角色设置</h3><button id="close-character-settings" class="ghost-button" type="button">关闭</button></div>
-          <div class="preview-settings-grid">
-            <div class="preview-column"><div id="library-preview"></div><div id="library-history"></div></div>
-            <div><div id="library-parameters"></div><div id="library-voice-controls" class="audition-controls"></div></div>
-          </div>
-          <div class="settings-footer"><span id="parameters-status" role="status">调整后点击保存；仅修改此角色</span><button id="reset-character-parameters" class="ghost-button" type="button">恢复默认</button><button id="save-character-parameters" class="primary-button" type="button">保存设置</button></div>
-        </article>
+
       </section>
 
       <section id="page-features" class="page">
         <div class="section-heading"><div><p class="kicker">QUIET COMPANION</p><h2>按需出现，轻轻提醒。</h2></div><span id="feature-save-status" role="status" class="hint">设置自动保存</span></div>
-        <div id="feature-modules" class="feature-modules"></div>
-        <article class="feature-options" id="feature-compatibility">
-          <h3>兼容性说明</h3>
-          <div id="plugin-compatibility-notes"></div>
-        </article>
-        <article class="feature-options">
+        <article class="feature-options" id="theme-settings"><h3>配色主题</h3><p class="hint">统一角色气泡、功能菜单、插件窗口与管理器的配色；选择后自动保存。</p><div id="theme-presets" class="theme-presets" aria-label="配色模板"></div><div id="custom-theme-controls" class="custom-theme-controls hidden"><h4>自定义颜色</h4><p class="hint">选择颜色后自动保存，并同步到角色气泡、输入框与插件界面。</p><div class="custom-theme-grid"><label><span>主色</span><input type="color" data-custom-color="accent" aria-label="主色颜色" /><output data-custom-value="accent"></output></label><label><span>页面背景</span><input type="color" data-custom-color="background" aria-label="页面背景颜色" /><output data-custom-value="background"></output></label><label><span>面板背景</span><input type="color" data-custom-color="surface" aria-label="面板背景颜色" /><output data-custom-value="surface"></output></label><label><span>主要文字</span><input type="color" data-custom-color="ink" aria-label="主要文字颜色" /><output data-custom-value="ink"></output></label><label><span>次要文字</span><input type="color" data-custom-color="muted" aria-label="次要文字颜色" /><output data-custom-value="muted"></output></label></div><button type="button" class="ghost-button" data-reset-custom-theme>恢复自定义初始颜色</button></div></article>
+        <article class="feature-options" id="startup-settings">
           <h3>应用启动</h3>
           <label class="feature-setting"><span><strong>开机启动</strong><small>登录 Windows 后自动启动桌宠。默认关闭；移动便携版文件后，请重新关闭并开启此选项。</small></span><input id="startup-enabled" type="checkbox" disabled aria-label="开机启动" /></label>
           <p id="startup-status" class="hint" role="status">正在读取启动设置…</p>
         </article>
-        <article class="feature-options">
+        <article class="feature-options" id="interaction-settings">
           <h3>提醒与交互</h3>
           <label class="feature-setting"><span><strong>显示模式（消息摘要）</strong><small>开启后新消息弹出简要内容；关闭为隐私模式，只提示来源和新消息数量。查看过的桌宠提醒不再显示，不修改系统或聊天已读状态。</small></span><input type="checkbox" data-feature-setting="details" /></label>
           <label class="feature-setting"><span><strong>角色字幕提醒</strong><small>新通知和 Codex 任务结束时，显示约 4 秒的轻提示。</small></span><input type="checkbox" data-feature-setting="subtitles" /></label>
@@ -61,12 +48,17 @@
           <label class="feature-setting"><span><strong>悬停展开延迟</strong><small>鼠标滚轮可横向浏览胶囊，点击图标打开详情。</small></span><select id="feature-hover-delay"><option value="150">150 毫秒</option><option value="300">300 毫秒</option><option value="600">600 毫秒</option><option value="1000">1 秒</option></select></label>
           <div class="feature-buttons"><span id="plugin-actions"></span><button id="feature-preview" class="ghost-button">预览字幕</button></div>
         </article>
+        <div id="feature-modules" class="feature-modules"></div>
+        <article class="feature-options" id="feature-compatibility">
+          <h3>兼容性说明</h3>
+          <div id="plugin-compatibility-notes"></div>
+        </article>
         <article class="feature-options"><h3>应用通知</h3><p class="hint">只接收真正进入 Windows 通知中心的消息。已验证当前微信与企业微信不走系统通知，暂不支持其聊天提醒；待官方提供可用接口后再评估。启动前的 ChatGPT 历史通知不再展示，只提示新消息。</p><div id="notification-channels"></div><div id="feature-apps"></div></article>
       </section>
       <section id="page-extensions" class="page">
-        <div class="section-heading"><div><p class="kicker">INDEPENDENT PLUGINS</p><h2>插件管理</h2></div><button id="plugin-import" class="primary-button">导入插件 ZIP</button></div>
+        <div class="section-heading"><div><p class="kicker">INDEPENDENT PLUGINS</p><h2>插件管理</h2></div><button id="plugin-import" class="primary-button import-button">导入插件 ZIP</button></div>
         <p id="plugin-package-status" class="hint" role="status">接口 v1 · ZIP 导入试用。文件仅在本机读取，不上传网络；请只安装可信来源。</p>
-        <div id="extension-registry" class="feature-modules"></div>
+        <div class="plugin-workspace-hint"><p class="hint">左侧拖动卡片即可排序，快捷菜单同步排列。点击插件，在右侧直接修改设置。</p><button type="button" class="ghost-button" data-show-themes>配色主题</button></div><div id="extension-registry" class="plugin-workspace"></div>
         <article class="feature-options"><h3>统一接口 · 验证阶段</h3><p class="hint">ZIP 插件在独立沙盒运行环境中提交页面和受控操作。桌宠统一负责显示、隐私、已读与生命周期。开放独立存储、角色提醒及授权的 Codex 只读/天气接口，不开放任意文件、网络或凭据访问。待办已内置，Codex 需导入 ZIP；完整接口见开发手册。</p><div class="module-protocol">ZIP → 权限确认 → activate → 页面 / 命令 / 提醒 → 停止或卸载</div></article>
       </section>
       <section id="page-import" class="page">
@@ -74,6 +66,36 @@
           <div><p class="kicker">NEW CHARACTER</p><h2>导入新角色</h2></div>
           <span class="step-pill">本机导入 · 不上传网络</span>
         </div>
+
+        <details id="import-guide" class="import-guide">
+          <summary class="material-entry">
+            <span class="material-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h6a3 3 0 0 1 3 3v14a4 4 0 0 0-4-3H4z"/><path d="M13 7a3 3 0 0 1 3-3h4v14h-3a4 4 0 0 0-4 3"/></svg></span>
+            <span class="material-copy"><small>素材准备 · 第一次导入从这里开始</small><strong>获取角色素材与查看导入教程</strong><span>还没有模型或语音？点击查看下载来源、文件要求与导入步骤。</span></span>
+            <span class="material-action"><span class="guide-open-label">查看素材与教程</span><span class="guide-close-label">收起说明</span><span aria-hidden="true">⌄</span></span>
+          </summary>
+          <ol class="material-steps"><li>准备角色的 Spine 3.8 模型：骨骼、图集和贴图放在同一个文件夹。</li><li>按需下载角色语音；长音频可自动匹配内置时间轴与中文字幕。</li><li>在下方填写名称并选择模型，预览确认后点击“导入并设为当前桌宠”。</li></ol>
+        <div class="help-grid">
+          <article class="help-card accent">
+            <span class="help-index">A</span><h3>Spine 模型</h3>
+            <p>一套完整模型通常由骨骼数据、图集描述和一张或多张贴图组成。明日方舟基建小人需要 Spine Runtime 3.8。</p>
+            <code>character.skel + character.atlas + character.png</code>
+            <button class="link-button" data-url="https://github.com/isHarryh/Ark-Models">打开 Ark-Models</button>
+          </article>
+          <article class="help-card">
+            <span class="help-index">B</span><h3>角色语音与字幕</h3>
+            <p>从 Ark-Voice 下载角色整合 OGG 即可。时间轴与简中台词表已经内置，不需要手工下载 JSON 或使用 FFmpeg。</p>
+            <div class="help-links">
+              <button class="link-button" data-url="https://github.com/isHarryh/Ark-Voice">下载角色语音</button>
+              <button class="link-button subtle" data-url="https://github.com/Kengxxiao/ArknightsGameData">字幕数据来源</button>
+            </div>
+          </article>
+          <article class="help-card">
+            <span class="help-index">C</span><h3>兼容与版权</h3>
+            <p>模型导出版本必须与 3.8 Runtime 兼容。只导入你有权使用的素材；游戏角色资源不得用于商业用途或损害权利人利益。</p>
+            <button class="link-button" data-url="https://esotericsoftware.com/spine-runtimes">查看 Spine Runtime 说明</button>
+          </article>
+        </div>
+        </details>
 
         <form id="import-form">
           <article class="form-card">
@@ -169,36 +191,22 @@
           </article>
           <div class="submit-bar">
             <div id="import-status" role="status">准备就绪</div>
-            <button id="import-submit" class="primary-button" type="submit">导入并设为当前桌宠</button>
+            <button id="import-submit" class="primary-button import-button" type="submit">导入并设为当前桌宠</button>
           </div>
         </form>
       </section>
 
-      <section id="page-help" class="page">
-        <div class="section-heading"><div><p class="kicker">GUIDE</p><h2>素材与导入格式</h2></div></div>
-        <div class="help-grid">
-          <article class="help-card accent">
-            <span class="help-index">A</span><h3>Spine 模型</h3>
-            <p>一套完整模型通常由骨骼数据、图集描述和一张或多张贴图组成。明日方舟基建小人需要 Spine Runtime 3.8。</p>
-            <code>character.skel + character.atlas + character.png</code>
-            <button class="link-button" data-url="https://github.com/isHarryh/Ark-Models">打开 Ark-Models</button>
-          </article>
-          <article class="help-card">
-            <span class="help-index">B</span><h3>角色语音与字幕</h3>
-            <p>从 Ark-Voice 下载角色整合 OGG 即可。时间轴与简中台词表已经内置，不需要手工下载 JSON 或使用 FFmpeg。</p>
-            <div class="help-links">
-              <button class="link-button" data-url="https://github.com/isHarryh/Ark-Voice">下载角色语音</button>
-              <button class="link-button subtle" data-url="https://github.com/Kengxxiao/ArknightsGameData">字幕数据来源</button>
-            </div>
-          </article>
-          <article class="help-card">
-            <span class="help-index">C</span><h3>兼容与版权</h3>
-            <p>模型导出版本必须与 3.8 Runtime 兼容。只导入你有权使用的素材；游戏角色资源不得用于商业用途或损害权利人利益。</p>
-            <button class="link-button" data-url="https://esotericsoftware.com/spine-runtimes">查看 Spine Runtime 说明</button>
-          </article>
-        </div>
-      </section>
-    </main>
+
+      </main>
+        <aside id="character-settings" class="settings-panel inspector-drawer hidden" aria-labelledby="character-settings-title">
+          <div class="section-heading drawer-header"><h3 id="character-settings-title" tabindex="-1">角色设置</h3><button id="close-character-settings" class="ghost-button" type="button">关闭</button></div>
+          <div class="drawer-content"><div class="preview-settings-grid">
+            <div class="preview-column"><div id="library-preview"></div><div id="library-history"></div></div>
+            <div><div id="library-parameters"></div><div id="library-voice-controls" class="audition-controls"></div></div>
+          </div>
+          </div><div class="settings-footer"><span id="parameters-status" role="status">调整后点击保存；仅修改此角色</span><button id="reset-character-parameters" class="ghost-button" type="button">恢复默认</button><button id="save-character-parameters" class="primary-button" type="button">保存设置</button></div>
+        </aside>
+    </div>
     <script type="module" src="/src/settings.ts"></script>
   </body>
 </html>

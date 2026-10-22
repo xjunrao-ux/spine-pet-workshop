@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld("featureSettings", {
   installPlugin: () => ipcRenderer.invoke("features:install-plugin"),
   uninstallPlugin: id => ipcRenderer.invoke("features:uninstall-plugin",id),
   preview: () => ipcRenderer.send("features:preview"),
+  onNavigate: callback => { const listener=(_event,id)=>callback(id);ipcRenderer.on('features:navigate',listener);return ()=>ipcRenderer.removeListener('features:navigate',listener); },
   onState: callback => {
     const listener = (_event, state) => callback(state);
     ipcRenderer.on("features:state", listener);
@@ -17,6 +18,8 @@ contextBridge.exposeInMainWorld("featureSettings", {
 });
 
 contextBridge.exposeInMainWorld("petSettings", {
+  getPetStatus: () => ipcRenderer.invoke("settings:pet-status"),
+  onPetStatus: callback => { const listener = (_event, value) => callback(value); ipcRenderer.on("settings:pet-status", listener); return () => ipcRenderer.removeListener("settings:pet-status", listener); },
   getCharacterConfig: (id) => ipcRenderer.invoke("settings:get-character-config", id),
   saveParameters: (id, parameters) => ipcRenderer.invoke("settings:save-parameters", id, parameters),
   previewModel: (payload) => ipcRenderer.invoke("settings:preview-model", payload),

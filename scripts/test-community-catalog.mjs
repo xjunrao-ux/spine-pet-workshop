@@ -14,9 +14,10 @@ test('catalog and generated download table agree',async()=>{
   const entries=await readEntries();assert.ok(entries.some(e=>e.id==='io.spine-workshop.codex'));
 });
 test('catalog rejects unsafe links, unknown permissions, invalid metadata and reserved identities',()=>{
+  assert.doesNotThrow(()=>validateEntry({...entry,minHostVersion:'4.2.2',permissions:['storage.own','ui.reminders','weather.read','codex.read','ai.deepseek','net.local']}));
   for(const patch of [
     {downloadUrl:'https://evil.example/plugin.zip'},
-    {downloadUrl:entry.downloadUrl.replace('/download/v3.2.3/','/latest/download/')},
+    {downloadUrl:entry.downloadUrl.replace(/\/download\/[^/]+\//,'/latest/download/')},
     {downloadUrl:entry.downloadUrl+'?token=secret'},
     {sourceUrl:'https://user:secret@github.com/owner/repo'},
     {permissions:['media.read']},{permissions:['storage.own','storage.own']},
