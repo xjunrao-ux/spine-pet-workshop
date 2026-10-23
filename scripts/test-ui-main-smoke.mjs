@@ -6,7 +6,7 @@ const profile=await mkdtemp(path.join(directory,'profile-'));app.setPath('userDa
 delete process.env.VITE_DEV_SERVER_URL;
 await writeFile(path.join(profile,'feature-settings.json'),JSON.stringify({schemaVersion:2,global:{theme:'graphite'},plugins:{'workshop.music':{enabled:false,configVersion:1,config:{}},'workshop.notifications':{enabled:false,configVersion:1,config:{}}}}));
 app.disableHardwareAcceleration();app.commandLine.appendSwitch('mute-audio');
-dialog.showOpenDialog=async()=>({canceled:false,filePaths:[path.resolve('release/plugins/DeepSeek-Plugin-v1.1.0.zip')]});
+dialog.showOpenDialog=async()=>({canceled:false,filePaths:[path.resolve('release/plugins/DeepSeek-Plugin-v1.1.1.zip')]});
 dialog.showMessageBox=async()=>({response:0});
 app.on('browser-window-created',(_e,w)=>w.setOpacity(0));
 const delay=ms=>new Promise(r=>setTimeout(r,ms));

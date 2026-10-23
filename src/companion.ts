@@ -6,6 +6,9 @@ export function initializeComposer(){
  const form=document.querySelector<HTMLFormElement>('#pet-chat')!,input=document.querySelector<HTMLInputElement>('#pet-chat-text')!,send=document.querySelector<HTMLButtonElement>('#pet-chat-send')!,stop=document.querySelector<HTMLButtonElement>('#pet-chat-stop')!,hint=document.querySelector<HTMLElement>('#pet-chat-hint')!;
  let state:CompanionState|undefined,identity='',held=false,composing=false,sending=false,error='',suppressed=false;
  let drag:{x:number;y:number;id:number}|null=null;
+ let resize:{x:number;id:number;edge:'left'|'right'}|null=null;
+ const pointerX=(event:PointerEvent)=>event.screenX||window.screenX+event.clientX;
+ const pointerY=(event:PointerEvent)=>event.screenY||window.screenY+event.clientY;
  const interacting=()=>!form.classList.contains('hidden')&&(held||form.contains(document.activeElement));
  function render(){
   const c=state?.companion,show=Boolean(c&&!suppressed);
@@ -34,7 +37,6 @@ export function initializeComposer(){
  }
  form.addEventListener('submit',event=>{event.preventDefault();const c=state?.companion;if(composing||!c?.form||c.form.pending||!input.value.trim()||!form.reportValidity())return;void execute(c.form.command,input.value);});
  stop.addEventListener('click',()=>{const command=state?.companion?.form?.stop;if(command)void execute(command);});
- document.querySelector('#pet-chat-settings')!.addEventListener('click',()=>api?.settings());
  input.addEventListener('compositionstart',()=>{composing=true;});input.addEventListener('compositionend',()=>{composing=false;});
  input.addEventListener('keydown',event=>{if(event.key==='Enter'&&(event.isComposing||composing))event.preventDefault();if(event.key==='Escape'){event.preventDefault();suppressed=true;held=false;input.blur();render();api?.close();}});
  form.addEventListener('pointerenter',()=>{held=true;render();});
@@ -44,11 +46,22 @@ export function initializeComposer(){
  window.addEventListener('blur',()=>{input.blur();held=false;render();});
  if(api){api.onState(update);void api.get().then(update).catch(()=>{});}
  const handle=document.querySelector<HTMLButtonElement>('#pet-chat-drag')!;
- handle.addEventListener('pointerdown',event=>{if(event.button!==0)return;event.preventDefault();drag={x:event.screenX,y:event.screenY,id:event.pointerId};handle.setPointerCapture(event.pointerId);document.body.classList.add('dragging-composer');void api?.move(0,0,'start');});
- window.addEventListener('pointermove',event=>{if(drag)void api?.move(event.screenX-drag.x,event.screenY-drag.y,'move');});
- const finish=(event:PointerEvent)=>{if(!drag)return;const start=drag;drag=null;document.body.classList.remove('dragging-composer');void api?.move(event.screenX-start.x,event.screenY-start.y,'end').then(result=>{if(!result.ok){error='输入框位置保存失败，请重试。';render();}});};
+ handle.addEventListener('pointerdown',event=>{if(event.button!==0)return;event.preventDefault();drag={x:pointerX(event),y:pointerY(event),id:event.pointerId};handle.setPointerCapture(event.pointerId);document.body.classList.add('dragging-composer');void api?.move(0,0,'start');});
+ window.addEventListener('pointermove',event=>{if(drag&&event.pointerId===drag.id)void api?.move(pointerX(event)-drag.x,pointerY(event)-drag.y,'move');if(resize&&event.pointerId===resize.id)void api?.resize(pointerX(event)-resize.x,resize.edge,'move');});
+ const finish=(event:PointerEvent)=>{if(!drag||event.pointerId!==drag.id)return;const start=drag;drag=null;document.body.classList.remove('dragging-composer');void api?.move(pointerX(event)-start.x,pointerY(event)-start.y,'end').then(result=>{if(!result.ok){error='输入框位置保存失败，请重试。';render();}});};
  window.addEventListener('pointerup',finish);window.addEventListener('pointercancel',finish);
- api?.onClose(()=>{input.blur();held=false;composing=false;suppressed=true;render();});
+ document.querySelectorAll<HTMLElement>('[data-resize-edge]').forEach(edge=>edge.addEventListener('pointerdown',event=>{
+  if(event.button!==0||drag||resize)return;event.preventDefault();
+  resize={x:pointerX(event),id:event.pointerId,edge:edge.dataset.resizeEdge as 'left'|'right'};
+  edge.setPointerCapture(event.pointerId);held=true;document.body.classList.add('resizing-composer');
+  void api?.resize(0,resize.edge,'start');render();
+ }));
+ const finishResize=(event:PointerEvent)=>{
+  if(!resize||event.pointerId!==resize.id)return;const start=resize;resize=null;document.body.classList.remove('resizing-composer');
+  void api?.resize(pointerX(event)-start.x,start.edge,'end').then(result=>{if(!result.ok){error='输入框宽度保存失败，请重试。';render();}});
+ };
+ window.addEventListener('pointerup',finishResize);window.addEventListener('pointercancel',finishResize);
+ api?.onClose(()=>{input.blur();held=false;composing=false;suppressed=true;drag=null;resize=null;document.body.classList.remove('dragging-composer','resizing-composer');render();});
 }
 
 initializeComposer();

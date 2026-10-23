@@ -1,4 +1,5 @@
 import {applyCredentialTheme} from '../electron/plugins/window-theme.mjs';
+import {SettingsStore} from '../electron/plugins/settings-store.mjs';
 import {createPetCompanionBridge} from '../electron/plugins/pet-companion-bridge.mjs';
 import {app,protocol,BrowserWindow,ipcMain,safeStorage,nativeImage} from 'electron';
 import assert from 'node:assert/strict';
@@ -55,7 +56,7 @@ void app.whenReady().then(async()=>{
   host=new ExtensionService({directory:'.',userData,...options,onUpdate:state=>{overlay?.update(state);petBridge?.update(state);for(const w of BrowserWindow.getAllWindows())if(/\/(?:deepseek|local-service)-settings\.html$/.test(w.webContents.getURL()))applyCredentialTheme(w,state.settings);if(manager&&!manager.isDestroyed())manager.webContents.send('features:state',state);}});
   await host.start();
   const packages=new PluginPackages({userData,makeProvider:bundle=>createSandboxProvider({root,bundle})});
-  for(const file of ['DeepSeek-Plugin-v1.1.0.zip','DSH-Pet-Plugin-v1.1.0.zip','Weather-Plugin-v1.2.0.zip'])await packages.install(await packages.inspect(path.join(root,'release/plugins',file)),host);
+  for(const file of ['DeepSeek-Plugin-v1.1.1.zip','DSH-Pet-Plugin-v1.1.0.zip','Weather-Plugin-v1.2.0.zip'])await packages.install(await packages.inspect(path.join(root,'release/plugins',file)),host);
   const plugin=id=>host.snapshot().plugins.find(p=>p.id===id);
   assert.ok([ai,dsh,weather].every(id=>plugin(id)?.runtime==='active'));
   assert.deepEqual(plugin(dsh).pages.map(p=>p.id),['chat','sessions']);
@@ -72,12 +73,14 @@ void app.whenReady().then(async()=>{
   const cv=petBridge.window,cj=code=>cv.webContents.executeJavaScript(code);
   await until(()=>pj("document.querySelector('#loading-status').classList.contains('hidden')"),'real Spine model loaded');
   // Native renderer input events hit the actual model, not a plugin/menu hover flag.
-  for(let y=120;y<285;y+=25){pet.webContents.sendInputEvent({type:'mouseMove',x:126,y});await delay(40);if(await cj("!document.querySelector('#pet-chat').classList.contains('hidden')"))break;}
+  let modelPoint;
+  for(let y=120;y<285;y+=25){pet.webContents.sendInputEvent({type:'mouseMove',x:126,y});await delay(120);if(cv.isVisible()){modelPoint={x:126,y};break;}}
+  assert.ok(modelPoint,'model hit position');
   await until(()=>cv.isVisible(),'character hover input');
   assert.equal(await cj("!document.querySelector('#pet-chat').classList.contains('hidden')"),true);
   assert.equal(await cj("document.querySelector('#pet-chat-hint').textContent"),'');
   assert.equal(modelCalls,0);check('real character hover opens its own composer before any menu exists');
-  overlay=createExtensionOverlay({root,service:host,getPet:()=>pet,getDragging:()=>false,setInteraction:()=>{},openSettings:()=>manager?.showInactive(),testing:true});
+  overlay=createExtensionOverlay({root,service:host,getPet:()=>pet,getDragging:()=>false,setInteraction:()=>{},openSettings:()=>{manager?.show();manager?.focus();},testing:true});
   const view=overlay.window,js=code=>view.webContents.executeJavaScript(code);
   const pb=pet.getBounds();overlay.setTestCursor({x:pb.x+70,y:pb.y+50});
   await until(()=>view.webContents.getURL().includes('extensions.html')&&!view.webContents.isLoading(),'overlay loaded');
@@ -142,6 +145,17 @@ void app.whenReady().then(async()=>{
     await delay(80);
   }
 
+  async function nativeDrag(window,selector,dx,dy=0){
+    const before=window.getBounds();
+    const at=await window.webContents.executeJavaScript("(()=>{const r=document.querySelector("+JSON.stringify(selector)+").getBoundingClientRect();return {x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)}})()");
+    window.webContents.sendInputEvent({type:'mouseMove',...at});
+    window.webContents.sendInputEvent({type:'mouseDown',button:'left',clickCount:1,...at});await delay(50);
+    window.webContents.sendInputEvent({type:'mouseMove',x:at.x+dx,y:at.y+dy});await delay(80);
+    const after=window.getBounds();
+    // Use the same screen point after a gesture moves the native window.
+    window.webContents.sendInputEvent({type:'mouseUp',button:'left',clickCount:1,x:at.x+dx-(after.x-before.x),y:at.y+dy-(after.y-before.y)});
+  }
+
   await until(()=>mj("!!document.querySelector('[data-plugin-select=\"local.spine-weather\"]')"),'manager settings');
 
   await mj("document.querySelector('[data-page=extensions]').click();window.weatherButtonBeforePoll=document.querySelector('[data-plugin-select=\"local.spine-weather\"]')");
@@ -204,11 +218,66 @@ void app.whenReady().then(async()=>{
   await cj("document.querySelector('#pet-chat-text').value=''");
   check('composer dimensions stay bounded through sustained state updates, long drafts, pet movement and dragging');
 
-  await nativeClick(cv,'#pet-chat-settings');
-  await until(()=>manager.isFocused()&&!cv.isVisible()&&!view.isVisible(),'chat settings gear focuses usable manager');
-  await until(()=>mj("document.querySelector('#page-extensions').classList.contains('active')&&document.querySelector('[data-plugin-scope]')?.dataset.pluginScope==='io.spine-workshop.deepseek'"),'gear selects AI settings');
-  manager.hide();await pj("window.desktopPet.companion.hover(true)");await until(()=>cv.isVisible(),'return from settings gear');
-  check('chat settings gear opens the AI panel and floating windows cannot cover it');
+  assert.equal(await cj("document.querySelector('#pet-chat-settings')"),null);
+  assert.equal(await cj("(()=>{const s=getComputedStyle(document.querySelector('#pet-chat-send'));return s.width===s.height&&s.borderRadius==='50%'&&!!document.querySelector('#pet-chat-send svg')})()"),true);
+  await js("document.querySelector('#capsule-settings').click()");
+  await until(()=>manager.isFocused()&&!cv.isVisible()&&!view.isVisible(),'existing upper settings opens usable manager');
+  await mj("document.querySelector('[data-page=extensions]').click();document.querySelector('[data-plugin-select=\"io.spine-workshop.deepseek\"]').click()");
+  await mj("{const i=document.querySelector('#companion-trigger');i.value='click';i.dispatchEvent(new Event('change',{bubbles:true}));}");
+  await until(()=>host.settings.companionTrigger==='click','click trigger saved');
+  const noAutoShow=async label=>{await delay(250);assert.equal(cv.isVisible(),false,label);};
+  manager.hide();await pj("window.desktopPet.companion.hover(true)");
+  await noAutoShow('hover cannot open a click-only composer');
+  pet.webContents.sendInputEvent({type:'mouseMove',...modelPoint});
+  pet.webContents.sendInputEvent({type:'mouseDown',button:'left',clickCount:1,...modelPoint});
+  pet.webContents.sendInputEvent({type:'mouseMove',x:modelPoint.x+24,y:modelPoint.y});
+  pet.webContents.sendInputEvent({type:'mouseUp',button:'left',clickCount:1,x:modelPoint.x+24,y:modelPoint.y});
+  await noAutoShow('a quick character drag cannot open chat');
+  pet.webContents.sendInputEvent({type:'mouseMove',...modelPoint});
+  pet.webContents.sendInputEvent({type:'mouseDown',button:'left',clickCount:1,...modelPoint});
+  await delay(80);assert.equal(cv.isVisible(),false,'pointerdown alone cannot open chat');
+  pet.webContents.sendInputEvent({type:'mouseUp',button:'left',clickCount:1,...modelPoint});
+  await until(()=>cv.isVisible(),'real character click opens composer');
+  await cj("document.querySelector('#pet-chat-text').focus();document.querySelector('#pet-chat-text').dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))");
+  await until(()=>!cv.isVisible(),'escape closes click composer');
+  await pj("window.desktopPet.companion.hover(false);window.desktopPet.companion.hover(true)");
+  host.publish();await noAutoShow('hover and state refresh cannot reopen closed click composer');
+  await pj("window.desktopPet.companion.click()");await until(()=>cv.isVisible(),'another click reopens composer');
+  assert.equal(modelCalls,0);
+  check('click-only setting uses real model clicks, rejects quick drags and stays closed after Escape without model calls');
+
+  manager.show();manager.focus();
+  await mj("{const i=document.querySelector('#companion-width');i.value='480';i.dispatchEvent(new Event('input',{bubbles:true}));i.dispatchEvent(new Event('change',{bubbles:true}));}");
+  await until(()=>host.settings.companionWidth===480,'width setting saved');
+  await until(()=>Math.abs(cv.getBounds().width-480)<=4,'width setting applied');
+  manager.hide();await pj("window.desktopPet.companion.click()");await until(()=>cv.isVisible(),'return to adjustable composer');
+  // Keep the test away from a screen edge while checking the anchored opposite side.
+  await cj("window.petCompanion.move(0,0,'start')");await cj("window.petCompanion.move(-150,0,'end')");
+  const beforeResize=cv.getBounds();
+  await nativeDrag(cv,'[data-resize-edge=right]',60);
+  await until(()=>host.settings.companionWidth===540,'right edge resize persisted');
+  assert.ok(Math.abs(cv.getBounds().x-beforeResize.x)<=2);
+  const beforeLeft=cv.getBounds();
+  await nativeDrag(cv,'[data-resize-edge=left]',40);
+  await until(()=>host.settings.companionWidth===500,'left edge resize persisted');
+  assert.ok(Math.abs((cv.getBounds().x+cv.getBounds().width)-(beforeLeft.x+beforeLeft.width))<=4,'opposite edge stays anchored');
+  const resizedDraft='调宽后仍然保留的草稿';await cj("document.querySelector('#pet-chat-text').value="+JSON.stringify(resizedDraft));
+  for(let i=0;i<20;i++){host.publish();await delay(20);assert.ok(Math.abs(cv.getBounds().width-500)<=4);}
+  assert.equal(await cj("document.querySelector('#pet-chat-text').value"),resizedDraft);
+  const restored=new SettingsStore(userData,[]);await restored.load();
+  assert.equal(restored.data.global.companionWidth,500);assert.equal(restored.data.global.companionTrigger,'click');
+  assert.equal((await cj("window.petCompanion.resize(0,'right','move')")).ok,false);
+  await cj("window.petCompanion.resize(0,'right','start')");await cj("window.petCompanion.resize(-10000,'right','end')");
+  assert.equal(host.settings.companionWidth,240);
+  await cj("window.petCompanion.resize(0,'left','start')");await cj("window.petCompanion.resize(-10000,'left','end')");
+  assert.equal(host.settings.companionWidth,720);
+  assert.equal((await cj("window.petCompanion.resize(Infinity,'right','start')")).ok,false);
+  assert.equal((await cj("window.petCompanion.resize(0,'bad','start')")).ok,false);
+  await writeFile(path.join(directory,'composer-resized.png'),(await cv.webContents.capturePage()).toPNG());
+  assert.equal(modelCalls,0);
+  await host.setSettings({global:{companionTrigger:'hover',companionWidth:340,companionPosition:null}});
+  await pj("window.desktopPet.companion.hover(true)");await until(()=>cv.isVisible(),'hover trigger restored');
+  check('both native resize edges and the settings slider save bounded width, preserve drafts and survive settings reload');
 
   assert.equal(await js("!!document.querySelector('[data-module=\"io.spine-workshop.deepseek\"]')"),false);
   await cj("{const input=document.querySelector('#pet-chat-text');input.focus();input.value='晚上好';input.dispatchEvent(new CompositionEvent('compositionstart',{bubbles:true}));document.querySelector('#pet-chat').requestSubmit();}");
@@ -269,9 +338,11 @@ void app.whenReady().then(async()=>{
   assert.equal(await cj("getComputedStyle(document.querySelector('#pet-chat')).opacity"),'1');
   check('custom colors, clean palette icons and input opacity synchronize without model calls');
 
+  manager.hide();await pj("window.desktopPet.companion.hover(true)");await until(()=>cv.isVisible(),'composer visible before dragging');
+  cv.focus();await until(()=>cv.isFocused(),'composer focused before dragging');
   await cj("document.querySelector('#pet-chat-text').focus()");
   const original=cv.getBounds();
-  await cj("{const h=document.querySelector('#pet-chat-drag');h.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,button:0,pointerId:1,screenX:100,screenY:100}));window.dispatchEvent(new PointerEvent('pointermove',{bubbles:true,pointerId:1,screenX:180,screenY:45}));window.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,pointerId:1,screenX:180,screenY:45}));}");
+  await nativeDrag(cv,'#pet-chat-drag',80,-55);
   await until(()=>host.settings.companionPosition!==null,'drag persisted');
   assert.notDeepEqual(cv.getBounds(),original);
   assert.deepEqual(host.settings.companionPosition,{x:cv.getBounds().x,y:cv.getBounds().y});

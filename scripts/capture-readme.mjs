@@ -30,7 +30,7 @@ void(async()=>{const captures=[];try{
  await js('document.querySelector("#close-character-settings").click();document.querySelector("[data-page=import]").click()');
  await js('document.querySelector("#import-status").textContent="准备就绪"');await capture('v512-materials');await js('document.querySelector("#import-guide").open=true');await capture('v512-materials-expanded');
  await js('document.querySelector("[data-page=features]").click()');await capture('v512-features');
- for(const file of ['Weather-Plugin-v1.2.0.zip','DeepSeek-Plugin-v1.1.0.zip','DSH-Pet-Plugin-v1.1.0.zip']){selection=path.join(root,'release/plugins',file);const result=await js('window.featureSettings.installPlugin()');assert.equal(result.ok,true);}
+ for(const file of ['Weather-Plugin-v1.2.0.zip','DeepSeek-Plugin-v1.1.1.zip','DSH-Pet-Plugin-v1.1.0.zip']){selection=path.join(root,'release/plugins',file);const result=await js('window.featureSettings.installPlugin()');assert.equal(result.ok,true);}
  await js('document.querySelector("[data-page=extensions]").click();[...document.querySelectorAll("[data-plugin-select]")].find(e=>e.dataset.pluginSelect==="io.spine-workshop.deepseek").click()');await capture('v512-plugins');
  await writeFile(path.join(local,'captures.json'),JSON.stringify({ok:true,version:'5.1.2',isolatedProfile:true,paidModelCalls:0,captures},null,2));
  clearTimeout(watchdog);app.exit(0);

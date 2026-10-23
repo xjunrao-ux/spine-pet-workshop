@@ -146,7 +146,7 @@ export class PluginHost {
       }
       await this.store.save(next);
       // Pure presentation changes must not reconfigure providers or touch their state.
-      if(!Object.keys(input.plugins??{}).length&&Object.keys(input.global??{}).every(key=>['theme','customTheme','pluginOrder','companionOpacity','companionPosition'].includes(key))){this.publish();return this.snapshot();}
+      if(!Object.keys(input.plugins??{}).length&&Object.keys(input.global??{}).every(key=>['theme','customTheme','pluginOrder','companionOpacity','companionPosition','companionWidth','companionTrigger'].includes(key))){this.publish();return this.snapshot();}
       this.broker.configure(this.settings);
       for(const record of this.records.values()) {
         await this.sync(record);

@@ -1,6 +1,6 @@
 # Spine 桌宠工坊插件开发规范与接入手册
 
-文档版本：1.7.0 · 更新日期：2026-10-22 · 对应宿主：v5.1.2 正式版（兼容已有 API v1 插件） · 插件 API：v1 · ZIP 包格式：v1。
+文档版本：1.7.0 · 更新日期：2026-10-23 · 对应宿主：v5.1.3 正式版（兼容已有 API v1 插件） · 插件 API：v1 · ZIP 包格式：v1。
 
 本手册面向独立插件作者。目标是：不修改主程序、不加入内置注册表，只编写自己的插件源码，打包为 ZIP，由用户在角色管理器导入，使用同一套菜单、左右分页、设置、存储和角色提醒。
 
@@ -945,7 +945,7 @@ Get-FileHash -Algorithm SHA256 -LiteralPath "release/plugins/Your-Plugin-v1.2.0.
 
 文档修订记录：1.3.0 新增 cloud 图标、左右分页、group.contextActions 与项目右键菜单。1.2.0 待办内置及右侧操作、Codex 外置与 codex.read 只读订阅，补充身份兼容。1.1.0 新增受控 weather.read 与独立天气插件，保留 Worker 的直接联网限制。1.0.0 为首版公开接口手册。后续接口改动必须同步修改字段说明、完整示例和回归测试。
 
-## 2026-10-22：管理器设置与面板呈现
+## 2026-10-23：管理器设置与面板呈现
 
 API v1 增量：manifest.presentation.panel 可为 compact、conversation、bubble，navigation 可为 pages、tabs。未声明时沿用紧凑面板。插件快照可额外提供 settingsPages，结构与 pages 一致、最多 20 页，统一由角色管理器渲染；设置页也经过完整组件校验。不要把配置表单继续放在桌宠 pages 中。设置命令仍需声明参数与权限，可用 managerOnly 限制来源。
 

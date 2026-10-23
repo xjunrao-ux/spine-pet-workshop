@@ -80,6 +80,7 @@ let behaviorTimer: number | undefined;
 let bubbleTimer: number | undefined;
 let pointerDownAt = 0;
 let pointerStartedOnModel = false;
+let pointerDownScreen = {x:0,y:0},pointerDownClient = {x:0,y:0},pointerMoved = false;
 let referenceBounds: { x: number; y: number; width: number; height: number } | undefined;
 let pixiApplication: Application | undefined;
 let modelScale = 1;
@@ -421,19 +422,23 @@ function handleModelPointerDown(event: FederatedPointerEvent) {
   if (event.button !== 0) return;
 
   pointerDownAt = performance.now();
+  pointerDownScreen = {x:event.nativeEvent.screenX,y:event.nativeEvent.screenY};
+  pointerDownClient = {x:event.nativeEvent.clientX,y:event.nativeEvent.clientY};pointerMoved=false;
   pointerStartedOnModel = true;
   window.clearTimeout(behaviorTimer);
   window.desktopPet?.setWalking(false, facingDirection);
   window.desktopPet?.beginDrag();
 }
 
-function handlePointerUp() {
+function handlePointerUp(event?:PointerEvent) {
   if (!pointerStartedOnModel) return;
   pointerStartedOnModel = false;
   window.desktopPet?.endDrag();
 
   const heldFor = performance.now() - pointerDownAt;
-  if (heldFor < 230) {
+  const moved=pointerMoved||Boolean(event&&(Math.hypot(event.screenX-pointerDownScreen.x,event.screenY-pointerDownScreen.y)>6||Math.hypot(event.clientX-pointerDownClient.x,event.clientY-pointerDownClient.y)>6));
+  if (event?.button===0&&!moved&&heldFor<500)companion.click();
+  if (event&&heldFor < 230&&!moved) {
     playAction("touch", { speak: !voiceEnabled, schedule: true });
     playRandomVoice(true);
   }
@@ -529,7 +534,9 @@ async function initialize() {
   }
 }
 
+window.addEventListener("pointermove",event=>{if(pointerStartedOnModel&&(Math.hypot(event.screenX-pointerDownScreen.x,event.screenY-pointerDownScreen.y)>6||Math.hypot(event.clientX-pointerDownClient.x,event.clientY-pointerDownClient.y)>6))pointerMoved=true;});
 window.addEventListener("pointerup", handlePointerUp);
+window.addEventListener("pointercancel",()=>{if(pointerStartedOnModel)handlePointerUp();});
 window.addEventListener("blur", () => {
   if (pointerStartedOnModel) handlePointerUp();
 });

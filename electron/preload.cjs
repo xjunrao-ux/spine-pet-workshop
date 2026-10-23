@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld("desktopPet", {
   companion: {
     get:()=>ipcRenderer.invoke('pet:companion-get'),
     hover:value=>ipcRenderer.send('pet:companion-hover',value),
+    click:()=>ipcRenderer.send('pet:companion-click'),
     onState:callback=>{const listener=(_e,state)=>callback(state);ipcRenderer.on('pet:companion-state',listener);return()=>ipcRenderer.removeListener('pet:companion-state',listener);}
   },
   reportStatus: (state, message) => ipcRenderer.send("pet:render-status", state, message),

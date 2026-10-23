@@ -1,6 +1,6 @@
 {
   "name": "spine-pet-workshop",
-  "version": "5.1.2",
+  "version": "5.1.3",
   "private": true,
   "description": "A Windows Spine 3.8 desktop-pet workshop with local character and voice import.",
   "author": "Amiya Desktop Pet Project",
@@ -12,7 +12,7 @@
     "test:local-service:sandbox": "node scripts/run-local-service-sandbox.mjs",
     "test:deepseek": "node --test scripts/test-deepseek.mjs",
     "test:deepseek:sandbox": "electron scripts/test-deepseek-sandbox.mjs",
-    "package:deepseek": "node scripts/package-plugin.mjs examples/deepseek-plugin release/plugins/DeepSeek-Plugin-v1.1.0.zip",
+    "package:deepseek": "node scripts/package-plugin.mjs examples/deepseek-plugin release/plugins/DeepSeek-Plugin-v1.1.1.zip",
     "dev": "concurrently -k -s first \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron .\"",
     "build": "tsc --noEmit && vite build",
     "test:plugins": "node --test scripts/test-plugins.mjs scripts/test-extensions.mjs scripts/test-external-plugins.mjs scripts/test-weather-plugin.mjs scripts/test-plugin-promotion.mjs scripts/test-plugin-documentation.mjs",

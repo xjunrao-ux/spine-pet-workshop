@@ -9,3 +9,6 @@
 *.mp3 binary
 *.skel binary
 *.exe binary
+
+# Protocol digests identify exact canonical bytes.
+dsh-pet-bridge/protocol/** text eol=lf

@@ -61,7 +61,7 @@ export function initializeFeatureSettings() {
 
   function companionSettings(p:PluginState){
     if(p.manifest.presentation?.panel!=='bubble')return '';
-    return '<section class="companion-appearance"><h4>输入框外观与位置</h4><label for="companion-opacity">输入框不透明度 <output id="companion-opacity-value">'+state.settings.companionOpacity+'%</output></label><input id="companion-opacity" type="range" min="0" max="100" value="'+state.settings.companionOpacity+'" /><p class="hint">0% 为透明背景，100% 为不透明；文字与按钮保持清晰。拖动输入框左侧手柄可移动到桌面任意位置。</p><button type="button" class="ghost-button" data-companion-reset>恢复输入框跟随角色</button></section>';
+    return '<section class="companion-appearance"><h4>对话触发与输入框</h4><label class="feature-setting"><span><strong>打开对话输入框</strong><small>选择鼠标悬停或点击角色后显示。</small></span><select id="companion-trigger"><option value="hover"'+(state.settings.companionTrigger==='hover'?' selected':'')+'>鼠标悬停</option><option value="click"'+(state.settings.companionTrigger==='click'?' selected':'')+'>点击角色</option></select></label><label for="companion-width">输入框宽度 <output id="companion-width-value">'+state.settings.companionWidth+' px</output></label><input id="companion-width" type="range" min="240" max="720" value="'+state.settings.companionWidth+'" /><label for="companion-opacity">输入框不透明度 <output id="companion-opacity-value">'+state.settings.companionOpacity+'%</output></label><input id="companion-opacity" type="range" min="0" max="100" value="'+state.settings.companionOpacity+'" /><p class="hint">0% 为透明背景，100% 为不透明；文字与按钮保持清晰。拖动输入框左侧手柄可移动位置，拖动左右边缘可调节宽度。</p><button type="button" class="ghost-button" data-companion-reset>恢复输入框跟随角色</button></section>';
   }
   function themeIcon(accent:string,background:string,surface:string,ink:string){
     return '<svg viewBox="0 0 40 40" aria-hidden="true"><path fill="'+esc(accent)+'" d="M20 3C10.6 3 3 10.2 3 19.2 3 28.8 10.8 37 20 37h2.4c3.5 0 5.2-3.8 3.2-6.5-1.6-2.2-.2-5.3 2.6-5.3h3.5c3.2 0 5.3-2.7 5.3-5.9C37 10.1 29.4 3 20 3Z"/><circle cx="12" cy="16" r="3" fill="'+esc(background)+'"/><circle cx="20" cy="11" r="3" fill="'+esc(surface)+'"/><circle cx="29" cy="16" r="3" fill="'+esc(ink)+'"/><circle cx="11" cy="26" r="2.5" fill="'+esc(surface)+'"/></svg>';
@@ -150,6 +150,7 @@ export function initializeFeatureSettings() {
   document.addEventListener('input',event=>{
     const input=event.target as HTMLInputElement;
     if(input.dataset.customColor){const key=input.dataset.customColor as keyof typeof state.settings.customTheme;applyTheme('custom',{...state.settings.customTheme,[key]:input.value});document.querySelector<HTMLOutputElement>('[data-custom-value="'+key+'"]')!.value=input.value;}
+    if(input.id==='companion-width')document.querySelector<HTMLOutputElement>('#companion-width-value')!.value=input.value+' px';
     if(input.id==='companion-opacity')document.querySelector<HTMLOutputElement>('#companion-opacity-value')!.value=input.value+'%';
   });
   document.addEventListener('change',event=>{
@@ -157,6 +158,8 @@ export function initializeFeatureSettings() {
     if(!input.closest('#page-features,#page-extensions')) return;
     const id=input.dataset.pluginId;
     if(input.dataset.customColor){const key=input.dataset.customColor as keyof typeof state.settings.customTheme;void save({global:{theme:'custom',customTheme:{...state.settings.customTheme,[key]:input.value}}});}
+    if(input.id==='companion-trigger')void save({global:{companionTrigger:input.value==='click'?'click':'hover'}});
+    if(input.id==='companion-width')void save({global:{companionWidth:Number(input.value)}});
     if(input.id==='companion-opacity')void save({global:{companionOpacity:Number(input.value)}});
     if(input.hasAttribute('data-plugin-enabled')&&id) void save({plugins:{[id]:{enabled:input.checked}}});
     if(input.dataset.featureSetting) void save({global:{[input.dataset.featureSetting]:input.checked}});

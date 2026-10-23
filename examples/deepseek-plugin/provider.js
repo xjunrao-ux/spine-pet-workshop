@@ -22,7 +22,7 @@ export async function activate(context){
     if(connection.error)blocks.push(txt(connection.error,'error'));
     if(!connection.configured)blocks.push(txt('请到角色管理器 → 扩展 → DeepSeek 对话配置 API Key。','muted'));
     if(messages.length)blocks.push({type:'chat',messages});
-    else blocks.push({type:'status',icon:'chat',title:'和桌宠聊聊吧',description:'把鼠标放到桌宠上，就可以和它说几句话。'});
+    else blocks.push({type:'status',icon:'chat',title:'和桌宠聊聊吧',description:'按设置悬停或点击桌宠，打开输入框和它聊聊。'});
     if(error)blocks.push(txt(error,'error'));if(notice)blocks.push(txt(notice,'muted'));
     if(usage!==null)blocks.push(txt('上次请求用量：'+usage+' tokens','muted'));
     if(!active&&state.history.length)blocks.push({type:'group',layout:'row',children:[button('retry','重新生成','undo',connection.configured),button('clear','清空对话','trash')]});

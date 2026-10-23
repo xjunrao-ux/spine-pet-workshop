@@ -1,6 +1,6 @@
 # 插件下载、安装与使用手册
 
-适用 Windows x64 SpinePet v5.1.2；ZIP 导入自 v3.2.2 起支持。普通用户无需安装 Node.js、pnpm 或开发工具。
+适用 Windows x64 SpinePet v5.1.3；ZIP 导入自 v3.2.2 起支持。普通用户无需安装 Node.js、pnpm 或开发工具。
 
 ## 从哪里找插件
 

@@ -1,6 +1,6 @@
 # 正式发布流程
 
-当前版本为 v5.1.2，产品名 SpinePet。发布必须对应同一份 main 提交、vX.Y.Z 标签、二进制、插件和校验清单；已发布版本不覆盖。
+当前版本为 v5.1.3，产品名 SpinePet。发布必须对应同一份 main 提交、vX.Y.Z 标签、二进制、插件和校验清单；已发布版本不覆盖。
 
 ## 1. 准备与验收
 
@@ -17,7 +17,7 @@ git merge --squash dev/v3
 git diff --cached --stat
 git diff --cached --check
 # 检查源码、凭据/素材排除与文档后提交
-git commit -m "release: v5.1.2"
+git commit -m "release: v5.1.3"
 ```
 
 在正式工作区安装锁定依赖，准备本地构建素材后重建。运行 pnpm package:win、pnpm test:packaged 和 scripts/Test-ReleaseBinaries.ps1。安装版版本和内容结构、便携/解包程序的隔离启动均需核对；不要用真实用户安装目录或个人配置执行测试。
@@ -29,23 +29,23 @@ git commit -m "release: v5.1.2"
 ```powershell
 pnpm community:generate
 pnpm community:check
-node scripts/community-catalog.mjs --archives release/v5.1.2
+node scripts/community-catalog.mjs --archives release/v5.1.3
 ```
 
-DSH 桥是单独 TGZ，在 dsh-pet-bridge 目录运行 node scripts/pack.mjs --out ../release/v5.1.2。保留白名单检查，不把令牌、运行配置、日志或测试 Profile 放入包。
+DSH 桥是单独 TGZ，在 dsh-pet-bridge 目录运行 node scripts/pack.mjs --out ../release/v5.1.3。保留白名单检查，不把令牌、运行配置、日志或测试 Profile 放入包。
 
 ## 4. 上传和公开
 
 GitHub 账户与 public 远端必须与目标仓库匹配。脚本只允许 main，拒绝未提交改动、研究历史或不完整附件。安装包名称从 package.json 的发行规则读取；使用说明优先选择精确版本文件。
 
 ```powershell
-& scripts/Publish-Release.ps1 -Version 5.1.2 -PluginArchives @(
-  'release/v5.1.2/Weather-Plugin-v1.2.0.zip',
-  'release/v5.1.2/Codex-Plugin-v1.1.0.zip',
-  'release/v5.1.2/DeepSeek-Plugin-v1.1.0.zip',
-  'release/v5.1.2/DSH-Pet-Plugin-v1.1.0.zip',
-  'release/v5.1.2/Hello-Counter-v1.0.0.zip'
-) -AdditionalAssets @('release/v5.1.2/local-dsh-pet-bridge-1.0.0.tgz')
+& scripts/Publish-Release.ps1 -Version 5.1.3 -PluginArchives @(
+  'release/v5.1.3/Weather-Plugin-v1.2.0.zip',
+  'release/v5.1.3/Codex-Plugin-v1.1.0.zip',
+  'release/v5.1.3/DeepSeek-Plugin-v1.1.1.zip',
+  'release/v5.1.3/DSH-Pet-Plugin-v1.1.0.zip',
+  'release/v5.1.3/Hello-Counter-v1.0.0.zip'
+) -AdditionalAssets @('release/v5.1.3/local-dsh-pet-bridge-1.0.0.tgz')
 ```
 
 脚本先生成所有自定义附件的 SHA256SUMS 和离线使用说明，再原子推送 main 与指定标签；创建 draft、上传完整附件后公开为 latest。构建始终 --publish never。若上传中断，先检查已有 draft 和附件，不覆盖同版本 Release 或重复创建标签。

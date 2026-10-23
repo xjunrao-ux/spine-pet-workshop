@@ -24,7 +24,7 @@ test('theme and order updates change snapshots without reactivating or reconfigu
  const host=new ExtensionService({directory:'.',userData,...options,definitions:[...options.definitions.filter(d=>d.manifest.id!==testPlugin.manifest.id),definition],onUpdate:()=>{},onEvent:()=>{}});
  t.after(()=>host.stop());await host.start();
  const epoch=host.snapshot().plugins.find(p=>p.id===testPlugin.manifest.id).epoch;
- const ids=host.snapshot().plugins.map(p=>p.id).reverse();await host.setSettings({global:{theme:'graphite',pluginOrder:ids}});
+ const ids=host.snapshot().plugins.map(p=>p.id).reverse();await host.setSettings({global:{theme:'graphite',pluginOrder:ids,companionTrigger:'click',companionWidth:480}});
  assert.deepEqual(host.snapshot().plugins.map(p=>p.id),ids);assert.equal(settingsCalls,0);assert.equal(host.snapshot().plugins.find(p=>p.id===testPlugin.manifest.id).epoch,epoch);
  const saved=JSON.parse(await readFile(path.join(userData,'feature-settings.json'),'utf8'));assert.deepEqual(saved.global.pluginOrder,ids);
 });
@@ -48,10 +48,13 @@ test('custom colors reject CSS injection, survive partial updates and do not cal
  assert.equal(sanitizeGlobals({theme:'slate'}).theme,'graphite');assert.ok(!THEME_PRESETS.some(t=>t.id==='slate'));
  const options=createTestOptions(),userData=await mkdtemp(path.join(os.tmpdir(),'pet-custom-')),host=new ExtensionService({directory:'.',userData,...options,onUpdate:()=>{},onEvent:()=>{}});t.after(()=>host.stop());await host.start();
  await host.setSettings({global:{theme:'custom',customTheme:{accent:'#12abcd',ink:'#eeeeee'}}});
- await host.setSettings({global:{customTheme:{surface:'#123456'},companionOpacity:20,companionPosition:{x:-1400,y:350}}});
+ await host.setSettings({global:{customTheme:{surface:'#123456'},companionOpacity:20,companionWidth:480,companionTrigger:'click',companionPosition:{x:-1400,y:350}}});
  assert.equal(host.settings.customTheme.accent,'#12abcd');assert.equal(host.settings.customTheme.surface,'#123456');
  assert.equal(themeVariables('custom',host.settings.customTheme)['--surface-rgb'],'18,52,86');
  const restored=new SettingsStore(userData,options.definitions);await restored.load();assert.deepEqual(restored.data.global.customTheme,host.settings.customTheme);
+ assert.equal(restored.data.global.companionWidth,480);assert.equal(restored.data.global.companionTrigger,'click');
+ assert.equal(sanitizeGlobals().companionTrigger,'hover');assert.equal(sanitizeGlobals({companionTrigger:'bad'}).companionTrigger,'hover');
+ assert.equal(sanitizeGlobals({companionWidth:-1}).companionWidth,240);assert.equal(sanitizeGlobals({companionWidth:9999}).companionWidth,720);assert.equal(sanitizeGlobals({companionWidth:Infinity}).companionWidth,340);
  assert.equal(restored.data.global.companionOpacity,20);assert.deepEqual(restored.data.global.companionPosition,{x:-1400,y:350});
  assert.equal(sanitizeGlobals({companionOpacity:999}).companionOpacity,100);assert.equal(sanitizeGlobals({companionPosition:{x:Infinity,y:0}}).companionPosition,null);
 });

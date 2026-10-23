@@ -1,5 +1,9 @@
 # 版本范围与维护状态
 
+## v5.1.3 正式版
+
+2026-10-23 更新宿主对话交互：可切换点击角色触发、左右拖动输入框调宽并保存设置，移除重复设置按钮并改为圆形发送按钮。配套 DeepSeek 插件为 1.1.1。
+
 ## v5.1.2 正式版
 
 2026-10-22 完成当前功能范围：本地 Spine 3.8 桌宠与语音导入、三栏管理器、真实模型缩略图、逐角色参数、主题与自定义颜色、当前桌宠状态、音乐/通知/待办，以及选装天气、Codex、DeepSeek 和 DSH 插件。
@@ -24,5 +28,6 @@
 | v4.1 / v4.2 | 独立 API 对话、受控本机 HTTP/SSE、DSH 对接 |
 | v4.3 / v5.1.1 | 命名与主题、独立输入框、交互修复、三栏管理器 |
 | v5.1.2 | 体验与文档收尾、清理、正式封装与发布 |
+| v5.1.3 | 对话点击触发、双侧调宽与发送按钮改进 |
 
-[使用说明](docs/versions/v5.1.2.md) · [版本日志](CHANGELOG.md) · [正式版本](https://github.com/xjunrao-ux/spine-pet-workshop/releases)
+[使用说明](docs/versions/v5.1.3.md) · [版本日志](CHANGELOG.md) · [正式版本](https://github.com/xjunrao-ux/spine-pet-workshop/releases)

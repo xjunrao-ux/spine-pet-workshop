@@ -10,5 +10,5 @@ export function initializeCompanion(speech:(text:string,streaming:boolean)=>void
  if(api){api.onState(update);void api.get().then(update).catch(()=>{});}
  window.addEventListener('pointerleave',()=>api?.hover(false));
  window.addEventListener('blur',()=>api?.hover(false));
- return {hover:(value:boolean)=>api?.hover(value)};
+ return {hover:(value:boolean)=>api?.hover(value),click:()=>api?.click()};
 }

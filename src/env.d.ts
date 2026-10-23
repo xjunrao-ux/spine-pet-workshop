@@ -20,6 +20,7 @@ interface DesktopPetBridge {
   companion?:{
     get():Promise<import('../electron/plugins/companion.mjs').CompanionState>;
     hover(value:boolean):void;
+    click():void;
     onState(callback:(state:import('../electron/plugins/companion.mjs').CompanionState)=>void):()=>void;
   };
   isElectron: boolean;
@@ -131,8 +132,9 @@ interface PetSettingsBridge {
 interface ComposerBridge {
  get():Promise<import('../electron/plugins/companion.mjs').CompanionState>;
  execute(id:string,epoch:number,command:string,text?:string):Promise<import('./plugins/types').CommandResult>;
- settings():void;interaction(value:boolean):void;close():void;
+ interaction(value:boolean):void;close():void;
  move(dx:number,dy:number,phase:'start'|'move'|'end'):Promise<{ok:boolean}>;
+ resize(dx:number,edge:'left'|'right',phase:'start'|'move'|'end'):Promise<{ok:boolean}>;
  onState(callback:(state:import('../electron/plugins/companion.mjs').CompanionState)=>void):()=>void;
  onClose(callback:()=>void):()=>void;
 }

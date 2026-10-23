@@ -1,4 +1,4 @@
-# 扩展与 ZIP 插件架构（v5.1.2）
+# 扩展与 ZIP 插件架构（v5.1.3）
 
 音乐、系统通知、待办内置；天气、Codex、DeepSeek、DSH 作为独立 ZIP 导入。插件 API v1 与 ZIP 包格式 v1 保持兼容，界面组件与受控能力可以增量增加；接口的具体范围以 [插件开发手册](PLUGIN_DEVELOPMENT.md) 为准。
 
