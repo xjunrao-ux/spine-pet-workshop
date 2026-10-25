@@ -1,7 +1,11 @@
 import {themeVariables} from './plugins/themes.mjs';
 import {applyCredentialTheme} from './plugins/window-theme.mjs';
 import {createPetCompanionBridge} from './plugins/pet-companion-bridge.mjs';
-import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, net, protocol, safeStorage, screen, shell, Tray } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, net, Notification, protocol, safeStorage, screen, shell, Tray } from "electron";
+import electronUpdater from 'electron-updater';
+import {AppUpdates, REPOSITORY, RELEASES_URL} from './updates.mjs';
+import {PluginUpdates} from './plugins/updates.mjs';
+import {startupVoiceEnabled} from './plugins/settings-store.mjs';
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { copyFile, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
@@ -47,6 +51,8 @@ protocol.registerSchemesAsPrivileged([
 
 let mainWindow;
 let settingsWindow;
+let appUpdates, pluginUpdates, updateTimer, updateStartupTimer, updateNotification;
+const notifiedPluginUpdates = new Set();
 let tray;
 let monitorProcess;
 let desktopWindows = [];
@@ -62,6 +68,7 @@ let gravityEnabled = true;
 let edgeSnapEnabled = true;
 let alwaysOnTop = true;
 let voiceEnabled = true;
+let lastDefaultVoiceEnabled = true;
 let petScale = 0.6;
 let activeCharacterParameters = normalizeParameters();
 let supportRatio = 1;
@@ -86,6 +93,22 @@ function grantPreviewAssets(kind, files) {
 
 function requireSettingsSender(event) {
   if (!settingsWindow || settingsWindow.isDestroyed() || event.sender !== settingsWindow.webContents) throw new Error("无效的设置窗口请求");
+}
+
+function openUpdateSettings() {
+  createSettingsWindow();
+  const target = settingsWindow;
+  if (!target || target.isDestroyed()) return;
+  const navigate = () => target.webContents.send('settings:navigate', 'updates');
+  if (target.webContents.isLoading()) target.webContents.once('did-finish-load', navigate); else navigate();
+}
+function publishUpdates() {
+  if (settingsWindow && !settingsWindow.isDestroyed()) settingsWindow.webContents.send('updates:state', {app: appUpdates?.snapshot(), plugins: pluginUpdates?.snapshot()});
+}
+function notifyUpdate(message) {
+  if (!Notification.isSupported() || process.env.PET_TEST_PROFILE) return;
+  updateNotification = new Notification({title: 'SpinePet 更新', body: message, icon: APP_ICON_PATH});
+  updateNotification.on('click', openUpdateSettings); updateNotification.show();
 }
 
 async function previewModel(payload) {
@@ -630,6 +653,7 @@ function buildMenu() {
       label: "打开角色管理器…",
       click: createSettingsWindow
     },
+    {label: '检查更新…', click: () => {openUpdateSettings(); void appUpdates?.check(); void pluginUpdates?.check();}},
     { type: "separator" },
     {
       label: visible ? `隐藏${activeCharacterName}` : `显示${activeCharacterName}`,
@@ -1013,6 +1037,7 @@ app.whenReady().then(async () => {
   await mkdir(charactersDirectory(), { recursive: true });
   const firstRun = (await readJson(preferencesPath(), undefined)) === undefined;
   if (firstRun) await writePreferences(BUILTIN_CHARACTER.id);
+  voiceEnabled = lastDefaultVoiceEnabled = startupVoiceEnabled(await readJson(path.join(app.getPath('userData'), 'feature-settings.json'), {}));
   const activeConfig = await getActiveCharacterConfig();
   activeCharacterName = activeConfig.name;
   activeCharacterParameters = normalizeParameters(activeConfig.parameters);
@@ -1066,7 +1091,7 @@ app.whenReady().then(async () => {
   });
   ipcMain.handle("settings:preview-model", (event, payload) => { requireSettingsSender(event); return previewModel(payload); });
   ipcMain.handle("settings:preview-voice", (event, payload) => { requireSettingsSender(event); return previewVoice(payload); });
-  ipcMain.handle("pet:get-character-config", getActiveCharacterConfig);
+  ipcMain.handle("pet:get-character-config", async () => ({...await getActiveCharacterConfig(), voiceEnabled}));
   ipcMain.on("pet:show-context-menu", showPetMenu);
   ipcMain.on("pet:drag-start", startDragging);
   ipcMain.on("pet:drag-end", stopDragging);
@@ -1173,9 +1198,15 @@ app.whenReady().then(async () => {
       return { ok: false, error: error instanceof Error ? error.message : "删除失败" };
     }
   });
-  ipcMain.handle("settings:open-external", async (_event, rawUrl) => {
+  ipcMain.handle("settings:open-external", async (event, rawUrl) => {
+    requireSettingsSender(event);
     const url = String(rawUrl);
     const allowed = [
+      REPOSITORY,
+      RELEASES_URL,
+      `${REPOSITORY}/blob/main/docs/PLUGIN_QUICKSTART.md`,
+      `${REPOSITORY}/blob/main/docs/PLUGIN_DEVELOPMENT.md`,
+      `${REPOSITORY}/tree/main/community`,
       "https://github.com/isHarryh/Ark-Models",
       "https://github.com/isHarryh/Ark-Voice",
       "https://github.com/isHarryh/Ark-Voice/blob/main/voice_data.json",
@@ -1203,6 +1234,11 @@ app.whenReady().then(async () => {
     directory: path.join(app.isPackaged ? path.join(process.resourcesPath, "app.asar.unpacked") : rootDirectory, "electron", "extensions"),
     userData: app.getPath("userData"),
     onUpdate: snapshot => {
+      if (snapshot.settings.defaultVoiceEnabled !== lastDefaultVoiceEnabled) {
+        lastDefaultVoiceEnabled = snapshot.settings.defaultVoiceEnabled;
+        voiceEnabled = lastDefaultVoiceEnabled;
+        sendCommand({type: 'voice-enabled', enabled: voiceEnabled});
+      }
       extensionOverlay?.update(snapshot);
       petCompanionBridge?.update(snapshot);
       for(const window of BrowserWindow.getAllWindows())if(/\/(?:deepseek|local-service)-settings\.html$/.test(window.webContents.getURL()))applyCredentialTheme(window,snapshot.settings);
@@ -1270,6 +1306,46 @@ app.whenReady().then(async () => {
     if (settingsSender(event) && source) extensionOverlay.event({ id: "preview", pluginId: source.id, text: "桌宠工坊 · 新消息会在这里轻轻提醒", createdAt: new Date().toISOString() });
   });
   await extensionService.start();
+  const portable = Boolean(process.env.PORTABLE_EXECUTABLE_FILE || process.env.PORTABLE_EXECUTABLE_DIR);
+  const supportsUpdate = app.isPackaged && process.platform === 'win32' && !portable;
+  appUpdates = new AppUpdates({version: app.getVersion(), userData: app.getPath('userData'),
+    updater: supportsUpdate ? electronUpdater.autoUpdater : undefined,
+    reason: portable ? '便携版请到发布页下载新版；安装版支持原位升级。' : !app.isPackaged ? '开发模式可检查版本，安装版支持下载并覆盖升级。' : '此系统暂不支持应用内安装，请到发布页下载。',
+    fetchRelease: async () => (await import('./updates.mjs')).latestRelease(net.fetch.bind(net)),
+    onChange: publishUpdates,
+    notify: notifyUpdate});
+  pluginUpdates = new PluginUpdates({version: app.getVersion(), packages: pluginPackages, host: extensionService, fetcher: net.fetch.bind(net),
+    onChange: state => {
+      publishUpdates();
+      if (state.phase !== 'ready') return;
+      const unseen = state.updates.filter(e => !notifiedPluginUpdates.has(e.id + '@' + e.version));
+      if (unseen.length) {for (const e of unseen) notifiedPluginUpdates.add(e.id + '@' + e.version); notifyUpdate(`发现 ${unseen.length} 个插件新版本，请到角色管理器查看并确认更新。`);}
+    },
+    confirm: async ({entry, oldVersion, addedPermissions}) => {
+      if (!settingsWindow || settingsWindow.isDestroyed()) return false;
+      const result = await dialog.showMessageBox(settingsWindow, {type: 'question', title: '确认插件更新', message: `更新 ${entry.name}：v${oldVersion} → v${entry.version}`,
+        detail: `ID：${entry.id}\n来源：${entry.downloadUrl}\n\n请求权限：${entry.permissions.join('、') || '无'}\n新增权限：${addedPermissions.join('、') || '无'}\n\n已核对社区目录中的 SHA-256、插件身份与兼容版本。更新保留启用状态、配置和独立数据；目录校验不代表发布者签名认证。`,
+        buttons: ['更新插件', '取消'], defaultId: 1, cancelId: 1, noLink: true});
+      return result.response === 0;
+    }});
+  await appUpdates.load();
+  const updatesSender = event => {requireSettingsSender(event); if (event.senderFrame !== settingsWindow.webContents.mainFrame) throw new Error('无效的更新请求');};
+  ipcMain.handle('updates:get', event => {updatesSender(event); return {app: appUpdates.snapshot(), plugins: pluginUpdates.snapshot()};});
+  ipcMain.handle('updates:check', event => {updatesSender(event); return appUpdates.check();});
+  ipcMain.handle('updates:download', event => {updatesSender(event); return appUpdates.download();});
+  ipcMain.handle('updates:install', event => {updatesSender(event); return appUpdates.install();});
+  ipcMain.handle('updates:preferences', async (event, patch) => {
+    updatesSender(event);
+    try {return {ok: true, state: await appUpdates.setPreferences(patch)};} catch {return {ok: false, error: '更新设置保存失败，原设置已保留'};}
+  });
+  ipcMain.handle('updates:plugins-check', event => {updatesSender(event); return pluginUpdates.check();});
+  ipcMain.handle('updates:plugin-install', (event, id) => {updatesSender(event); return pluginUpdates.install(String(id));});
+  // Tests and local development never contact the release server automatically.
+  if (app.isPackaged && !process.env.PET_TEST_PROFILE) {
+    const checkAutomatically = () => {if (appUpdates.state.autoCheck) {void appUpdates.check(); void pluginUpdates.check();}};
+    updateStartupTimer = setTimeout(checkAutomatically, 15_000);
+    updateTimer = setInterval(checkAutomatically, 6 * 60 * 60 * 1000);
+  }
   if(!app.isPackaged&&process.env.ZIP_PLUGIN_SMOKE_DIR){
     const {runSmoke}=await import("../scripts/smoke-plugin-transition.mjs");void runSmoke({app,mainWindow,overlay:extensionOverlay,service:extensionService,createSettingsWindow,getSettingsWindow:()=>settingsWindow});
   }else if (!app.isPackaged && (process.env.V311_SMOKE_DIR || process.env.V321_SMOKE_DIR)) {
@@ -1296,6 +1372,7 @@ app.whenReady().then(async () => {
 });
 
 app.on("before-quit", () => {
+  clearTimeout(updateStartupTimer); clearInterval(updateTimer); appUpdates?.stop();
   extensionService?.stop();
   extensionOverlay?.stop();
   petCompanionBridge?.stop();

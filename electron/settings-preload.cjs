@@ -18,6 +18,17 @@ contextBridge.exposeInMainWorld("featureSettings", {
 });
 
 contextBridge.exposeInMainWorld("petSettings", {
+  updates: {
+    get: () => ipcRenderer.invoke('updates:get'),
+    check: () => ipcRenderer.invoke('updates:check'),
+    download: () => ipcRenderer.invoke('updates:download'),
+    install: () => ipcRenderer.invoke('updates:install'),
+    preferences: patch => ipcRenderer.invoke('updates:preferences', patch),
+    checkPlugins: () => ipcRenderer.invoke('updates:plugins-check'),
+    installPlugin: id => ipcRenderer.invoke('updates:plugin-install', id),
+    onState: callback => {const listener = (_event, value) => callback(value); ipcRenderer.on('updates:state', listener); return () => ipcRenderer.removeListener('updates:state', listener);}
+  },
+  onNavigate: callback => {const listener = (_event, page) => callback(page); ipcRenderer.on('settings:navigate', listener); return () => ipcRenderer.removeListener('settings:navigate', listener);},
   getPetStatus: () => ipcRenderer.invoke("settings:pet-status"),
   onPetStatus: callback => { const listener = (_event, value) => callback(value); ipcRenderer.on("settings:pet-status", listener); return () => ipcRenderer.removeListener("settings:pet-status", listener); },
   getCharacterConfig: (id) => ipcRenderer.invoke("settings:get-character-config", id),

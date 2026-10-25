@@ -4,6 +4,7 @@ import { initializeFeatureSettings } from "./features/settings";
 import { createParameterEditor } from "./parameter-editor";
 import { CharacterPreview, VoiceAudition } from "./character-preview";
 import { normalizeParameters } from "../electron/character-parameters.mjs";
+import {initializeUpdates} from './update-settings';
 
 type ActionName = "idle" | "walk" | "sit" | "sleep" | "touch" | "special";
 
@@ -439,4 +440,6 @@ document.addEventListener("keydown", event => {
 switchPage(previewPage ?? "characters");
 void loadCharacters();
 initializeFeatureSettings();
+api.onNavigate?.(page => {if (page === 'updates') switchPage(page);});
+initializeUpdates(api.updates, () => switchPage('updates'));
 window.addEventListener("beforeunload", () => audition.stop());

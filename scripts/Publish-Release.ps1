@@ -39,13 +39,25 @@ try {
     }
     $setup = Join-Path $artifactRoot $setupName
     $portable = Join-Path $artifactRoot $portableName
+    $updateManifest = Join-Path $artifactRoot 'latest.yml'
+    $blockmap = Join-Path $artifactRoot ($setupName + '.blockmap')
     $notes = Join-Path $projectRoot "docs/RELEASE_$tag.md"
     $series = ($Version.Split('.')[0..1] -join '.')
     $usage = Join-Path $projectRoot "docs/versions/v$Version.md"
     if (-not (Test-Path -LiteralPath $usage -PathType Leaf)) { $usage = Join-Path $projectRoot "docs/versions/v$series.md" }
-    foreach ($required in @($setup, $portable, $notes, $usage)) {
+    foreach ($required in @($setup, $portable, $notes, $usage, $updateManifest, $blockmap)) {
         if (-not (Test-Path -LiteralPath $required -PathType Leaf)) { throw "Missing release file: $required" }
     }
+    $manifestText = Get-Content -Raw -LiteralPath $updateManifest
+    $versionPattern = '(?m)^version:\s*[''"]?' + [regex]::Escape($Version) + '[''"]?\s*$'
+    if ($manifestText -notmatch $versionPattern -or -not $manifestText.Contains($setupName)) {
+        throw 'latest.yml must describe this version and its NSIS installer. Rebuild with package:win.'
+    }
+    $setupStream = [System.IO.File]::OpenRead($setup)
+    $sha512 = [System.Security.Cryptography.SHA512]::Create()
+    try { $setupDigest = [Convert]::ToBase64String($sha512.ComputeHash($setupStream)) }
+    finally { $sha512.Dispose(); $setupStream.Dispose() }
+    if (-not $manifestText.Contains($setupDigest)) { throw 'latest.yml checksum does not match the installer. Rebuild before publishing.' }
     $plugins = @(foreach ($archive in $PluginArchives) {
         $full = [System.IO.Path]::GetFullPath((Join-Path $projectRoot $archive))
         if (-not $full.StartsWith($projectRoot + '\', [System.StringComparison]::OrdinalIgnoreCase) -or [System.IO.Path]::GetExtension($full) -ne '.zip') {
@@ -76,7 +88,7 @@ try {
 
     $usageArtifact = Join-Path $artifactRoot "USAGE-$tag.md"
     Copy-Item -LiteralPath $usage -Destination $usageArtifact -Force
-    $attachments = @($portable, $setup, $usageArtifact) + @($plugins) + @($extras)
+    $attachments = @($portable, $setup, $usageArtifact, $updateManifest, $blockmap) + @($plugins) + @($extras)
     if (@($attachments | ForEach-Object { [System.IO.Path]::GetFileName($_) } | Sort-Object -Unique).Count -ne $attachments.Count) { throw 'Release asset names must be unique.' }
     $checksumPath = Join-Path $artifactRoot 'SHA256SUMS.txt'
     $checksumLines = foreach ($artifact in $attachments) {

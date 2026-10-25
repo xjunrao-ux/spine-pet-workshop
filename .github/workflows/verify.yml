@@ -22,6 +22,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: npm install --prefix dsh-pet-bridge --no-save --package-lock=false --ignore-scripts @deepseek-ai/dsh-llm@0.1.1-rc.2 @deepseek-ai/dsh-agent@0.1.1-rc.2
       - run: pnpm test:release
+      - run: pnpm test:updates
+      - run: pnpm test:voice
       - run: node --test scripts/test-ui-themes.mjs scripts/test-deepseek.mjs scripts/test-dsh-pet.mjs scripts/test-plugin-presentation.mjs
       - run: node --test "dsh-pet-bridge/test/*.test.js"
       - run: pnpm docs:check

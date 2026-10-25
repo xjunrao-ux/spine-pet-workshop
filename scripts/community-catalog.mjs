@@ -78,6 +78,9 @@ export async function catalog({write=false,archives}={}){
   const entries=await readEntries(),file=path.join(root,'community/README.md'),source=await readFile(file,'utf8');
   const output=renderCatalogDocument(source,entries);
   if(write)await writeFile(file,output);else if(output!==source.replaceAll('\r\n','\n'))throw new Error('Catalog table is stale. Run pnpm community:generate');
+  const onlineFile=path.join(root,'community/catalog.json'),online=JSON.stringify({schemaVersion:1,plugins:entries},null,2)+'\n';
+  if(write)await writeFile(onlineFile,online);
+  else if((await readFile(onlineFile,'utf8')).replaceAll('\r\n','\n')!==online)throw new Error('Online catalog is stale. Run pnpm community:generate');
   if(archives)for(const entry of entries){
     const filename=path.basename(new URL(entry.downloadUrl).pathname);
     verifyArchive(entry,await readFile(path.join(archives,filename)));

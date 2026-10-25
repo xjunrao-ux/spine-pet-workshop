@@ -45,6 +45,7 @@ interface PetVoiceLine {
 }
 
 interface PetCharacterConfig {
+  voiceEnabled?: boolean;
   parameters?: PetParameters;
   id: string;
   name: string;
@@ -112,6 +113,8 @@ interface CharacterImportPayload {
 }
 
 interface PetSettingsBridge {
+  updates?: import('./update-settings').UpdatesBridge;
+  onNavigate?(callback: (page: string) => void): () => void;
   getPetStatus?(): Promise<PetDisplayStatus>;
   onPetStatus?(callback: (status: PetDisplayStatus) => void): () => void;
   getCharacterConfig(id: string): Promise<PetCharacterConfig>;

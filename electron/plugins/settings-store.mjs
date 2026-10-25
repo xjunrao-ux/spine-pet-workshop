@@ -3,7 +3,7 @@ import path from 'node:path';
 import { sanitizeConfig, readKey } from './contracts.mjs';
 import { normalizeTheme, sanitizeCustomTheme, DEFAULT_CUSTOM_THEME } from './themes.mjs';
 
-export const DEFAULT_GLOBALS={details:false,subtitles:true,quiet:false,reducedMotion:false,hoverDelay:300,cardWidth:282,cardHeight:285,aiCardWidth:420,aiCardHeight:500,theme:'graphite',customTheme:{...DEFAULT_CUSTOM_THEME},companionOpacity:86,companionWidth:340,companionTrigger:'hover',companionPosition:null,pluginOrder:[]};
+export const DEFAULT_GLOBALS={defaultVoiceEnabled:true,details:false,subtitles:true,quiet:false,reducedMotion:false,hoverDelay:300,cardWidth:282,cardHeight:285,aiCardWidth:420,aiCardHeight:500,theme:'graphite',customTheme:{...DEFAULT_CUSTOM_THEME},companionOpacity:86,companionWidth:340,companionTrigger:'hover',companionPosition:null,pluginOrder:[]};
 export function sanitizeGlobals(input={}) {
   const result={...DEFAULT_GLOBALS};
   result.theme=normalizeTheme(input.theme);
@@ -11,9 +11,14 @@ export function sanitizeGlobals(input={}) {
   result.companionTrigger=input.companionTrigger==='click'?'click':'hover';
   result.companionPosition=input.companionPosition&&Number.isFinite(input.companionPosition.x)&&Number.isFinite(input.companionPosition.y)?{x:Math.round(Math.max(-100000,Math.min(100000,input.companionPosition.x))),y:Math.round(Math.max(-100000,Math.min(100000,input.companionPosition.y)))}:null;
   result.pluginOrder=[...new Set((Array.isArray(input.pluginOrder)?input.pluginOrder:[]).filter(id=>typeof id==='string'&&/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$/.test(id)))].slice(0,128);
-  for (const key of ['details','subtitles','quiet','reducedMotion']) if (typeof input[key]==='boolean') result[key]=input[key];
+  for (const key of ['defaultVoiceEnabled','details','subtitles','quiet','reducedMotion']) if (typeof input[key]==='boolean') result[key]=input[key];
   for (const [key,min,max] of [['companionOpacity',0,100],['companionWidth',240,720],['hoverDelay',150,1200],['cardWidth',240,560],['cardHeight',230,640],['aiCardWidth',320,560],['aiCardHeight',360,640]]) if (Number.isFinite(input[key])) result[key]=Math.round(Math.max(min,Math.min(max,input[key])));
   return result;
+}
+export function startupVoiceEnabled(saved) {
+  if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return DEFAULT_GLOBALS.defaultVoiceEnabled;
+  if (saved.schemaVersion === 2) return sanitizeGlobals(saved.global ?? {}).defaultVoiceEnabled;
+  return saved.schemaVersion == null ? sanitizeGlobals(saved).defaultVoiceEnabled : DEFAULT_GLOBALS.defaultVoiceEnabled;
 }
 async function optionalFile(file) { try { return await readFile(file,'utf8'); } catch(error) { if(error.code==='ENOENT') return null;throw error; } }
 export async function atomicWrite(file,value) {

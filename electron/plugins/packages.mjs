@@ -49,16 +49,31 @@ export class PluginPackages {
   }
   definition(bundle,grants=bundle.manifest.permissions){return {...this.makeProvider(bundle),manifest:bundle.manifest,origin:'external',grantedPermissions:[...grants],defaultEnabled:true};}
   async inspect(file){const info=await stat(file);if(!info.isFile()||info.size>8*1024*1024) throw new Error('请选择小于 8 MB 的插件 ZIP');return inspectPluginZip(await readFile(file));}
-  async install(bundle,host){
+  async install(bundle,host,{preserveEnabled=false,requireHealthy=false}={}){
     const operation=this.queue.then(async()=>{
       const safe=validateBundle(bundle),hash=hashBundle(safe),old=[...this.installed],entry={id:safe.manifest.id,hash,grants:safe.manifest.permissions};
       if(this.readOnly)throw new Error('插件安装记录不可写，已保留原文件');
       if(host.readOnly) throw new Error('当前设置不可写，请先修复设置');
       if(host.records.get(safe.manifest.id)?.origin==='builtin')throw new Error('该插件已经内置，不能通过 ZIP 替换；请在管理器启用或禁用');
       const next=old.filter(item=>item.id!==entry.id);if(next.length>=32) throw new Error('外部插件安装数量已达上限');next.push(entry);
+      const previousDefinition=host.definitions.find(def=>def.manifest.id===entry.id);
+      const previousSettings=structuredClone(host.store.data.plugins[entry.id]);
+      const enabled=preserveEnabled?(previousSettings?.enabled??true):true;
       await atomicWrite(this.file(hash),safe);await atomicWrite(this.index,{schemaVersion:1,installed:next});
-      try{await host.installDefinition(this.definition(safe),{enabled:true});this.installed=next;return host.snapshot();}
-      catch(error){await atomicWrite(this.index,{schemaVersion:1,installed:old});throw error;}
+      try{
+        await host.installDefinition(this.definition(safe),{enabled});
+        if(requireHealthy&&enabled&&host.records.get(entry.id)?.runtime!=='active')throw new Error('新版插件启动失败');
+        this.installed=next;return host.snapshot();
+      }
+      catch(error){
+        await atomicWrite(this.index,{schemaVersion:1,installed:old});
+        if(requireHealthy&&previousDefinition){
+          const restored=structuredClone(host.store.data);restored.plugins[entry.id]=previousSettings;await host.store.save(restored);
+          await host.installDefinition(previousDefinition,{enabled:previousSettings.enabled});
+          if(error.message==='新版插件启动失败')throw new Error('新版插件启动失败，已恢复旧版；独立数据已保留');
+        }
+        throw error;
+      }
     });this.queue=operation.catch(()=>{});return operation;
   }
   async uninstall(id,host){

@@ -449,6 +449,7 @@ async function initialize() {
   window.desktopPet?.reportStatus?.("loading");
   try {
     characterConfig = await window.desktopPet?.getCharacterConfig() ?? FALLBACK_CHARACTER;
+    setVoiceEnabled(characterConfig.voiceEnabled ?? true);
   } catch (error) {
     console.warn("无法读取当前角色配置，使用内置阿米娅。", error);
     characterConfig = FALLBACK_CHARACTER;

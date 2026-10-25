@@ -7,7 +7,7 @@
 3. 使用宿主打包脚本生成根目录含 `plugin.json` 的插件 ZIP，在你的 GitHub Release 上传 ZIP 附件。固定版本链接不要使用 `latest`；不要覆盖同一版本附件，更新时增加版本号。
 4. 使用 PowerShell `Get-FileHash -Algorithm SHA256 -LiteralPath '你的插件.zip'` 取得完整 ZIP 摘要，小写填写到条目。
 5. Fork 本仓库，复制 `community/plugins/com.example.hello-counter.json` 为 `community/plugins/<你的ID>.json`，替换全部信息。不要复制示例的 hash，也不要提交 ZIP、依赖或用户数据到 Git。
-6. 在仓库根目录运行 `pnpm community:generate`、`pnpm community:check`，提交条目与生成后的表格，创建 PR，注明首次收录或更新。
+6. 在仓库根目录运行 `pnpm community:generate`、`pnpm community:check`，提交条目、生成后的表格与 `community/catalog.json`，创建 PR，注明首次收录或更新。合并到 main 后，接入更新功能的客户端即可检查已安装插件的新版本，无需重新发布主程序；发布 ZIP 应先于合并目录。
 7. 等待检查与审核，通过后由维护者合并。收录不需要修改宿主注册表，不触发新的 EXE 发行。
 
 ## 字段规范

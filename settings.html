@@ -10,13 +10,14 @@
       <aside class="app-sidebar" aria-label="应用导航">
         <header class="brand-header">
           <img class="brand-logo" src="./assets/spinepet-icon.png" alt="" />
-          <div class="brand-meta"><strong>SpinePet</strong><span>桌面角色工坊</span><small>v5.1.3</small></div>
+          <div class="brand-meta"><strong>SpinePet</strong><span>桌面角色工坊</span><small id="brand-version">v5.2.1</small></div>
         </header>
       <nav class="tabs" aria-label="功能导航">
         <button class="tab active" data-page="characters"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>角色库</span></button>
         <button class="tab" data-page="import"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 15v5h16v-5"/></svg><span>导入角色</span></button>
         <button class="tab" data-page="features"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m13 2-9 12h7l-1 8 10-13h-7z"/></svg><span>功能</span></button>
         <button class="tab" data-page="extensions"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><path d="M17.5 3v7M14 6.5h7"/></svg><span>扩展</span></button>
+        <button class="tab" data-page="updates"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7a9 9 0 1 0 1 7M20 3v5h-5"/></svg><span>更新与开发</span><small id="update-badge" class="hidden">新</small></button>
       </nav>
         <footer class="sidebar-footer"><div id="current-pet-status" class="runtime-badge" data-state="loading" role="status"><span class="status-dot" aria-hidden="true"></span><div><strong id="current-pet-name">正在读取桌宠…</strong><small id="current-pet-message">正在确认显示状态</small></div></div></footer>
       </aside>
@@ -38,6 +39,7 @@
           <h3>应用启动</h3>
           <label class="feature-setting"><span><strong>开机启动</strong><small>登录 Windows 后自动启动桌宠。默认关闭；移动便携版文件后，请重新关闭并开启此选项。</small></span><input id="startup-enabled" type="checkbox" disabled aria-label="开机启动" /></label>
           <p id="startup-status" class="hint" role="status">正在读取启动设置…</p>
+          <label class="feature-setting"><span><strong>默认开启角色语音</strong><small>保存后立即应用，下次启动也按此设置。右键菜单中的“语音与字幕”可临时切换。</small></span><input id="default-voice-enabled" type="checkbox" data-feature-setting="defaultVoiceEnabled" aria-label="默认开启角色语音" /></label>
         </article>
         <article class="feature-options" id="interaction-settings">
           <h3>提醒与交互</h3>
@@ -56,10 +58,40 @@
         <article class="feature-options"><h3>应用通知</h3><p class="hint">只接收真正进入 Windows 通知中心的消息。已验证当前微信与企业微信不走系统通知，暂不支持其聊天提醒；待官方提供可用接口后再评估。启动前的 ChatGPT 历史通知不再展示，只提示新消息。</p><div id="notification-channels"></div><div id="feature-apps"></div></article>
       </section>
       <section id="page-extensions" class="page">
-        <div class="section-heading"><div><p class="kicker">INDEPENDENT PLUGINS</p><h2>插件管理</h2></div><button id="plugin-import" class="primary-button import-button">导入插件 ZIP</button></div>
+        <div class="section-heading"><div><p class="kicker">INDEPENDENT PLUGINS</p><h2>插件管理</h2></div><div class="workspace-actions"><button id="plugin-update-shortcut" class="ghost-button" type="button">检查插件更新</button><button id="plugin-import" class="primary-button import-button">导入插件 ZIP</button></div></div>
         <p id="plugin-package-status" class="hint" role="status">接口 v1 · ZIP 导入试用。文件仅在本机读取，不上传网络；请只安装可信来源。</p>
         <div class="plugin-workspace-hint"><p class="hint">左侧拖动卡片即可排序，快捷菜单同步排列。点击插件，在右侧直接修改设置。</p><button type="button" class="ghost-button" data-show-themes>配色主题</button></div><div id="extension-registry" class="plugin-workspace"></div>
         <article class="feature-options"><h3>统一接口 · 验证阶段</h3><p class="hint">ZIP 插件在独立沙盒运行环境中提交页面和受控操作。桌宠统一负责显示、隐私、已读与生命周期。开放独立存储、角色提醒及授权的 Codex 只读/天气接口，不开放任意文件、网络或凭据访问。待办已内置，Codex 需导入 ZIP；完整接口见开发手册。</p><div class="module-protocol">ZIP → 权限确认 → activate → 页面 / 命令 / 提醒 → 停止或卸载</div></article>
+      </section>
+      <section id="page-updates" class="page">
+        <div class="section-heading"><div><p class="kicker">UPDATES & DEVELOPMENT</p><h2>更新与开发</h2></div><span id="update-current-version" class="step-pill">正在读取版本…</span></div>
+        <article class="feature-options update-card">
+          <h3>桌宠更新</h3>
+          <p class="hint">从 GitHub 获取正式发布版。安装版升级替换程序文件，保留角色、插件及用户数据。</p>
+          <p id="app-update-status" class="update-status" role="status" aria-live="polite">正在读取更新状态…</p>
+          <p id="app-update-reason" class="hint"></p>
+          <progress id="app-update-progress" class="hidden" max="100" value="0" aria-label="新版下载进度"></progress>
+          <div class="feature-buttons"><button id="app-update-check" class="ghost-button" type="button" disabled>检查更新</button><button id="app-update-download" class="primary-button hidden" type="button">下载更新</button><button id="app-update-install" class="primary-button hidden" type="button">重启并安装</button><button class="ghost-button" type="button" data-url="https://github.com/xjunrao-ux/spine-pet-workshop/releases/latest">打开发布页</button></div>
+          <p id="app-update-last-checked" class="hint update-last-checked"></p>
+          <label class="feature-setting"><span><strong>自动检查更新</strong><small>启动后及运行期间每 6 小时检查主程序和已收录插件。</small></span><input id="update-auto-check" type="checkbox" disabled /></label>
+          <label class="feature-setting"><span><strong>自动下载主程序更新</strong><small>发现新版后在后台下载，由你点击“重启并安装”完成升级。</small></span><input id="update-auto-download" type="checkbox" disabled /></label>
+          <p id="update-preferences-status" class="hint" role="status"></p>
+          <details id="app-update-notes-panel" class="hidden"><summary>本次更新说明</summary><pre id="app-update-notes" class="update-notes"></pre></details>
+        </article>
+        <article class="feature-options update-card">
+          <div class="update-card-heading"><h3>插件更新</h3><button id="plugin-update-check" class="ghost-button" type="button" disabled>检查插件更新</button></div>
+          <p id="plugin-release-guide" class="hint">首次安装插件：点击“打开发布页”，在 GitHub Release 的 Assets（附件）中下载插件 ZIP，然后到“扩展 → 导入插件 ZIP”选择下载文件。无需解压；Source code.zip 是源码，不能作为插件导入。</p>
+          <div class="feature-buttons"><button class="ghost-button" type="button" data-url="https://github.com/xjunrao-ux/spine-pet-workshop/releases/latest">打开发布页下载插件</button></div>
+          <p class="hint">检查已安装且被社区目录收录的插件。替换前会核对版本、兼容性和文件校验值，并请你确认权限。</p>
+          <p id="plugin-update-status" class="update-status" role="status" aria-live="polite">正在读取插件更新状态…</p>
+          <div id="plugin-update-list" class="plugin-update-list"></div>
+        </article>
+        <article class="feature-options update-card">
+          <h3>源码与开发者入口</h3>
+          <p class="hint">查看项目源码、提交问题，或参考开发手册制作和发布自己的插件。</p>
+          <button class="repository-link" type="button" data-url="https://github.com/xjunrao-ux/spine-pet-workshop">github.com/xjunrao-ux/spine-pet-workshop <span aria-hidden="true">↗</span></button>
+          <div class="feature-buttons"><button class="ghost-button" type="button" data-url="https://github.com/xjunrao-ux/spine-pet-workshop/blob/main/docs/PLUGIN_QUICKSTART.md">开发第一个插件</button><button class="ghost-button" type="button" data-url="https://github.com/xjunrao-ux/spine-pet-workshop/blob/main/docs/PLUGIN_DEVELOPMENT.md">插件开发手册</button><button class="ghost-button" type="button" data-url="https://github.com/xjunrao-ux/spine-pet-workshop/tree/main/community">社区插件目录</button></div>
+        </article>
       </section>
       <section id="page-import" class="page">
         <div class="section-heading">

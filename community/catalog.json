@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "plugins": [
+    {
+      "id": "com.example.hello-counter",
+      "name": "我的第一个插件",
+      "author": "xjunrao-ux",
+      "description": "入门 demo：点击加一或清零，不联网、不保存数据。",
+      "version": "1.0.0",
+      "apiVersion": 1,
+      "minHostVersion": "3.2.3",
+      "category": "学习示例",
+      "sourceUrl": "https://github.com/xjunrao-ux/spine-pet-workshop/tree/v5.2.1/examples/hello-counter-plugin",
+      "downloadUrl": "https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v5.2.1/Hello-Counter-v1.0.0.zip",
+      "sha256": "7138b294203e67944d0d039f69b76fb23bb922030beafd9e65946358c04f4d49",
+      "permissions": [],
+      "license": "MIT"
+    },
+    {
+      "id": "io.spine-workshop.codex",
+      "name": "Codex 信息",
+      "author": "xjunrao-ux",
+      "description": "外置 ZIP 插件：显示本机 Codex 额度、重置时间与可读取的任务状态。",
+      "version": "1.1.0",
+      "apiVersion": 1,
+      "minHostVersion": "3.2.3",
+      "category": "开发工具",
+      "sourceUrl": "https://github.com/xjunrao-ux/spine-pet-workshop/tree/v5.2.1/examples/codex-plugin",
+      "downloadUrl": "https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v5.2.1/Codex-Plugin-v1.1.0.zip",
+      "sha256": "16a31c707af618a2d3db17592fdfd350a8753fb06efd8ef2bd270cb9e736d3e3",
+      "permissions": [
+        "codex.read",
+        "ui.reminders"
+      ],
+      "license": "UNLICENSED"
+    },
+    {
+      "id": "io.spine-workshop.deepseek",
+      "name": "DeepSeek 对话",
+      "author": "xjunrao-ux",
+      "description": "可按设置悬停或点击桌宠简短聊天，回复通过气泡显示；API、人设和记忆在角色管理器配置。",
+      "version": "1.1.1",
+      "apiVersion": 1,
+      "minHostVersion": "5.1.3",
+      "category": "其他",
+      "sourceUrl": "https://github.com/xjunrao-ux/spine-pet-workshop/tree/v5.2.1/examples/deepseek-plugin",
+      "downloadUrl": "https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v5.2.1/DeepSeek-Plugin-v1.1.1.zip",
+      "sha256": "d703e792503606755a97a9b653fe25f019eaf3ffa2a12382024f738402c506be",
+      "permissions": [
+        "ai.deepseek",
+        "storage.own",
+        "ui.reminders"
+      ],
+      "license": "UNLICENSED"
+    },
+    {
+      "id": "io.spine-workshop.dsh-pet",
+      "name": "DSH 会话伙伴",
+      "author": "xjunrao-ux",
+      "description": "连接已有 DSH 会话：流式对话、任务摘要、取消、可选追加指令与回执恢复。连接凭据由宿主隔离保存。",
+      "version": "1.1.0",
+      "apiVersion": 1,
+      "minHostVersion": "5.1.2",
+      "category": "开发工具",
+      "sourceUrl": "https://github.com/xjunrao-ux/spine-pet-workshop/tree/v5.2.1/examples/dsh-pet-plugin",
+      "downloadUrl": "https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v5.2.1/DSH-Pet-Plugin-v1.1.0.zip",
+      "sha256": "5cbffb2d6cb52aa79de238bd350cbce7bf926a5e09cd1f585ff35411c877a5a7",
+      "permissions": [
+        "net.local",
+        "storage.own",
+        "ui.reminders"
+      ],
+      "license": "UNLICENSED"
+    },
+    {
+      "id": "local.spine-weather",
+      "name": "天气与预报",
+      "author": "xjunrao-ux",
+      "description": "选择城市，查看当前天气、未来 24 小时和 7 天天气预报。数据由 Open-Meteo 提供。",
+      "version": "1.2.0",
+      "apiVersion": 1,
+      "minHostVersion": "5.1.2",
+      "category": "天气",
+      "sourceUrl": "https://github.com/xjunrao-ux/spine-pet-workshop/tree/v5.2.1/examples/weather-plugin",
+      "downloadUrl": "https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v5.2.1/Weather-Plugin-v1.2.0.zip",
+      "sha256": "a6436b914b16f7d24f422a75b12c8087f80b44d001204275acc3ccb8f00ff068",
+      "permissions": [
+        "storage.own",
+        "weather.read"
+      ],
+      "license": "UNLICENSED"
+    }
+  ]
+}

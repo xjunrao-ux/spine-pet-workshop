@@ -24,6 +24,8 @@ test('theme and order updates change snapshots without reactivating or reconfigu
  const host=new ExtensionService({directory:'.',userData,...options,definitions:[...options.definitions.filter(d=>d.manifest.id!==testPlugin.manifest.id),definition],onUpdate:()=>{},onEvent:()=>{}});
  t.after(()=>host.stop());await host.start();
  const epoch=host.snapshot().plugins.find(p=>p.id===testPlugin.manifest.id).epoch;
+ await host.setSettings({global:{defaultVoiceEnabled:false}});
+ assert.equal(host.snapshot().settings.defaultVoiceEnabled,false);assert.equal(settingsCalls,0);
  const ids=host.snapshot().plugins.map(p=>p.id).reverse();await host.setSettings({global:{theme:'graphite',pluginOrder:ids,companionTrigger:'click',companionWidth:480}});
  assert.deepEqual(host.snapshot().plugins.map(p=>p.id),ids);assert.equal(settingsCalls,0);assert.equal(host.snapshot().plugins.find(p=>p.id===testPlugin.manifest.id).epoch,epoch);
  const saved=JSON.parse(await readFile(path.join(userData,'feature-settings.json'),'utf8'));assert.deepEqual(saved.global.pluginOrder,ids);
