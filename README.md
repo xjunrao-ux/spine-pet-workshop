@@ -2,11 +2,13 @@
 
 把喜欢的角色放到 Windows 桌面上。导入本地 Spine 3.8 模型与语音，让角色陪伴工作、走动、坐在窗口边缘，也可以使用音乐控制、系统通知、待办和选装插件。
 
-**正式版 v5.2.1 · Windows x64 · 2026-10-25**
+**正式版 v5.2.2 · Windows x64 · 2026-10-25**
 
-[下载正式版](https://github.com/xjunrao-ux/spine-pet-workshop/releases/tag/v5.2.1) · [完整使用说明](docs/versions/v5.2.1.md) · [插件目录](community/README.md) · [插件开发](docs/PLUGIN_QUICKSTART.md) · [文档索引](docs/README.md)
+[下载正式版](https://github.com/xjunrao-ux/spine-pet-workshop/releases/tag/v5.2.2) · [完整使用说明](docs/versions/v5.2.2.md) · [插件目录](community/README.md) · [插件开发](docs/PLUGIN_QUICKSTART.md) · [文档索引](docs/README.md)
 
 ![SpinePet 角色库：卡片网格、固定红色导入按钮和当前桌宠状态](docs/images/v512-library.png)
+
+v5.2.2 修复管理器任务栏和窗口标题栏显示 Electron 默认图标的问题，Windows 窗口改用多尺寸 ICO，并显式指定任务栏图标。
 
 ## 下载与运行
 
@@ -14,10 +16,10 @@
 
 | 文件 | 用途 |
 | --- | --- |
-| [SpinePet-Setup-v5.2.1-x64.exe](https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v5.2.1/SpinePet-Setup-v5.2.1-x64.exe) | 安装版，支持选择安装目录和创建快捷方式 |
-| [SpinePet-Portable-v5.2.1-x64.exe](https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v5.2.1/SpinePet-Portable-v5.2.1-x64.exe) | 免安装运行；用户数据仍保存在 Windows 用户目录 |
-| [SHA256SUMS.txt](https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v5.2.1/SHA256SUMS.txt) | 核对 EXE、插件和其他附件的完整性 |
-| [USAGE-v5.2.1.md](https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v5.2.1/USAGE-v5.2.1.md) | 离线使用说明 |
+| [SpinePet-Setup-v5.2.2-x64.exe](https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v5.2.2/SpinePet-Setup-v5.2.2-x64.exe) | 安装版，支持选择安装目录和创建快捷方式 |
+| [SpinePet-Portable-v5.2.2-x64.exe](https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v5.2.2/SpinePet-Portable-v5.2.2-x64.exe) | 免安装运行；用户数据仍保存在 Windows 用户目录 |
+| [SHA256SUMS.txt](https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v5.2.2/SHA256SUMS.txt) | 核对 EXE、插件和其他附件的完整性 |
+| [USAGE-v5.2.2.md](https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v5.2.2/USAGE-v5.2.2.md) | 离线使用说明 |
 
 GitHub 自动生成的 Source code.zip 是源码，不是可运行安装包。升级前先退出旧版，再安装或运行新版；正常升级保留角色、待办、插件配置和个人设置。更换便携版位置后，请在“功能 → 应用启动”重新登记开机启动。
 
@@ -67,11 +69,11 @@ GitHub 自动生成的 Source code.zip 是源码，不是可运行安装包。�
 
 | 插件 | 版本 | 下载及说明 |
 | --- | --- | --- |
-| 天气与预报 | 1.2.0 | [ZIP](https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v5.2.1/Weather-Plugin-v1.2.0.zip) · [说明](examples/weather-plugin/README.md)，在管理器设置城市 |
-| Codex 信息 | 1.1.0 | [ZIP](https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v5.2.1/Codex-Plugin-v1.1.0.zip) · [说明](examples/codex-plugin/README.md)，只读本机额度与任务状态 |
-| DeepSeek 对话 | 1.1.1 | [ZIP](https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v5.2.1/DeepSeek-Plugin-v1.1.1.zip) · [说明](examples/deepseek-plugin/README.md)，配置自己的 API Key 后使用气泡聊天，可切换点击角色触发并拖动输入框两侧调宽 |
-| DSH 会话伙伴 | 1.1.0 | [ZIP](https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v5.2.1/DSH-Pet-Plugin-v1.1.0.zip) · [说明](examples/dsh-pet-plugin/README.md)，连接已授权的本机 DSH 桥服务 |
-| 计数器示例 | 1.0.0 | [ZIP](https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v5.2.1/Hello-Counter-v1.0.0.zip) · [开发教程](docs/PLUGIN_QUICKSTART.md)，零权限入门示例 |
+| 天气与预报 | 1.2.0 | [ZIP](https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v5.2.2/Weather-Plugin-v1.2.0.zip) · [说明](examples/weather-plugin/README.md)，在管理器设置城市 |
+| Codex 信息 | 1.1.0 | [ZIP](https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v5.2.2/Codex-Plugin-v1.1.0.zip) · [说明](examples/codex-plugin/README.md)，只读本机额度与任务状态 |
+| DeepSeek 对话 | 1.1.1 | [ZIP](https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v5.2.2/DeepSeek-Plugin-v1.1.1.zip) · [说明](examples/deepseek-plugin/README.md)，配置自己的 API Key 后使用气泡聊天，可切换点击角色触发并拖动输入框两侧调宽 |
+| DSH 会话伙伴 | 1.1.0 | [ZIP](https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v5.2.2/DSH-Pet-Plugin-v1.1.0.zip) · [说明](examples/dsh-pet-plugin/README.md)，连接已授权的本机 DSH 桥服务 |
+| 计数器示例 | 1.0.0 | [ZIP](https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v5.2.2/Hello-Counter-v1.0.0.zip) · [开发教程](docs/PLUGIN_QUICKSTART.md)，零权限入门示例 |
 
 DeepSeek 对话使用你的服务商账户，发送相关对话、人设与手工记忆，费用由账户承担；不读取本机项目文件。DSH 插件需要另行配置兼容桥服务，不会自动接管本机项目。两种插件分别使用自己的连接设置。
 
@@ -91,7 +93,7 @@ pnpm build
 pnpm start
 ```
 
-构建后可双击 `启动桌宠.cmd`。开发热更新使用 `pnpm dev`；打包使用 `pnpm package:win`。详见 [开发与测试](docs/DEVELOPMENT.md)、[发布流程](docs/RELEASING.md)和[验证记录](docs/VALIDATION_v5.2.1.md)。
+构建后可双击 `启动桌宠.cmd`。开发热更新使用 `pnpm dev`；打包使用 `pnpm package:win`。详见 [开发与测试](docs/DEVELOPMENT.md)、[发布流程](docs/RELEASING.md)和[验证记录](docs/VALIDATION_v5.2.2.md)。
 
 ## 许可与来源
 

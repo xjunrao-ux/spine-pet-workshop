@@ -1,6 +1,6 @@
 {
   "name": "spine-pet-workshop",
-  "version": "5.2.1",
+  "version": "5.2.2",
   "private": true,
   "description": "A Windows Spine 3.8 desktop-pet workshop with local character and voice import.",
   "author": "Amiya Desktop Pet Project",
@@ -71,6 +71,9 @@
     "executableName": "SpinePet",
     "artifactName": "SpinePet-v${version}-${arch}.${ext}",
     "asar": true,
+    "extraResources": [
+      { "from": "assets/spinepet-icon.ico", "to": "spinepet-icon.ico" }
+    ],
     "asarUnpack": [
       "electron/window-monitor.ps1",
       "electron/extensions/*.ps1",

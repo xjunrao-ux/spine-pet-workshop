@@ -1,5 +1,9 @@
 # 版本范围与维护状态
 
+## v5.2.2 正式版
+
+2026-10-25 修复管理器任务栏和标题栏应用图标：Windows 使用多尺寸 ICO，并为任务栏显式指定可直接读取的图标资源。
+
 ## v5.2.1 正式版
 
 2026-10-25 加入 GitHub 正式版检查、后台下载、重启升级、已安装社区插件检查与确认更新，以及源码/开发入口。功能页可设置启动时默认是否开启角色语音，更新页提供 Release 插件下载和导入说明。
@@ -34,4 +38,4 @@
 | v5.1.2 | 体验与文档收尾、清理、正式封装与发布 |
 | v5.1.3 | 对话点击触发、双侧调宽与发送按钮改进 |
 
-[使用说明](docs/versions/v5.2.1.md) · [版本日志](CHANGELOG.md) · [正式版本](https://github.com/xjunrao-ux/spine-pet-workshop/releases)
+[使用说明](docs/versions/v5.2.2.md) · [版本日志](CHANGELOG.md) · [正式版本](https://github.com/xjunrao-ux/spine-pet-workshop/releases)

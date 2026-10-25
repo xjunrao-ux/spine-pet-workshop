@@ -7,6 +7,7 @@ const require=createRequire(import.meta.url),deps=createRequire(require.resolve(
 const sourcePackage=JSON.parse(await readFile('package.json','utf8')),directory=path.resolve(process.argv[2]??('release/v'+sourcePackage.version)),archive=path.join(directory,'win-unpacked/resources/app.asar');
 const packaged=JSON.parse(asar.extractFile(archive,'package.json').toString('utf8'));assert.equal(packaged.version,sourcePackage.version);assert.equal(sourcePackage.build.productName,'SpinePet');assert.equal(sourcePackage.build.executableName,'SpinePet');
 const checks=[];
+assert.deepEqual(await readFile(path.join(directory,'win-unpacked/resources/spinepet-icon.ico')),await readFile('assets/spinepet-icon.ico'));checks.push('resources/spinepet-icon.ico');
 for(const file of ['electron/updates.mjs','electron/plugins/updates.mjs']){assert.deepEqual(asar.extractFile(archive,path.normalize(file)),await readFile(file),file);checks.push(file);}
 assert.ok(packaged.dependencies['electron-updater']);
 const updateConfig=await readFile(path.join(directory,'win-unpacked/resources/app-update.yml'),'utf8');

@@ -30,6 +30,10 @@ app.setPath("userData",path.join(app.getPath("appData"),"spine-pet-workshop"));
 app.setName("SpinePet");
 if (process.env.PET_TEST_PROFILE) app.setPath("userData", path.resolve(process.env.PET_TEST_PROFILE));
 const APP_ICON_PATH = path.join(rootDirectory, "assets", "spinepet-icon.png");
+// Windows needs native icon sizes; its shell cannot read resources inside ASAR.
+const WINDOW_ICON_PATH = process.platform === "win32"
+  ? path.join(app.isPackaged ? process.resourcesPath : path.join(rootDirectory, "assets"), "spinepet-icon.ico")
+  : APP_ICON_PATH;
 const BASE_WIDTH = 420;
 const BASE_HEIGHT = 500;
 const GRAVITY = 1850;
@@ -566,7 +570,7 @@ function createSettingsWindow() {
     backgroundColor: themeVariables(extensionService?.settings.theme,extensionService?.settings.customTheme)["--page-bg"],
     title: "SpinePet",
     autoHideMenuBar: true,
-    icon: APP_ICON_PATH,
+    icon: WINDOW_ICON_PATH,
     webPreferences: {
       preload: path.join(rootDirectory, "electron", "settings-preload.cjs"),
       contextIsolation: true,
@@ -574,6 +578,16 @@ function createSettingsWindow() {
       sandbox: true
     }
   });
+  if (process.platform === "win32") {
+    // The portable launcher survives after its temporary resources are removed.
+    const portableExecutable = app.isPackaged && process.env.PORTABLE_EXECUTABLE_FILE;
+    settingsWindow.setAppDetails({
+      appId: "local.spine.desktop.pet.workshop",
+      appIconPath: portableExecutable || WINDOW_ICON_PATH,
+      appIconIndex: 0,
+      ...(portableExecutable ? { relaunchCommand: `"${portableExecutable}"`, relaunchDisplayName: "SpinePet" } : {})
+    });
+  }
   const openedSettingsWindow = settingsWindow;
   openedSettingsWindow.once("ready-to-show", () => {
     if (!openedSettingsWindow.isDestroyed()) {
@@ -951,7 +965,7 @@ function createWindow() {
     skipTaskbar: true,
     hasShadow: false,
     title: `${activeCharacterName}桌宠`,
-    icon: APP_ICON_PATH,
+    icon: WINDOW_ICON_PATH,
     webPreferences: {
       preload: path.join(rootDirectory, "electron", "preload.cjs"),
       contextIsolation: true,
