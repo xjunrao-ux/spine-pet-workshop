@@ -7,8 +7,8 @@
   "apiVersion": 1,
   "minHostVersion": "5.1.2",
   "category": "天气",
-  "sourceUrl": "https://github.com/xjunrao-ux/spine-pet-workshop/tree/v5.2.2/examples/weather-plugin",
-  "downloadUrl": "https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v5.2.2/Weather-Plugin-v1.2.0.zip",
+  "sourceUrl": "https://github.com/xjunrao-ux/spine-pet-workshop/tree/v5.2.3/examples/weather-plugin",
+  "downloadUrl": "https://github.com/xjunrao-ux/spine-pet-workshop/releases/download/v5.2.3/Weather-Plugin-v1.2.0.zip",
   "sha256": "a6436b914b16f7d24f422a75b12c8087f80b44d001204275acc3ccb8f00ff068",
   "permissions": [
     "storage.own",

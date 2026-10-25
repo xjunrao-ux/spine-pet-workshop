@@ -17,6 +17,7 @@ import { ExtensionService } from "./extensions/extension-service.mjs";
 import { createExtensionOverlay } from "./extensions/overlay.mjs";
 import { normalizeParameters, mergeParameters } from "./character-parameters.mjs";
 import { createStartupSettings } from "./startup.mjs";
+import { createWindowBranding } from "./window-branding.mjs";
 import { PluginPackages } from "./plugins/packages.mjs";
 import { createSandboxProvider,SANDBOX_SCHEME } from "./plugins/sandbox-runtime.mjs";
 import { DeepSeekCredentials,DeepSeekService } from "./plugins/deepseek-service.mjs";
@@ -30,10 +31,9 @@ app.setPath("userData",path.join(app.getPath("appData"),"spine-pet-workshop"));
 app.setName("SpinePet");
 if (process.env.PET_TEST_PROFILE) app.setPath("userData", path.resolve(process.env.PET_TEST_PROFILE));
 const APP_ICON_PATH = path.join(rootDirectory, "assets", "spinepet-icon.png");
-// Windows needs native icon sizes; its shell cannot read resources inside ASAR.
-const WINDOW_ICON_PATH = process.platform === "win32"
-  ? path.join(app.isPackaged ? process.resourcesPath : path.join(rootDirectory, "assets"), "spinepet-icon.ico")
-  : APP_ICON_PATH;
+const windowBranding = createWindowBranding(app, {rootDirectory, shell});
+const WINDOW_ICON_PATH = windowBranding.iconPath;
+windowBranding.install();
 const BASE_WIDTH = 420;
 const BASE_HEIGHT = 500;
 const GRAVITY = 1850;
@@ -578,16 +578,6 @@ function createSettingsWindow() {
       sandbox: true
     }
   });
-  if (process.platform === "win32") {
-    // The portable launcher survives after its temporary resources are removed.
-    const portableExecutable = app.isPackaged && process.env.PORTABLE_EXECUTABLE_FILE;
-    settingsWindow.setAppDetails({
-      appId: "local.spine.desktop.pet.workshop",
-      appIconPath: portableExecutable || WINDOW_ICON_PATH,
-      appIconIndex: 0,
-      ...(portableExecutable ? { relaunchCommand: `"${portableExecutable}"`, relaunchDisplayName: "SpinePet" } : {})
-    });
-  }
   const openedSettingsWindow = settingsWindow;
   openedSettingsWindow.once("ready-to-show", () => {
     if (!openedSettingsWindow.isDestroyed()) {
@@ -1047,7 +1037,6 @@ function createWindow() {
 }
 
 app.whenReady().then(async () => {
-  app.setAppUserModelId("local.spine.desktop.pet.workshop");
   await mkdir(charactersDirectory(), { recursive: true });
   const firstRun = (await readJson(preferencesPath(), undefined)) === undefined;
   if (firstRun) await writePreferences(BUILTIN_CHARACTER.id);

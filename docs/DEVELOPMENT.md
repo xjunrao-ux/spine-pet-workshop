@@ -1,6 +1,6 @@
 # 开发、测试与源码结构
 
-当前正式版为 v5.2.2。公共 main 和正式标签保存验收快照；本地 dev/v3 留存完整开发历史，不向 public 推送。正式发布使用 squash，避免公开过程记录与私人测试资料。
+当前正式版为 v5.2.3。公共 main 和正式标签保存验收快照；本地 dev/v3 留存完整开发历史，不向 public 推送。正式发布使用 squash，避免公开过程记录与私人测试资料。
 
 ## 环境与运行
 
@@ -69,7 +69,7 @@ pnpm package:dsh-pet
 pnpm package:hello
 ```
 
-产物为 release/v5.2.2 下的安装版/便携版，以及 release/plugins 下的插件 ZIP。模型和音频只随本地构建进入二进制，不进入公共 Git 历史。完整公开步骤见 [发布流程](RELEASING.md)。
+产物为 release/v5.2.3 下的安装版/便携版，以及 release/plugins 下的插件 ZIP。模型和音频只随本地构建进入二进制，不进入公共 Git 历史。完整公开步骤见 [发布流程](RELEASING.md)。
 
 ## 清理与保留
 
