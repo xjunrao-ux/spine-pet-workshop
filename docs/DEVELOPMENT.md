@@ -1,6 +1,6 @@
 # 开发、测试与源码结构
 
-当前正式版为 v5.3.0。公共 main 和正式标签保存验收快照；本地 dev/v3 留存完整开发历史，不向 public 推送。正式发布使用 squash，避免公开过程记录与私人测试资料。
+当前正式版为 v5.3.1。公共 main 和正式标签保存验收快照；本地 dev/v3 留存完整开发历史，不向 public 推送。正式发布使用 squash，避免公开过程记录与私人测试资料。
 
 ## 环境与运行
 
@@ -31,6 +31,8 @@ pnpm start
 | community/ | 经过校验的固定版本插件下载目录 |
 
 node_modules、dist、release、releases、.local、artifacts 是本地目录，不上传。用户资料始终在 Windows AppData，测试必须用隔离 PET_TEST_PROFILE；不得使用用户的凭据、现有会话或正式待办执行回归。
+
+Windows 任务栏标识由 `electron/window-branding.mjs` 统一设置：安装版沿用安装器固定标识，源码目录、便携入口和测试 Profile 各自隔离。源码启动时会注册本目录专用的“SpinePet 本地版”开始菜单快捷方式；开发通知使用不同的进程标识，避免 Electron 自动生成的无图标入口与窗口匹配。任务栏图标持久保存在当前 userData 的 `shell-icons`，名称随内容变化；测试只写隔离目录。若本地桌面入口失效，可运行 `pnpm desktop:repair`，工具会先备份并校验已有桌宠快捷方式，再同步正确的开始菜单关联。
 
 ## 验证命令
 
@@ -70,7 +72,7 @@ pnpm package:dsh-pet
 pnpm package:hello
 ```
 
-产物为 release/v5.3.0 下的安装版/便携版，以及 release/plugins 下的插件 ZIP。模型和音频只随本地构建进入二进制，不进入公共 Git 历史。完整公开步骤见 [发布流程](RELEASING.md)。
+产物为 release/v5.3.1 下的安装版/便携版，以及 release/plugins 下的插件 ZIP。模型和音频只随本地构建进入二进制，不进入公共 Git 历史。完整公开步骤见 [发布流程](RELEASING.md)。
 
 ## 清理与保留
 

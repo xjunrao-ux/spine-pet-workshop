@@ -125,7 +125,7 @@ function publishUpdates() {
   if (settingsWindow && !settingsWindow.isDestroyed()) settingsWindow.webContents.send('updates:state', {app: appUpdates?.snapshot(), plugins: pluginUpdates?.snapshot()});
 }
 function notifyUpdate(message) {
-  if (!Notification.isSupported() || process.env.PET_TEST_PROFILE) return;
+  if (process.env.PET_TEST_PROFILE || !Notification.isSupported()) return;
   updateNotification = new Notification({title: 'SpinePet 更新', body: message, icon: APP_ICON_PATH});
   updateNotification.on('click', openUpdateSettings); updateNotification.show();
 }
