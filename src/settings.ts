@@ -5,6 +5,7 @@ import { createParameterEditor } from "./parameter-editor";
 import { CharacterPreview, VoiceAudition } from "./character-preview";
 import { normalizeParameters } from "../electron/character-parameters.mjs";
 import {initializeUpdates} from './update-settings';
+import {initializeModelSearch} from './model-search';
 
 type ActionName = "idle" | "walk" | "sit" | "sleep" | "touch" | "special";
 
@@ -154,8 +155,8 @@ function invalidateVoicePreview() {
   document.querySelector("#import-voice-controls")!.replaceChildren();
 }
 
-document.querySelector<HTMLButtonElement>("#prepare-voice-preview")!.addEventListener("click", async (event) => {
-  const button = event.currentTarget as HTMLButtonElement;
+async function prepareVoicePreview() {
+  const button = document.querySelector<HTMLButtonElement>('#prepare-voice-preview')!;
   const host = document.querySelector<HTMLElement>("#import-voice-controls")!;
   const generation = ++voicePreviewGeneration;
   if (!longVoiceFile || !bundleCharacterId.value.trim()) { host.textContent = "请先选择长音频并填写角色 ID"; return; }
@@ -166,7 +167,8 @@ document.querySelector<HTMLButtonElement>("#prepare-voice-preview")!.addEventLis
     if (generation === voicePreviewGeneration) renderVoiceControls(host, result.lines, () => result.audioUrl, importParameters.get);
   } catch (error) { if (generation === voicePreviewGeneration) host.textContent = `试听准备失败：${String(error)}`; }
   finally { button.disabled = false; }
-});
+}
+document.querySelector('#prepare-voice-preview')!.addEventListener('click', () => void prepareVoicePreview());
 
 const tabs = [...document.querySelectorAll<HTMLButtonElement>(".tab")];
 const pages = [...document.querySelectorAll<HTMLElement>(".page")];
@@ -269,8 +271,7 @@ async function loadCharacters() {
   }
 }
 
-modelButton.addEventListener("click", async () => {
-  const result = await api.chooseModelFolder();
+function applyModelSelection(result: ModelFolderSelection) {
   if (result.canceled) return;
   if (result.error || !result.folderPath || !result.modelFiles?.length) {
     modelSummary.textContent = result.error ?? "没有找到骨骼文件";
@@ -289,6 +290,33 @@ modelButton.addEventListener("click", async () => {
   modelFileLabel.classList.remove("hidden");
   atlasFileLabel.classList.remove("hidden");
   void updateImportPreview();
+}
+
+modelButton.addEventListener("click", async () => {
+  applyModelSelection(await api.chooseModelFolder());
+});
+
+const modelSearch = initializeModelSearch(api, (result) => {
+  if (result.name) characterName.value = result.name.slice(0, 40);
+  applyModelSelection(result);
+  importStatus.textContent = '模型已下载并填入，预览确认后可导入为桌宠。';
+  modelSummary.scrollIntoView({block: 'nearest', behavior: 'smooth'});
+}, busy => {
+  modelButton.disabled = busy; importSubmit.disabled = busy; longVoiceButton.disabled = busy;
+  bundleCharacterId.disabled = busy; bundleLanguage.disabled = busy;
+  document.querySelectorAll<HTMLButtonElement>('[data-config-kind]').forEach(button => { button.disabled = busy; });
+}, async selection => {
+  applyLongVoiceSelection(selection);
+  // The offered voice was checked against the bundled timeline and subtitle snapshot.
+  for (const kind of ['metadata', 'subtitles'] as VoiceConfigKind[]) {
+    customVoiceConfig[kind] = undefined;
+    const summary = document.querySelector<HTMLElement>(`#config-${kind}-summary`)!;
+    summary.textContent = kind === 'metadata' ? '使用内置时间轴' : '使用内置简中台词';
+    summary.removeAttribute('title'); summary.classList.remove('selected');
+  }
+  importStatus.textContent = `角色语音已准备好，匹配 ${selection.clipCount} 句中文字幕。`;
+  await prepareVoicePreview();
+  longVoiceSummary.scrollIntoView({block: 'nearest', behavior: 'smooth'});
 });
 
 modelFile.addEventListener("change", () => {
@@ -333,19 +361,21 @@ audioButton.addEventListener("click", async () => {
   renderAudioRows();
 });
 
-longVoiceButton.addEventListener("click", async () => {
-  const result = await api.chooseLongVoiceFile();
+function applyLongVoiceSelection(result: SingleFileSelection & {characterId?: string; language?: string}) {
   if (result.canceled || !result.path || !result.name) return;
   longVoiceFile = { path: result.path, name: result.name };
   invalidateVoicePreview();
-  if (!bundleCharacterId.value.trim()) {
+  if (result.characterId) bundleCharacterId.value = result.characterId;
+  else if (!bundleCharacterId.value.trim()) {
     const inferredId = result.name.match(/char_\d+_[a-z0-9]+/i)?.[0];
     if (inferredId) bundleCharacterId.value = inferredId;
   }
+  if (result.language) bundleLanguage.value = result.language;
   longVoiceSummary.textContent = result.name;
   longVoiceSummary.title = result.path;
   longVoiceSummary.classList.add("selected");
-});
+}
+longVoiceButton.addEventListener('click', async () => applyLongVoiceSelection(await api.chooseLongVoiceFile()));
 
 document.querySelectorAll<HTMLButtonElement>("[data-config-kind]").forEach((button) => {
   button.addEventListener("click", async () => {
@@ -372,6 +402,7 @@ form.addEventListener("submit", async (event) => {
   }
 
   importSubmit.disabled = true;
+  modelSearch.setImporting(true);
   importStatus.textContent = "正在复制并验证素材…";
   const animations = Object.fromEntries(actionNames.map((name) => [
     name,
@@ -396,6 +427,7 @@ form.addEventListener("submit", async (event) => {
     } : undefined
   });
   importSubmit.disabled = false;
+  modelSearch.setImporting(false);
   if (!result.ok) {
     importStatus.textContent = `导入失败：${result.error ?? "未知错误"}`;
     return;

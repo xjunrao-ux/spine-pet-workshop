@@ -24,6 +24,8 @@ import { DeepSeekCredentials,DeepSeekService } from "./plugins/deepseek-service.
 import { createDeepSeekDialog } from "./plugins/deepseek-dialog.mjs";
 import { LocalConnectionStore,LocalService } from "./plugins/local-service.mjs";
 import { createLocalServiceDialog } from "./plugins/local-service-dialog.mjs";
+import {ModelCatalog, ModelDownloads} from './model-catalog.mjs';
+import {VoiceCatalog, VoiceDownloads} from './voice-catalog.mjs';
 
 const rootDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 // Keep the existing profile across the public product rename.
@@ -87,6 +89,19 @@ let featureInteraction = false, companionInteraction = false, petCompanionBridge
 const previewAssets = new Map();
 const selectedPreviewFolders = new Set();
 const selectedPreviewFiles = new Set();
+let modelCatalogPromise, modelDownloads, voiceCatalogPromise, voiceDownloads;
+function getModelCatalog() {
+  return modelCatalogPromise ??= readFile(path.join(rootDirectory, 'electron/data/ark-model-catalog.json'), 'utf8')
+    .then(text => new ModelCatalog(JSON.parse(text))).catch(error => { modelCatalogPromise = undefined; throw error; });
+}
+function getVoiceCatalog() {
+  return voiceCatalogPromise ??= Promise.all([
+    readFile(path.join(rootDirectory, 'electron/data/ark-voice-catalog.json'), 'utf8'),
+    readFile(bundledArkDataPath('voice_data.json'), 'utf8'),
+    readFile(bundledArkDataPath('charword_table.json'), 'utf8')
+  ]).then(texts => new VoiceCatalog(...texts.map(text => JSON.parse(text))))
+    .catch(error => { voiceCatalogPromise = undefined; throw error; });
+}
 
 function grantPreviewAssets(kind, files) {
   for (const [token, grant] of previewAssets) if (grant.kind === kind) previewAssets.delete(token);
@@ -600,6 +615,8 @@ function createSettingsWindow() {
   else void settingsWindow.loadFile(path.join(rootDirectory, "dist", "settings.html"));
   settingsWindow.on("closed", () => {
     if (settingsWindow === openedSettingsWindow) {
+      modelDownloads?.cancel();
+      voiceDownloads?.cancel();
       settingsWindow = undefined; previewAssets.clear(); selectedPreviewFolders.clear(); selectedPreviewFiles.clear();
     }
   });
@@ -1117,6 +1134,57 @@ app.whenReady().then(async () => {
   });
 
   ipcMain.handle("settings:list-characters", listCharacters);
+  ipcMain.handle('settings:search-models', async (event, query) => {
+    requireSettingsSender(event);
+    const models = await getModelCatalog();
+    const results = models.search(query);
+    try {
+      const voices = await getVoiceCatalog();
+      return {...results, entries: results.entries.map(entry => ({...entry, voices: voices.options(models.get(entry.key))}))};
+    } catch { return {...results, voiceError: '语音索引暂时无法读取，仍可下载模型。', entries: results.entries.map(entry => ({...entry, voices: []}))}; }
+  });
+  ipcMain.handle('settings:open-model-page', async (event, key) => {
+    requireSettingsSender(event);
+    const url = (await getModelCatalog()).pageUrl(key);
+    await shell.openExternal(url);
+    return true;
+  });
+  ipcMain.handle('settings:cancel-model-download', event => {
+    requireSettingsSender(event); modelDownloads?.cancel(); voiceDownloads?.cancel();
+  });
+  ipcMain.handle('settings:download-voice', async (event, key) => {
+    requireSettingsSender(event);
+    try {
+      const catalog = await getVoiceCatalog();
+      voiceDownloads ??= new VoiceDownloads({catalog, directory: path.join(app.getPath('userData'), 'voice-downloads'), fetch: (...args) => net.fetch(...args)});
+      const result = await voiceDownloads.download(key, progress => {
+        if (!event.sender.isDestroyed()) event.sender.send('settings:model-download-progress', progress);
+      });
+      if (!result.canceled) { requireSettingsSender(event); selectedPreviewFiles.add(path.resolve(result.path)); }
+      return result;
+    } catch (error) { return {canceled: false, error: error.message || '语音下载失败，请重试'}; }
+  });
+  ipcMain.handle('settings:open-voice-page', async (event, key) => {
+    requireSettingsSender(event);
+    await shell.openExternal((await getVoiceCatalog()).pageUrl(key));
+    return true;
+  });
+  ipcMain.handle('settings:download-model', async (event, key) => {
+    requireSettingsSender(event);
+    try {
+      const catalog = await getModelCatalog();
+      modelDownloads ??= new ModelDownloads({catalog, directory: path.join(app.getPath('userData'), 'model-downloads'), fetch: (...args) => net.fetch(...args)});
+      const result = await modelDownloads.download(key, progress => {
+        if (!event.sender.isDestroyed()) event.sender.send('settings:model-download-progress', progress);
+      });
+      if (!result.canceled) {
+        requireSettingsSender(event);
+        selectedPreviewFolders.clear();
+        selectedPreviewFolders.add(path.resolve(result.folderPath));
+      }
+      return result;
+    } catch (error) { return {canceled: false, error: error.message || '模型下载失败，请重试或打开下载页'}; }
+  });
   ipcMain.handle("settings:choose-model-folder", async () => {
     const result = await dialog.showOpenDialog(settingsWindow, {
       title: "选择 Spine 模型文件夹",
@@ -1375,6 +1443,8 @@ app.whenReady().then(async () => {
 });
 
 app.on("before-quit", () => {
+  modelDownloads?.cancel();
+  voiceDownloads?.cancel();
   clearTimeout(updateStartupTimer); clearInterval(updateTimer); appUpdates?.stop();
   extensionService?.stop();
   extensionOverlay?.stop();

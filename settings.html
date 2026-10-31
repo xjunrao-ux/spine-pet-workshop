@@ -10,7 +10,7 @@
       <aside class="app-sidebar" aria-label="应用导航">
         <header class="brand-header">
           <img class="brand-logo" src="./assets/spinepet-icon.png" alt="" />
-          <div class="brand-meta"><strong>SpinePet</strong><span>桌面角色工坊</span><small id="brand-version">v5.2.3</small></div>
+          <div class="brand-meta"><strong>SpinePet</strong><span>桌面角色工坊</span><small id="brand-version">v5.3.0</small></div>
         </header>
       <nav class="tabs" aria-label="功能导航">
         <button class="tab active" data-page="characters"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>角色库</span></button>
@@ -96,7 +96,7 @@
       <section id="page-import" class="page">
         <div class="section-heading">
           <div><p class="kicker">NEW CHARACTER</p><h2>导入新角色</h2></div>
-          <span class="step-pill">本机导入 · 不上传网络</span>
+          <span class="step-pill">素材下载 · 本机导入</span>
         </div>
 
         <details id="import-guide" class="import-guide">
@@ -128,6 +128,22 @@
           </article>
         </div>
         </details>
+
+        <section class="model-search" aria-labelledby="model-search-title">
+          <div class="model-search-heading"><div><h3 id="model-search-title">搜索角色模型与语音</h3><p class="hint">输入角色名字找模型，选择配音语种，一起准备好导入素材。</p></div><small id="model-catalog-summary">正在读取素材目录…</small></div>
+          <div class="model-search-controls">
+            <div class="model-search-query"><label for="model-search-query">角色名称、英文名或编号</label><div class="model-search-field"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><input id="model-search-query" type="search" maxlength="120" placeholder="输入角色名，例如：阿米娅、能天使" autocomplete="off" /><button id="model-search-submit" class="primary-button" type="button">搜索</button></div></div>
+            <label><span>模型分类</span><select id="model-search-category"><option value="all">全部模型</option><option value="operator">干员小人（含皮肤）</option><option value="illustration">干员动态立绘</option><option value="enemy">敌人战斗模型（含首领）</option></select></label>
+          </div>
+          <div class="model-search-drawer-heading"><span class="hint">点击搜索或按回车后展开结果。</span><button id="model-search-toggle" class="ghost-button" type="button" aria-expanded="false" aria-controls="model-search-drawer" hidden>收起搜索结果</button></div>
+          <div id="model-search-drawer" class="model-search-drawer" hidden>
+            <p id="voice-catalog-status" class="hint hidden" role="status"></p>
+            <p id="model-search-summary" class="hint" role="status" aria-live="polite"></p>
+            <div id="model-search-results" class="model-search-results" aria-label="模型与语音检索结果" aria-busy="false"></div>
+            <div class="model-search-pagination"><button id="model-search-prev" class="ghost-button" type="button" disabled>上一页</button><span id="model-search-page"></span><button id="model-search-next" class="ghost-button" type="button" disabled>下一页</button></div>
+          </div>
+          <div id="model-download-panel" class="model-download-panel hidden" aria-live="polite"><div><strong id="model-download-name"></strong><button id="model-download-cancel" class="ghost-button" type="button">取消下载</button></div><progress id="model-download-progress" max="1" value="0" aria-label="素材下载进度"></progress><p id="model-download-status" role="status"></p></div>
+        </section>
 
         <form id="import-form">
           <article class="form-card">
@@ -172,13 +188,8 @@
               <h3>语音与字幕 <span class="optional">可选</span></h3>
               <p class="voice-intro">选择一种导入方式即可。两种方式地位相同，可以按手头素材决定。</p>
               <div class="voice-options">
-                <section class="voice-option">
-                  <div class="voice-option-heading"><span class="method-label">方案 A</span><h4>单句音频</h4></div>
-                  <p>适合已经切分好的 MP3、WAV 或 OGG。每条音频可以单独填写字幕。</p>
-                  <button id="choose-audio-files" class="select-button secondary" type="button">添加单句音频</button>
-                </section>
                 <section class="voice-option recommended">
-                  <div class="voice-option-heading"><span class="method-label">方案 B</span><h4>明日方舟长音频</h4><span class="recommend-tag">推荐</span></div>
+                  <div class="voice-option-heading"><span class="method-label">方案 A</span><h4>明日方舟长音频</h4><span class="recommend-tag">推荐</span></div>
                   <p>只需选择一个角色长音频。时间轴与简中台词已内置，程序会自动分句并显示中文字幕。</p>
                   <div class="long-voice-picker">
                     <button id="choose-long-voice" class="select-button secondary" type="button">选择长音频</button>
@@ -186,7 +197,7 @@
                   </div>
                   <div class="bundle-options">
                     <label>角色 ID<input id="bundle-character-id" placeholder="通常会从文件名自动识别" /></label>
-                    <label>音频语种<select id="bundle-language"><option value="JP">日语 JP</option><option value="CN">普通话 CN</option><option value="EN">英语 EN</option><option value="KR">韩语 KR</option></select></label>
+                    <label>音频语种<select id="bundle-language"><option value="JP">日语 JP</option><option value="CN">普通话 CN</option><option value="EN">英语 EN</option><option value="KR">韩语 KR</option><option value="CUSTOM">个性化语音</option></select></label>
                   </div>
                   <p class="built-in-note">默认使用内置配置；普通导入无需另外下载 JSON。</p>
                   <details class="custom-data">
@@ -201,6 +212,11 @@
                       <span id="config-subtitles-summary">使用内置简中台词</span>
                     </div>
                   </details>
+                </section>
+                <section class="voice-option">
+                  <div class="voice-option-heading"><span class="method-label">方案 B</span><h4>单句音频</h4></div>
+                  <p>适合已经切分好的 MP3、WAV 或 OGG。每条音频可以单独填写字幕。</p>
+                  <button id="choose-audio-files" class="select-button secondary" type="button">添加单句音频</button>
                 </section>
               </div>
               <div id="audio-list" class="audio-list"></div>

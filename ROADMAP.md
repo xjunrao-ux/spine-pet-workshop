@@ -1,5 +1,9 @@
 # 版本范围与维护状态
 
+## v5.3.0 正式版
+
+2026-10-31 集成全仓库模型检索、完整素材下载、配音语种选择、自动字幕及分句试听；搜索结果使用默认收起的抽屉，长音频导入位于方案 A。公开名称及文件校验索引，继续沿用角色资料和插件配置。
+
 ## v5.2.3 正式版
 
 2026-10-25 修正旧任务栏标识与 Electron 图标的关联，统一安装器、窗口和快捷方式迁移，并将脚本版与安装版的任务栏标识分开。
@@ -42,4 +46,4 @@
 | v5.1.2 | 体验与文档收尾、清理、正式封装与发布 |
 | v5.1.3 | 对话点击触发、双侧调宽与发送按钮改进 |
 
-[使用说明](docs/versions/v5.2.3.md) · [版本日志](CHANGELOG.md) · [正式版本](https://github.com/xjunrao-ux/spine-pet-workshop/releases)
+[使用说明](docs/versions/v5.3.0.md) · [版本日志](CHANGELOG.md) · [正式版本](https://github.com/xjunrao-ux/spine-pet-workshop/releases)

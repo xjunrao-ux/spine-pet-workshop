@@ -95,6 +95,14 @@ interface SingleFileSelection {
   name?: string;
 }
 
+interface DownloadedVoiceSelection extends SingleFileSelection {
+  characterId?: string;
+  language?: string;
+  clipCount?: number;
+  cached?: boolean;
+  error?: string;
+}
+
 interface CharacterImportPayload {
   parameters?: PetParameters;
   name: string;
@@ -113,6 +121,13 @@ interface CharacterImportPayload {
 }
 
 interface PetSettingsBridge {
+  searchModels(query: {query: string; category: string; offset: number}): Promise<import('./model-search').ModelSearchResults>;
+  openModelPage(key: string): Promise<boolean>;
+  downloadModel(key: string): Promise<ModelFolderSelection & {name?: string; cached?: boolean}>;
+  downloadVoice(key: string): Promise<DownloadedVoiceSelection>;
+  openVoicePage(key: string): Promise<boolean>;
+  cancelModelDownload(): Promise<void>;
+  onModelDownloadProgress(callback: (value: {key: string; received: number; total: number; file?: string; completedFiles: number; fileCount: number}) => void): () => void;
   updates?: import('./update-settings').UpdatesBridge;
   onNavigate?(callback: (page: string) => void): () => void;
   getPetStatus?(): Promise<PetDisplayStatus>;
