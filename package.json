@@ -8,6 +8,8 @@
   "type": "module",
   "main": "electron/main.mjs",
   "scripts": {
+    "website:build": "node scripts/build-website.mjs",
+    "website:preview": "node scripts/preview-website.mjs",
     "desktop:repair": "electron scripts/repair-desktop-shortcut.mjs",
     "test:models": "node --test scripts/test-model-catalog.mjs scripts/test-voice-catalog.mjs",
     "test:models:ui": "node scripts/run-model-search-ui.mjs",

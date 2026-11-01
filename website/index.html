@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="SpinePet：把喜欢的角色放到 Windows 桌面上。下载即用，自定义角色与语音，用插件添加天气、对话与更多小工具。">
+  <meta name="theme-color" content="#f8f7f4">
+  <meta property="og:title" content="SpinePet · 让喜欢的角色，住进你的桌面">
+  <meta property="og:description" content="下载、开始陪伴，再挑几个顺手的插件。Windows 桌宠使用指南与插件社区。">
+  <meta property="og:type" content="website">
+  <title>SpinePet · 你的桌面，多一个伙伴</title>
+  <link rel="icon" href="assets/spinepet-icon.png" type="image/png">
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到正文</a>
+  <header class="site-header">
+    <a class="brand" href="#" aria-label="SpinePet 首页"><img src="assets/spinepet-icon.png" width="38" height="38" alt=""><span>SpinePet<span class="brand-note">桌面角色工坊</span></span></a>
+    <nav aria-label="主导航"><a href="#guide">使用指南</a><a href="#community">插件社区</a><a href="#developer">开发者窗口</a></nav>
+    <a class="repo-link" href="__REPO__"><svg aria-hidden="true"><use href="#i-github"/></svg><span>GitHub</span><span aria-hidden="true">↗</span></a>
+  </header>
+  <main id="main">
+    <section class="hero wrap" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow"><span class="status-dot"></span> A LITTLE COMPANY, ON YOUR DESKTOP</p>
+        <h1 id="hero-title">让喜欢的角色，<br>住进你的<span class="accent-word">桌面<svg viewBox="0 0 180 12" aria-hidden="true"><path d="M3 8Q78-2 177 5"/></svg></span>。</h1>
+        <p class="hero-description">拖一拖，听它说句话。<br>让角色陪你工作，也帮你记待办、控音乐。<br>想要更多？再装几个喜欢的插件。</p>
+        <div class="hero-actions"><a class="button primary" href="__SETUP__"><svg aria-hidden="true"><use href="#i-download"/></svg>下载 Windows 版<span aria-hidden="true">↗</span></a><a class="text-link" href="#guide">看看怎么用 <span aria-hidden="true">→</span></a></div>
+        <p class="download-note">v__VERSION__ · Windows x64 <span>／</span> <a href="__PORTABLE__">免安装版</a> · <a href="__REPO__/releases/latest">全部下载</a></p>
+      </div>
+      <div class="hero-visual">
+        <div class="visual-note"><span class="small-cross">✳</span> 你的桌面，可以再热闹一点。</div>
+        <div class="app-shot"><div class="window-bar"><span class="window-dots"><i></i><i></i><i></i></span><span>SpinePet / 我的桌宠</span><span aria-hidden="true">↗</span></div><img src="assets/library.png" width="1440" height="900" alt="SpinePet 角色库实拍，选择角色并在右侧调整大小与语音" fetchpriority="high"></div>
+        <div class="pet-sticker"><span>今天也请多关照。</span><img src="assets/spinepet-icon.png" width="92" height="92" alt="SpinePet 阿米娅图标"></div>
+        <p class="image-caption"><span class="status-dot"></span> 应用界面实拍 <span>角色、语音和参数，都由你决定。</span></p>
+      </div>
+    </section>
+    <div class="facts wrap"><p><svg aria-hidden="true"><use href="#i-spark"/></svg>自带角色，启动就能陪伴</p><p><svg aria-hidden="true"><use href="#i-sliders"/></svg>导入自己的模型与语音</p><p><svg aria-hidden="true"><use href="#i-puzzle"/></svg>按需安装，插件自由搭配</p></div>
+
+    <section class="section wrap" id="guide" aria-labelledby="guide-title">
+      <div class="section-heading"><div><p class="eyebrow">01 / GET STARTED</p><h2 id="guide-title">几步，就能熟悉起来。</h2></div><p>先让它出现在桌面，再慢慢调成你喜欢的样子。</p></div>
+      <div class="guide-layout">
+        <div class="guide-controls"><div class="guide-tabs" role="tablist" aria-label="使用步骤"><button id="tab-start" class="guide-tab" role="tab" aria-selected="true" aria-controls="guide-panel" data-guide="start"><span>01</span>开始陪伴<span aria-hidden="true">↗</span></button><button id="tab-character" class="guide-tab" role="tab" aria-selected="false" aria-controls="guide-panel" tabindex="-1" data-guide="character"><span>02</span>换个角色<span aria-hidden="true">↗</span></button><button id="tab-plugin" class="guide-tab" role="tab" aria-selected="false" aria-controls="guide-panel" tabindex="-1" data-guide="plugin"><span>03</span>装个插件<span aria-hidden="true">↗</span></button></div>
+          <p class="guide-aside">不用准备开发环境。<br>下载 EXE，直接安装或运行。</p><a class="text-link" href="__REPO__/blob/main/docs/versions/v__VERSION__.md">打开完整使用手册 <span aria-hidden="true">↗</span></a>
+        </div>
+        <div id="guide-panel" role="tabpanel" aria-labelledby="tab-start" tabindex="0"><div class="guide-instructions"><h3 id="guide-subtitle">下载、打开，和它打个招呼。</h3><ol id="guide-steps"><li>下载 Windows 安装版或免安装版，启动 SpinePet。</li><li>首次启动自带阿米娅。左键拖动位置，短按互动，右键选择动作。</li><li>右键桌宠打开「角色管理器」，在角色库选择你想使用的角色。</li></ol><p class="guide-tip" id="guide-tip">关闭管理器后，桌宠会继续陪伴。要退出，请右键桌宠或系统托盘图标。</p></div><a class="guide-image" id="guide-image-link" href="assets/library.png" target="_blank" rel="noopener" aria-label="在新标签页查看完整操作截图"><img id="guide-image" src="assets/library.png" width="1440" height="900" loading="lazy" alt="角色库与独立参数设置栏"><span>点击查看完整截图 ↗</span></a></div>
+      </div>
+      <div class="everyday"><article><span class="mini-label">MAKE IT YOURS</span><h3>大小、语音，自己调。</h3><p>角色库点「设置」，调整角色大小、语音时间和气泡位置，最后点「保存设置」。</p></article><article><span class="mini-label">KEEP IT HANDY</span><h3>常用小事，就在身边。</h3><p>悬停角色，打开音乐、待办和通知面板。把常用面板固定在桌面，随手就能用。</p></article><article><span class="mini-label">AT YOUR PACE</span><h3>按自己的习惯陪伴。</h3><p>在「功能」里换配色、设置开机启动和提醒。需要安静时，开启专注或隐私模式。</p></article></div>
+    </section>
+
+    <section class="community-section" id="community" aria-labelledby="community-title"><div class="wrap section">
+      <div class="section-heading"><div><p class="eyebrow">02 / PLUGIN COMMUNITY</p><h2 id="community-title">给陪伴，加一点新本领<span class="red-dot">.</span></h2></div><a class="text-link" href="__REPO__/issues/new?template=plugin-submission.yml">提交你的插件 <span aria-hidden="true">↗</span></a></div>
+      <p class="section-intro">挑选插件，下载 ZIP，在「角色管理器 → 扩展 → 导入插件 ZIP」中安装。<strong>不用解压。</strong></p>
+      <div class="community-toolbar"><div class="filters" role="group" aria-label="按插件分类筛选"><button class="filter active" type="button" data-category="全部" aria-pressed="true">全部</button>__CATEGORY_BUTTONS__</div><label class="search"><svg aria-hidden="true"><use href="#i-search"/></svg><input id="plugin-search" type="search" placeholder="找一个插件…" aria-label="搜索插件名称、作者或用途" autocomplete="off"></label></div>
+      <p id="plugin-count" class="catalog-count" aria-live="polite">__PLUGIN_COUNT__ 个已收录插件</p>
+      <div class="plugin-grid" id="plugin-grid">__PLUGIN_CARDS__</div>
+      <div id="empty-state" class="empty-state" hidden><h3>还没有找到这个插件。</h3><p>试试别的关键词，或者把想法交给社区。</p><button id="clear-search" class="button secondary" type="button">查看全部插件</button></div>
+      <noscript><p class="catalog-note">启用 JavaScript 可搜索、筛选并查看权限详情。下方下载链接可直接使用。</p></noscript>
+      <p class="catalog-note">当前收录项目维护的选装插件与学习示例，欢迎第三方作者加入。安装前请核对权限和最低宿主版本。</p>
+      <div class="community-invite"><div><span class="small-cross">✳</span><div><h3>有个想法，也可以从这里开始。</h3><p>分享一个插件、报告使用问题，或说说你希望桌宠学会什么。</p></div></div><div class="invite-links"><a href="__REPO__/issues/new?template=plugin-idea.yml">提个插件点子 ↗</a><a href="__REPO__/blob/main/community/CONTRIBUTING.md">查看投稿指南 ↗</a></div></div>
+    </div></section>
+
+    <section class="section wrap developer-section" id="developer" aria-labelledby="developer-title"><div class="developer-copy"><p class="eyebrow">03 / FOR BUILDERS</p><h2 id="developer-title">开发者窗口<span class="red-dot">_</span></h2><p>想自己做一个小工具，<br>或让桌宠连接你的服务？从这里动手。</p><div class="developer-links"><a href="__REPO__/blob/main/docs/PLUGIN_QUICKSTART.md">插件快速入门 <span>↗</span></a><a href="__REPO__/blob/main/docs/PLUGIN_DEVELOPMENT.md">插件 API 与完整规范 <span>↗</span></a><a href="__REPO__/blob/main/docs/LOCAL_SERVICE_API.md">连接本机服务 <span>↗</span></a><a href="__REPO__/blob/main/docs/DEVELOPMENT.md">源码开发与测试 <span>↗</span></a></div></div>
+      <div class="terminal"><div class="terminal-title"><span class="window-dots"><i></i><i></i><i></i></span><span>developer / powershell</span><span class="terminal-status">READY</span></div><div class="terminal-tabs" role="tablist" aria-label="开发命令"><button id="tab-plugin-dev" role="tab" aria-selected="true" aria-controls="terminal-panel" data-terminal="plugin">做一个插件</button><button id="tab-app-dev" role="tab" aria-selected="false" aria-controls="terminal-panel" tabindex="-1" data-terminal="app">运行主程序</button></div><div id="terminal-panel" role="tabpanel" aria-labelledby="tab-plugin-dev" tabindex="0"><p id="terminal-note">先克隆项目，再从零权限计数器示例开始。</p><pre><code id="terminal-code">git clone __REPO__.git
+cd spine-pet-workshop
+
+# 修改 examples/hello-counter-plugin 中的示例
+# 打包后，在「扩展」中导入生成的 ZIP
+node scripts/package-plugin.mjs examples/hello-counter-plugin release/plugins/Hello-Counter-v1.0.0.zip</code></pre><div class="terminal-bottom"><span id="terminal-requirement">需要 Node.js 24 · 示例打包无需安装 Electron</span><button id="copy-command" type="button"><svg aria-hidden="true"><use href="#i-copy"/></svg><span>复制命令</span></button></div><p class="copy-feedback" id="copy-feedback" aria-live="polite"></p></div></div>
+    </section>
+
+    <section class="section wrap faq-section" aria-labelledby="faq-title"><div><p class="eyebrow">A FEW MORE THINGS</p><h2 id="faq-title">你可能还想知道。</h2><a class="text-link" href="__REPO__/issues">反馈问题 ↗</a></div><div class="faq-list"><details><summary>下载后，应该打开哪个文件？<span>＋</span></summary><p>普通使用请选择 SpinePet-Setup 或 SpinePet-Portable 的 EXE 文件。Setup 是安装版，Portable 可直接运行。GitHub 的 Source code.zip 是源码，不能当安装包使用。目前提供 Windows x64 版本。</p></details><details><summary>怎么导入新的角色？<span>＋</span></summary><p>打开「导入角色 → 搜索角色模型与语音」，输入角色名或编号，下载后预览、试听，确认再导入。也可选择本地模型文件夹，需要兼容 Spine 3.8，包含骨骼、图集和完整贴图。<a href="__REPO__/blob/main/docs/MODEL_SEARCH.md">查看图文教程 ↗</a></p></details><details><summary>对话插件装好就能聊天吗？<span>＋</span></summary><p>DeepSeek 插件需要在扩展设置中填写你自己的 API Key，相关费用由服务商账户承担。DSH 会话伙伴需要另行配置已授权的本机桥服务。每个插件的配置与权限可在安装前查看。</p></details><details><summary>怎么更新？原来的角色和设置会丢吗？<span>＋</span></summary><p>安装版可在「更新与开发」中检查并下载新版本，便携版请到发布页下载。正常升级会保留角色和设置；升级前先退出旧版。插件需要单独确认更新，也可以重新导入同 ID 的新 ZIP。</p></details><details><summary>怎么隐藏或退出桌宠？<span>＋</span></summary><p>关闭角色管理器后桌宠仍会运行。右键桌宠或系统托盘图标，可以隐藏、显示或退出整个应用。</p></details><details><summary>数据保存在哪里？支持哪些通知？<span>＋</span></summary><p>角色、设置和插件资料保存在本机 <code>%APPDATA%\spine-pet-workshop\</code>，退出后可以备份。通知功能读取 Windows 通知中心的消息，不支持直接读取微信或企业微信聊天。对话插件会向你配置的服务发送相关对话。</p></details></div></section>
+    <section class="closing wrap"><div><p class="eyebrow">SEE YOU ON THE DESKTOP</p><h2>给桌面，留个伙伴的位置。</h2></div><a class="button primary" href="__SETUP__"><svg aria-hidden="true"><use href="#i-download"/></svg>下载 SpinePet <span aria-hidden="true">↗</span></a></section>
+  </main>
+  <footer class="wrap"><a class="footer-brand" href="#">SpinePet<span>桌面上的一点陪伴。</span></a><div><a href="__REPO__">GitHub ↗</a><a href="__REPO__/releases">更新记录 ↗</a><a href="__REPO__/blob/main/docs/README.md">文档 ↗</a></div><p>宿主代码许可为 UNLICENSED。角色、语音与第三方资源的权利归各自权利人；请使用有权使用的素材。</p></footer>
+  <dialog id="plugin-dialog" aria-labelledby="dialog-title"><div class="dialog-header"><span class="eyebrow">PLUGIN DETAILS</span><button class="icon-button" id="close-dialog" type="button" aria-label="关闭插件详情">×</button></div><h2 id="dialog-title"></h2><p id="dialog-description"></p><dl id="dialog-meta"></dl><h3>使用前准备</h3><p id="dialog-setup"></p><h3>所需权限</h3><ul id="dialog-permissions"></ul><label class="checksum-label" for="dialog-checksum">ZIP 文件 SHA-256</label><input id="dialog-checksum" readonly><p class="dialog-install">下载 ZIP → 打开「角色管理器 → 扩展」→ 导入插件 ZIP。无需解压。</p><div class="dialog-actions"><a class="button primary" id="dialog-download">下载 ZIP ↓</a><a class="text-link" id="dialog-source">源码与说明 ↗</a></div></dialog>
+  <script id="site-data" type="application/json">__SITE_DATA__</script>
+  <svg class="svg-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></symbol>
+    <symbol id="i-github" viewBox="0 0 24 24"><path d="M9 20c-4 1-4-2-6-2m12 4v-4c0-1-.3-2-1-2 4-.5 6-2 6-6 0-2-.5-3-1.5-4 .2-1 .2-3-.5-4-2 0-4 1-4 1a15 15 0 0 0-5 0S7 2 5 2c-.7 1-.7 3-.5 4C3.5 7 3 8 3 10c0 4 2 5.5 6 6-.7.5-1 1-1 2v4"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3Z"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h9m4 0h3M4 17h3m4 0h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></symbol>
+    <symbol id="i-puzzle" viewBox="0 0 24 24"><path d="M4 4h6a3 3 0 1 1 5 0h5v6a3 3 0 1 0 0 5v5h-6a3 3 0 1 0-5 0H4v-6a3 3 0 1 1 0-5V4Z"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V3H3v13h5"/></symbol>
+    <symbol id="i-weather" viewBox="0 0 24 24"><path d="M8 3V1m-5 4L1 3m15 2 2-2M2 10H0"/><circle cx="8" cy="9" r="4"/><path d="M7 21a4 4 0 1 1 0-8h1a6 6 0 0 1 11 0 4 4 0 0 1 0 8H7Z"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 11a9 9 0 0 1-9 9H8l-5 3v-7a9 9 0 1 1 18-5Z"/><path d="M7 10h10m-10 4h6"/></symbol>
+    <symbol id="i-code" viewBox="0 0 24 24"><path d="m8 6-6 6 6 6m8-12 6 6-6 6M14 3l-4 18"/></symbol>
+    <symbol id="i-terminal" viewBox="0 0 24 24"><path d="m4 6 6 6-6 6m8 0h8"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"/></symbol>
+  </defs></svg>
+</body>
+</html>
