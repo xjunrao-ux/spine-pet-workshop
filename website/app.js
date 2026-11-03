@@ -311,10 +311,10 @@ reducedMotion.addEventListener('change', event => {
 });
 const showcaseImage = document.getElementById('showcase-image');
 const showcaseModes = {
-  pet: { file: 'pet.png', title: 'SPINEPET / DESKTOP COMPANION', label: '真实桌宠', alt: '当前 v5.3.1 阿米娅桌宠、互动动作和原声字幕气泡实拍', caption: '真实桌宠窗口实拍 · v5.3.1 · 角色动作与原声字幕' },
+  pet: { file: 'pet.png', title: 'SPINEPET / DESKTOP COMPANION', label: '真实桌宠', alt: '当前 v5.3.1 阿米娅桌宠待机状态实拍', caption: '真实桌宠窗口实拍 · v5.3.1 · 待机状态' },
   library: { file: 'library.png', title: 'SPINEPET / CHARACTER LIBRARY', label: '角色库', alt: '重新启动当前 v5.3.1 后实拍的角色管理器与参数设置', caption: '当前管理器实拍 · v5.3.1 · 角色与语音设置' },
   models: { file: 'models.png', title: 'SPINEPET / MODEL SEARCH', label: '模型检索', alt: '当前 v5.3.1 模型与语音检索结果，包含角色分类、配音语种与下载入口', caption: '当前模型检索实拍 · 基建小人、动态立绘与敌方模型可分类查找' },
-  scene: { file: 'images/desktop-scene.png', title: 'SPINEPET / DESKTOP SCENE', label: '桌面搭配', alt: '用户提供的阿米娅时装桌宠与桌面背景搭配展示', caption: '来自你提供的图片文件夹 · 桌宠与壁纸搭配展示' },
+  scene: { file: 'images/desktop-scene.png', title: 'SPINEPET / DESKTOP SCENE', label: '桌面搭配', alt: '阿米娅时装桌宠与桌面背景搭配展示', caption: '桌宠与壁纸搭配展示' },
 };
 let showcaseRequest = 0;
 setupTabs('[data-showcase]', async tab => {
@@ -379,3 +379,32 @@ const revealObserver = new IntersectionObserver(entries => {
   }
 }, { threshold: .12 });
 document.querySelectorAll('.hero-copy, .hero-visual, .section-heading, .guide-layout, .plugin-grid, .participation-grid, .developer-copy, .terminal').forEach(element => revealObserver.observe(element));
+
+// The decorative pet docks at the image edge and parks in reserved footer space on approach.
+const companionHost = document.querySelector('.hero-visual');
+const edgeCompanion = document.querySelector('.edge-companion');
+const finePointer = matchMedia('(hover: hover) and (pointer: fine)');
+let companionReturnTimer;
+function parkCompanion() {
+  clearTimeout(companionReturnTimer);
+  if (companionHost.dataset.companionAway !== 'true') companionHost.dataset.companionAway = 'true';
+}
+companionHost.addEventListener('pointermove', event => {
+  if (!finePointer.matches || event.pointerType === 'touch') return;
+  const picture = companionHost.querySelector('.app-shot').getBoundingClientRect();
+  const pet = edgeCompanion.getBoundingClientRect();
+  const overPicture = event.clientX >= picture.left && event.clientX <= picture.right && event.clientY >= picture.top && event.clientY <= picture.bottom;
+  const nearPet = event.clientX >= pet.left - 24 && event.clientX <= pet.right + 24 && event.clientY >= pet.top - 24 && event.clientY <= pet.bottom + 24;
+  if (overPicture || nearPet) parkCompanion();
+}, {passive: true});
+companionHost.addEventListener('pointerleave', () => {
+  companionReturnTimer = setTimeout(() => {
+    if (!companionHost.querySelector(':focus-visible')) delete companionHost.dataset.companionAway;
+  }, 240);
+});
+companionHost.addEventListener('focusin', event => { if (event.target.matches(':focus-visible')) parkCompanion(); });
+companionHost.addEventListener('focusout', event => {
+  if (!companionHost.contains(event.relatedTarget)) {
+    companionReturnTimer = setTimeout(() => { delete companionHost.dataset.companionAway; }, 240);
+  }
+});
