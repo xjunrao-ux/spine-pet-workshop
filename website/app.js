@@ -4,19 +4,19 @@ document.querySelectorAll('[data-details]').forEach(button => { button.hidden = 
 
 const guides = {
   start: {
-    title: '下载、打开，和它打个招呼。',
-    steps: ['下载 Windows 安装版或免安装版，启动 SpinePet。', '首次启动自带阿米娅。左键拖动位置，短按互动，右键选择动作。', '右键桌宠打开「角色管理器」，在角色库选择你想使用的角色。'],
-    tip: '关闭管理器后，桌宠会继续陪伴。要退出，请右键桌宠或系统托盘图标。',
+    title: '下载安装，启动第一个桌宠。',
+    steps: ['下载 Windows 安装版并完成安装；也可以直接运行免安装版。', '启动后会显示内置阿米娅。左键拖动调整位置，短按互动，右键打开菜单。', '右键选择「角色管理器」，在角色库切换角色，点击「设置」调整大小和语音。'],
+    tip: '关闭管理器不会退出桌宠。要隐藏或退出，请使用桌宠或系统托盘的右键菜单。',
     image: 'library.png', alt: '角色库与独立参数设置栏',
   },
   character: {
-    title: '找到喜欢的角色，预览后再导入。',
-    steps: ['打开「导入角色 → 搜索角色模型与语音」，输入角色名或模型编号。', '下载模型，按需选择语种、下载语音，确认角色 ID 后预览和试听。', '点击「导入并设为当前桌宠」。也可以选择本地模型文件夹导入。'],
+    title: '添加喜欢的干员和原声语音。',
+    steps: ['打开「导入角色 → 搜索角色模型与语音」，输入干员名或模型编号。', '下载模型，再选择语种并下载语音。确认角色 ID 与中文字幕匹配后，预览并试听。', '点击「导入并设为当前桌宠」。本地已有模型与语音，也可直接选择文件夹导入。'],
     tip: '本地素材需兼容 Spine 3.8，骨骼、图集和贴图放在同一完整文件夹中；素材入口和教程就在导入页顶部。',
     image: 'materials.png', alt: '导入角色页：素材教程、模型与语音检索入口',
   },
   plugin: {
-    title: '挑一个小工具，把 ZIP 交给桌宠。',
+    title: '下载插件，导入后完成设置。',
     steps: ['在下方插件社区找到需要的插件，先查看使用条件和权限，再下载 ZIP。', '进入「角色管理器 → 扩展 → 导入插件 ZIP」，核对信息后安装，不用解压。', '在扩展页填写城市、连接或 API 配置，然后悬停桌宠打开对应功能。'],
     tip: '插件有自己的版本。在「更新与开发」中检查已收录插件的更新，或重新导入同 ID 的新 ZIP，保留配置和数据。',
     image: 'plugins.png', alt: '扩展管理页：ZIP 导入、插件启用与设置',
@@ -25,6 +25,9 @@ const guides = {
 
 function setupTabs(selector, activate) {
   const tabs = [...document.querySelectorAll(selector)];
+  const updateOrientation = () => tabs[0].parentElement.setAttribute('aria-orientation', getComputedStyle(tabs[0].parentElement).flexDirection === 'column' ? 'vertical' : 'horizontal');
+  updateOrientation();
+  window.addEventListener('resize', updateOrientation);
   function select(tab, moveFocus = false) {
     for (const candidate of tabs) {
       candidate.setAttribute('aria-selected', String(candidate === tab));
@@ -168,4 +171,113 @@ document.getElementById('copy-command').addEventListener('click', async () => {
     selection.removeAllRanges(); selection.addRange(range);
     feedback.textContent = '浏览器未允许自动复制，已选中命令，请按 Ctrl+C 复制。';
   }
+});
+
+// CSS handles wheel, touch and keyboard scrolling; this only updates navigation.
+const sections = [...document.querySelectorAll('.snap-panel')];
+const chapterLinks = [...document.querySelectorAll('.section-rail a, .site-header nav a')];
+let scrollUpdatePending = false;
+function updateChapter() {
+  const marker = Math.min(innerHeight * .38, 260);
+  const active = sections.find(section => {
+    const box = section.getBoundingClientRect();
+    return box.top <= marker && box.bottom > marker;
+  }) || sections[0];
+  for (const link of chapterLinks) {
+    if (link.hash === `#${active.id}`) link.setAttribute('aria-current', 'location');
+    else link.removeAttribute('aria-current');
+  }
+  document.documentElement.dataset.section = active.id;
+  scrollUpdatePending = false;
+}
+window.addEventListener('scroll', () => {
+  if (!scrollUpdatePending) { scrollUpdatePending = true; requestAnimationFrame(updateChapter); }
+}, { passive: true });
+window.addEventListener('resize', updateChapter);
+updateChapter();
+
+const contributionTypes = {
+  plugin: {
+    title: '上传与分享插件', prefix: '插件收录',
+    description: '先把 ZIP 上传到自己的 GitHub Release，再填写下面的信息申请收录。投稿指南中有完整的上传步骤。',
+    fields: [
+      { id: 'name', label: '插件名称与版本', placeholder: '例如：桌面便签 / 1.0.0', max: 100 },
+      { id: 'identity', label: '插件 ID', placeholder: '例如：io.yourname.notes', max: 100 },
+      { id: 'source', label: 'GitHub 源码地址', type: 'url', placeholder: 'https://github.com/作者/仓库', wide: true, pattern: 'https://github\\.com/.+' },
+      { id: 'download', label: '插件 ZIP 下载链接', type: 'url', placeholder: 'GitHub Release 中的固定版本 ZIP 链接', wide: true, pattern: 'https://github\\.com/.+/releases/download/.+', max: 500 },
+      { id: 'checksum', label: 'ZIP 的 SHA-256', placeholder: '64 位文件校验值', wide: true, pattern: '[a-fA-F0-9]{64}', max: 64, help: '可用 PowerShell：Get-FileHash -Algorithm SHA256 -LiteralPath 你的插件.zip' },
+      { id: 'description', label: '功能、最低桌宠版本与权限', type: 'textarea', placeholder: '说明插件能做什么、测试过的桌宠版本，以及需要哪些权限。', wide: true, max: 1200 },
+    ],
+  },
+  feedback: {
+    title: '提交意见', prefix: '意见反馈',
+    description: '告诉我们哪里不好用，或发生了什么问题。具体的操作步骤有助于排查。',
+    fields: [
+      { id: 'name', label: '反馈主题', placeholder: '用一句话说明问题或建议', wide: true, max: 120 },
+      { id: 'description', label: '具体情况', type: 'textarea', placeholder: '做了什么操作？期望怎样？实际发生了什么？', wide: true, max: 1800 },
+      { id: 'environment', label: '桌宠版本与系统版本（可选）', placeholder: `例如：SpinePet ${data.version} / Windows 11`, wide: true, optional: true, max: 200 },
+    ],
+  },
+  wish: {
+    title: '功能许愿', prefix: '功能许愿',
+    description: '不需要先考虑怎么开发。说清楚你希望的使用效果，以及会在什么场景用到它。',
+    fields: [
+      { id: 'name', label: '想要什么功能？', placeholder: '用一句话描述你的愿望', wide: true, max: 120 },
+      { id: 'description', label: '使用场景与期望效果', type: 'textarea', placeholder: '什么时候会用到？希望桌宠如何帮助你？', wide: true, max: 1800 },
+      { id: 'participation', label: '补充想法（可选）', placeholder: '例如：愿意测试、已有设计或相关工具', wide: true, optional: true, max: 200 },
+    ],
+  },
+};
+const contributionDialog = document.getElementById('contribution-dialog');
+const contributionForm = document.getElementById('contribution-form');
+let contributionTrigger;
+let contributionType;
+const contributionDrafts = {};
+function saveContributionDraft() {
+  if (!contributionType) return;
+  contributionDrafts[contributionType] = Object.fromEntries(contributionTypes[contributionType].fields.map(field => [field.id, document.getElementById(`contribution-input-${field.id}`).value]));
+}
+document.querySelectorAll('[data-contribute]').forEach(link => link.addEventListener('click', event => {
+  event.preventDefault();
+  contributionType = link.dataset.contribute;
+  const config = contributionTypes[contributionType];
+  contributionTrigger = link;
+  document.getElementById('contribution-title').textContent = config.title;
+  document.getElementById('contribution-description').textContent = config.description;
+  const fields = config.fields.map(field => {
+    const label = document.createElement('label');
+    label.className = `contribution-field${field.wide ? ' wide' : ''}`;
+    const caption = document.createElement('span'); caption.textContent = field.label;
+    const control = document.createElement(field.type === 'textarea' ? 'textarea' : 'input');
+    control.id = `contribution-input-${field.id}`;
+    if (field.type !== 'textarea') control.type = field.type || 'text';
+    control.required = !field.optional;
+    control.maxLength = field.max || 500;
+    control.placeholder = field.placeholder;
+    control.value = contributionDrafts[contributionType]?.[field.id] || '';
+    if (field.pattern) { control.pattern = field.pattern; control.title = field.id === 'checksum' ? '请输入 64 位十六进制 SHA-256 校验值' : '请使用有效的 HTTPS GitHub 地址'; }
+    label.append(caption, control);
+    if (field.help) { const hint = document.createElement('small'); hint.id = `${control.id}-help`; hint.textContent = field.help; control.setAttribute('aria-describedby', hint.id); label.append(hint); }
+    return label;
+  });
+  document.getElementById('contribution-fields').replaceChildren(...fields);
+  document.getElementById('form-handoff').textContent = '下一步将打开 GitHub，登录并确认后才会提交。' + (contributionType === 'plugin' ? ' ZIP 文件请先上传到你自己的 GitHub Release。' : ' 截图可以在 GitHub 编辑页补充。');
+  contributionDialog.showModal();
+}));
+contributionForm.addEventListener('submit', () => {
+  const config = contributionTypes[contributionType];
+  saveContributionDraft();
+  const draft = contributionDrafts[contributionType];
+  document.getElementById('issue-title').value = `[${config.prefix}] ${draft.name.trim()}`;
+  document.getElementById('issue-body').value = config.fields.map(field => `### ${field.label}\n\n${draft[field.id].trim() || '未填写'}`).join('\n\n');
+  // Native form submission opens an editable GitHub draft; no issue is posted here.
+});
+document.getElementById('close-contribution').addEventListener('click', () => contributionDialog.close());
+contributionDialog.addEventListener('click', event => {
+  const box = contributionDialog.getBoundingClientRect();
+  if (event.target === contributionDialog && (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom)) contributionDialog.close();
+});
+contributionDialog.addEventListener('close', () => {
+  saveContributionDraft();
+  contributionTrigger?.focus();
 });

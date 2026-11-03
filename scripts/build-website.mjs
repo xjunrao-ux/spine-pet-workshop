@@ -20,7 +20,14 @@ const plugins = catalog.plugins.map(plugin => {
     const url = new URL(plugin[key]);
     if (url.protocol !== 'https:') throw new Error(`Plugin ${plugin.id}: ${key} must use HTTPS`);
   }
-  return { ...plugin, ...(details[plugin.id] || { icon: 'puzzle', setup: '请阅读作者提供的源码与说明，按插件要求完成设置。' }) };
+  const descriptions = {
+    'local.spine-weather': '出门前查看天气，安排接下来的一天。支持当前天气、24 小时和 7 天预报。',
+    'io.spine-workshop.deepseek': '在桌面与角色对话，通过气泡查看回复。可配置人设与记忆，需要自己的 API Key。',
+    'io.spine-workshop.codex': '不用切回工具窗口，也能查看本机 Codex 额度、重置时间和可读取的任务状态。',
+    'io.spine-workshop.dsh-pet': '从桌宠查看已有 DSH 会话、接收任务摘要并继续对话。需要先配置本机桥服务。',
+    'com.example.hello-counter': '想自己做插件？从加一和清零开始，了解插件如何安装与运行。不联网、不保存数据。',
+  };
+  return { ...plugin, description: descriptions[plugin.id] || plugin.description, ...(details[plugin.id] || { icon: 'puzzle', setup: '请阅读作者提供的源码与说明，按插件要求完成设置。' }) };
 }).sort((a, b) => {
   const rank = id => preferredOrder.includes(id) ? preferredOrder.indexOf(id) : preferredOrder.length;
   return rank(a.id) - rank(b.id) || a.name.localeCompare(b.name, 'zh-CN');
@@ -33,7 +40,7 @@ const cards = plugins.map(plugin => `<article class="plugin-card" data-plugin="$
   <p class="plugin-description">${escapeHtml(plugin.description)}</p>
   <p class="plugin-author">by ${escapeHtml(plugin.author)} · 桌宠 ≥ ${escapeHtml(plugin.minHostVersion)}</p>
   <div class="plugin-bottom"><a href="${escapeHtml(plugin.downloadUrl)}" aria-label="下载${escapeHtml(plugin.name)} v${escapeHtml(plugin.version)} ZIP"><svg aria-hidden="true"><use href="#i-download"/></svg>下载 ZIP</a><button class="detail-button" type="button" data-details="${escapeHtml(plugin.id)}" aria-label="查看${escapeHtml(plugin.name)}的使用条件与权限" hidden>使用条件与权限 ↗</button><noscript><a href="${escapeHtml(plugin.sourceUrl)}">查看说明 ↗</a></noscript></div>
-</article>`).join('\n') + `<article class="plugin-card plugin-contribute" id="contribute-card"><span aria-hidden="true">[ + ]</span><h3>下一个，是你的插件。</h3><p>从一个简单想法开始，<br>把你的桌面小工具分享给大家。</p><a class="text-link" href="${repository}/blob/main/docs/PLUGIN_QUICKSTART.md">动手做第一个插件 ↗</a></article>`;
+</article>`).join('\n') + `<article class="plugin-card plugin-contribute" id="contribute-card"><span aria-hidden="true">[ + ]</span><h3>分享你的插件</h3><p>已经做好了一个工具？<br>上传 ZIP 并申请收录，让更多用户找到它。</p><a class="text-link" href="#contribute">上传与投稿 ↗</a></article>`;
 
 let html = await readFile(path.join(root, 'website/index.html'), 'utf8');
 const replacements = {
