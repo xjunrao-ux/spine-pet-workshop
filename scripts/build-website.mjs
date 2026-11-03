@@ -58,11 +58,14 @@ if (/__[A-Z_]+__/.test(html)) throw new Error('Unresolved website template token
 await mkdir(path.join(siteDirectory, 'assets'), { recursive: true });
 await writeFile(path.join(siteDirectory, 'index.html'), html);
 for (const name of ['styles.css', 'app.js']) await cp(path.join(root, 'website', name), path.join(siteDirectory, name));
+await cp(path.join(root, 'website/fonts'), path.join(siteDirectory, 'assets/fonts'), {recursive: true});
+await cp(path.join(root, 'website/images'), path.join(siteDirectory, 'assets/images'), {recursive: true});
 for (const [source, destination] of [
-  ['docs/images/v512-library.png', 'library.png'],
-  ['docs/images/v512-materials.png', 'materials.png'],
-  ['docs/images/v512-materials-expanded.png', 'models.png'],
-  ['docs/images/v512-plugins.png', 'plugins.png'],
+  ['docs/images/website-current/library.png', 'library.png'],
+  ['docs/images/website-current/materials.png', 'materials.png'],
+  ['docs/images/website-current/models.png', 'models.png'],
+  ['docs/images/website-current/plugins.png', 'plugins.png'],
+  ['docs/images/website-current/pet.png', 'pet.png'],
   ['assets/spinepet-icon.png', 'spinepet-icon.png'],
 ]) await cp(path.join(root, source), path.join(siteDirectory, 'assets', destination));
 await cp(path.join(root, 'community/catalog.json'), path.join(siteDirectory, 'catalog.json'));

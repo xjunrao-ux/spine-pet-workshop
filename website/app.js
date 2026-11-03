@@ -5,7 +5,7 @@ document.querySelectorAll('[data-details]').forEach(button => { button.hidden = 
 const guides = {
   start: {
     title: '下载安装，启动第一个桌宠。',
-    steps: ['下载 Windows 安装版并完成安装；也可以直接运行免安装版。', '启动后会显示内置阿米娅。左键拖动调整位置，短按互动，右键打开菜单。', '右键选择「角色管理器」，在角色库切换角色，点击「设置」调整大小和语音。'],
+    steps: ['下载 Windows 安装版并完成安装；也可以直接运行免安装版。', '启动后会显示内置阿米娅。左键拖动调整位置，短按互动，右键打开菜单。', '右键桌宠 → 角色管理器，在角色库切换角色；点击「设置」调整大小和语音。'],
     tip: '关闭管理器不会退出桌宠。要隐藏或退出，请使用桌宠或系统托盘的右键菜单。',
     image: 'library.png', alt: '角色库与独立参数设置栏',
   },
@@ -52,11 +52,19 @@ function setupTabs(selector, activate) {
   });
 }
 
-setupTabs('[data-guide]', tab => {
+function renderGuide(tab) {
   const guide = guides[tab.dataset.guide];
   document.getElementById('guide-subtitle').textContent = guide.title;
   document.getElementById('guide-steps').replaceChildren(...guide.steps.map(text => {
-    const item = document.createElement('li'); item.textContent = text; return item;
+    const item = document.createElement('li');
+    const keys = ['右键桌宠 → 角色管理器', '左键拖动', '导入并设为当前桌宠', '导入插件 ZIP', '搜索角色模型与语音', '角色管理器', '不用解压', '导入角色', '扩展', '设置'];
+    const pattern = new RegExp(`(${keys.join('|')})`, 'g');
+    for (const part of text.split(pattern)) {
+      if (keys.includes(part)) { const strong = document.createElement('strong'); strong.className = 'action-highlight'; strong.textContent = part; item.append(strong); }
+      else item.append(document.createTextNode(part));
+    }
+    if (text.includes('右键桌宠')) item.classList.add('key-step');
+    return item;
   }));
   document.getElementById('guide-tip').textContent = guide.tip;
   const image = document.getElementById('guide-image');
@@ -64,7 +72,9 @@ setupTabs('[data-guide]', tab => {
   image.alt = guide.alt;
   document.getElementById('guide-image-link').href = image.src;
   document.getElementById('guide-panel').setAttribute('aria-labelledby', tab.id);
-});
+}
+setupTabs('[data-guide]', renderGuide);
+renderGuide(document.querySelector('[data-guide=start]'));
 
 let selectedCategory = '全部';
 const search = document.getElementById('plugin-search');
@@ -301,8 +311,10 @@ reducedMotion.addEventListener('change', event => {
 });
 const showcaseImage = document.getElementById('showcase-image');
 const showcaseModes = {
-  library: { file: 'library.png', title: 'SPINEPET / CHARACTER LIBRARY', label: '角色库', alt: 'SpinePet 角色库：基建阿米娅、角色预览与大小和语音设置' },
-  models: { file: 'models.png', title: 'SPINEPET / MATERIAL IMPORT', label: '素材与导入', alt: 'SpinePet 素材与导入教程：模型文件、角色语音与字幕的获取和导入说明' },
+  pet: { file: 'pet.png', title: 'SPINEPET / DESKTOP COMPANION', label: '真实桌宠', alt: '当前 v5.3.1 阿米娅桌宠、互动动作和原声字幕气泡实拍', caption: '真实桌宠窗口实拍 · v5.3.1 · 角色动作与原声字幕' },
+  library: { file: 'library.png', title: 'SPINEPET / CHARACTER LIBRARY', label: '角色库', alt: '重新启动当前 v5.3.1 后实拍的角色管理器与参数设置', caption: '当前管理器实拍 · v5.3.1 · 角色与语音设置' },
+  models: { file: 'models.png', title: 'SPINEPET / MODEL SEARCH', label: '模型检索', alt: '当前 v5.3.1 模型与语音检索结果，包含角色分类、配音语种与下载入口', caption: '当前模型检索实拍 · 基建小人、动态立绘与敌方模型可分类查找' },
+  scene: { file: 'images/desktop-scene.png', title: 'SPINEPET / DESKTOP SCENE', label: '桌面搭配', alt: '用户提供的阿米娅时装桌宠与桌面背景搭配展示', caption: '来自你提供的图片文件夹 · 桌宠与壁纸搭配展示' },
 };
 let showcaseRequest = 0;
 setupTabs('[data-showcase]', async tab => {
@@ -313,8 +325,11 @@ setupTabs('[data-showcase]', async tab => {
   try { await preloader.decode(); } catch { return; }
   if (request !== showcaseRequest) return;
   showcaseImage.src = preloader.src;
+  showcaseImage.classList.toggle('pet-shot', tab.dataset.showcase === 'pet');
+  document.querySelector('.showcase-open').classList.toggle('is-pet', tab.dataset.showcase === 'pet');
   showcaseImage.alt = mode.alt;
   document.getElementById('showcase-window-title').textContent = mode.title;
+  document.getElementById('showcase-caption').textContent = mode.caption;
   document.getElementById('showcase-panel').setAttribute('aria-labelledby', tab.id);
   document.querySelector('.showcase-open').setAttribute('aria-label', `放大查看${mode.label}截图`);
   if (!reducedMotion.matches) showcaseImage.animate([{ opacity: .3, transform: 'translateY(6px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 350, easing: 'cubic-bezier(.2,.7,.2,1)' });
