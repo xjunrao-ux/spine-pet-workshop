@@ -380,12 +380,12 @@ const revealObserver = new IntersectionObserver(entries => {
 }, { threshold: .12 });
 document.querySelectorAll('.hero-copy, .hero-visual, .section-heading, .guide-layout, .plugin-grid, .participation-grid, .developer-copy, .terminal').forEach(element => revealObserver.observe(element));
 
-// The decorative pet docks at the image edge and parks in reserved footer space on approach.
+// The pet keeps its height and slides out to the right while the image is in use.
 const companionHost = document.querySelector('.hero-visual');
 const edgeCompanion = document.querySelector('.edge-companion');
 const finePointer = matchMedia('(hover: hover) and (pointer: fine)');
 let companionReturnTimer;
-function parkCompanion() {
+function slideCompanionOut() {
   clearTimeout(companionReturnTimer);
   if (companionHost.dataset.companionAway !== 'true') companionHost.dataset.companionAway = 'true';
 }
@@ -395,14 +395,14 @@ companionHost.addEventListener('pointermove', event => {
   const pet = edgeCompanion.getBoundingClientRect();
   const overPicture = event.clientX >= picture.left && event.clientX <= picture.right && event.clientY >= picture.top && event.clientY <= picture.bottom;
   const nearPet = event.clientX >= pet.left - 24 && event.clientX <= pet.right + 24 && event.clientY >= pet.top - 24 && event.clientY <= pet.bottom + 24;
-  if (overPicture || nearPet) parkCompanion();
+  if (overPicture || nearPet) slideCompanionOut();
 }, {passive: true});
 companionHost.addEventListener('pointerleave', () => {
   companionReturnTimer = setTimeout(() => {
     if (!companionHost.querySelector(':focus-visible')) delete companionHost.dataset.companionAway;
   }, 240);
 });
-companionHost.addEventListener('focusin', event => { if (event.target.matches(':focus-visible')) parkCompanion(); });
+companionHost.addEventListener('focusin', event => { if (event.target.matches(':focus-visible')) slideCompanionOut(); });
 companionHost.addEventListener('focusout', event => {
   if (!companionHost.contains(event.relatedTarget)) {
     companionReturnTimer = setTimeout(() => { delete companionHost.dataset.companionAway; }, 240);
