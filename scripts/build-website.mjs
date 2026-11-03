@@ -61,6 +61,7 @@ for (const name of ['styles.css', 'app.js']) await cp(path.join(root, 'website',
 for (const [source, destination] of [
   ['docs/images/v512-library.png', 'library.png'],
   ['docs/images/v512-materials.png', 'materials.png'],
+  ['docs/images/v512-materials-expanded.png', 'models.png'],
   ['docs/images/v512-plugins.png', 'plugins.png'],
   ['assets/spinepet-icon.png', 'spinepet-icon.png'],
 ]) await cp(path.join(root, source), path.join(siteDirectory, 'assets', destination));

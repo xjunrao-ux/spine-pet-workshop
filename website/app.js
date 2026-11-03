@@ -11,7 +11,7 @@ const guides = {
   },
   character: {
     title: '添加喜欢的干员和原声语音。',
-    steps: ['打开「导入角色 → 搜索角色模型与语音」，输入干员名或模型编号。', '下载模型，再选择语种并下载语音。确认角色 ID 与中文字幕匹配后，预览并试听。', '点击「导入并设为当前桌宠」。本地已有模型与语音，也可直接选择文件夹导入。'],
+    steps: ['打开「导入角色 → 搜索角色模型与语音」，输入角色名或模型编号；可筛选基建小人、动态立绘或敌人战斗模型。', '下载模型，再选择可用语种并下载语音。确认角色 ID 与中文字幕匹配后，预览并试听。', '点击「导入并设为当前桌宠」。本地已有模型与语音，也可直接选择文件夹导入。'],
     tip: '本地素材需兼容 Spine 3.8，骨骼、图集和贴图放在同一完整文件夹中；素材入口和教程就在导入页顶部。',
     image: 'materials.png', alt: '导入角色页：素材教程、模型与语音检索入口',
   },
@@ -176,6 +176,7 @@ document.getElementById('copy-command').addEventListener('click', async () => {
 // CSS handles wheel, touch and keyboard scrolling; this only updates navigation.
 const sections = [...document.querySelectorAll('.snap-panel')];
 const chapterLinks = [...document.querySelectorAll('.section-rail a, .site-header nav a')];
+const nextPage = document.querySelector('.page-next');
 let scrollUpdatePending = false;
 function updateChapter() {
   const marker = Math.min(innerHeight * .38, 260);
@@ -188,6 +189,14 @@ function updateChapter() {
     else link.removeAttribute('aria-current');
   }
   document.documentElement.dataset.section = active.id;
+  const following = sections[sections.indexOf(active) + 1];
+  nextPage.hidden = !following;
+  if (following) {
+    const title = following.querySelector('h2').textContent.replace(/[+_]/g, '').trim();
+    nextPage.href = `#${following.id}`;
+    nextPage.setAttribute('aria-label', `向下翻页：${title}`);
+    nextPage.querySelector('.page-next-name').textContent = title;
+  }
   scrollUpdatePending = false;
 }
 window.addEventListener('scroll', () => {
@@ -281,3 +290,77 @@ contributionDialog.addEventListener('close', () => {
   saveContributionDraft();
   contributionTrigger?.focus();
 });
+
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+reducedMotion.addEventListener('change', event => {
+  if (!event.matches) return;
+  // Cancel in-flight motion too, so changing the preference takes effect immediately.
+  window.scrollTo({ top: scrollY, left: scrollX, behavior: 'instant' });
+  document.getAnimations().forEach(animation => animation.cancel());
+  document.querySelectorAll('.press-wave').forEach(wave => wave.remove());
+});
+const showcaseImage = document.getElementById('showcase-image');
+const showcaseModes = {
+  library: { file: 'library.png', title: 'SPINEPET / CHARACTER LIBRARY', label: '角色库', alt: 'SpinePet 角色库：基建阿米娅、角色预览与大小和语音设置' },
+  models: { file: 'models.png', title: 'SPINEPET / MATERIAL IMPORT', label: '素材与导入', alt: 'SpinePet 素材与导入教程：模型文件、角色语音与字幕的获取和导入说明' },
+};
+let showcaseRequest = 0;
+setupTabs('[data-showcase]', async tab => {
+  const request = ++showcaseRequest;
+  const mode = showcaseModes[tab.dataset.showcase];
+  const preloader = new Image();
+  preloader.src = `assets/${mode.file}`;
+  try { await preloader.decode(); } catch { return; }
+  if (request !== showcaseRequest) return;
+  showcaseImage.src = preloader.src;
+  showcaseImage.alt = mode.alt;
+  document.getElementById('showcase-window-title').textContent = mode.title;
+  document.getElementById('showcase-panel').setAttribute('aria-labelledby', tab.id);
+  document.querySelector('.showcase-open').setAttribute('aria-label', `放大查看${mode.label}截图`);
+  if (!reducedMotion.matches) showcaseImage.animate([{ opacity: .3, transform: 'translateY(6px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 350, easing: 'cubic-bezier(.2,.7,.2,1)' });
+});
+
+const imageDialog = document.getElementById('image-dialog');
+let imageTrigger;
+function openImage(source, description, trigger) {
+  imageTrigger = trigger;
+  document.getElementById('image-dialog-image').src = source;
+  document.getElementById('image-dialog-image').alt = description;
+  document.getElementById('image-dialog-title').textContent = description;
+  imageDialog.showModal();
+}
+document.querySelector('.showcase-open').addEventListener('click', event => openImage(showcaseImage.src, showcaseImage.alt, event.currentTarget));
+document.querySelector('.guide-image').addEventListener('click', event => {
+  event.preventDefault();
+  const image = event.currentTarget.querySelector('img');
+  openImage(image.src, image.alt, event.currentTarget);
+});
+document.getElementById('close-image-dialog').addEventListener('click', () => imageDialog.close());
+imageDialog.addEventListener('close', () => imageTrigger?.focus());
+imageDialog.addEventListener('click', event => {
+  const box = imageDialog.getBoundingClientRect();
+  if (event.target === imageDialog && (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom)) imageDialog.close();
+});
+
+// Brief feedback for pointer input, while keyboard input retains native :active/focus states.
+document.addEventListener('pointerdown', event => {
+  const control = event.target.closest('.button, .guide-tab, .filter, .showcase-tabs button, .terminal-tabs button');
+  if (!control || reducedMotion.matches || (event.button !== undefined && event.button !== 0)) return;
+  const box = control.getBoundingClientRect();
+  const wave = document.createElement('i');
+  wave.className = 'press-wave';
+  wave.setAttribute('aria-hidden', 'true');
+  const diameter = Math.max(box.width, box.height) * 2;
+  Object.assign(wave.style, { width: `${diameter}px`, height: `${diameter}px`, left: `${event.clientX - box.left}px`, top: `${event.clientY - box.top}px` });
+  control.append(wave);
+  wave.addEventListener('animationend', () => wave.remove(), { once: true });
+}, { passive: true });
+
+const revealObserver = new IntersectionObserver(entries => {
+  for (const entry of entries) {
+    if (!entry.isIntersecting) continue;
+    revealObserver.unobserve(entry.target);
+    if (!reducedMotion.matches) entry.target.animate([{ opacity: 0, transform: 'translateY(14px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 550, easing: 'cubic-bezier(.2,.7,.2,1)' });
+  }
+}, { threshold: .12 });
+document.querySelectorAll('.hero-copy, .hero-visual, .section-heading, .guide-layout, .plugin-grid, .participation-grid, .developer-copy, .terminal').forEach(element => revealObserver.observe(element));
