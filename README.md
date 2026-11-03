@@ -6,7 +6,7 @@
 
 [下载正式版](https://github.com/xjunrao-ux/spine-pet-workshop/releases/tag/v5.3.1) · [完整使用说明](docs/versions/v5.3.1.md) · [插件目录](community/README.md) · [插件开发](docs/PLUGIN_QUICKSTART.md) · [文档索引](docs/README.md)
 
-项目介绍网页已完成，包含使用指南、插件社区与开发者窗口，目前仅保留本地。见 [本地预览与 GitHub Pages 发布说明](website/README.md)。
+[访问项目网站](https://xjunrao-ux.github.io/spine-pet-workshop/)：新手教程、插件社区与开发者窗口。见 [本地预览与 GitHub Pages 发布说明](website/README.md)。
 
 ![SpinePet 角色库：卡片网格、固定红色导入按钮和当前桌宠状态](docs/images/v512-library.png)
 

@@ -2,7 +2,7 @@
 
 GitHub Pages 静态网站：使用指南、可搜索的插件社区和开发者窗口。网站与桌面程序独立，部署不需要安装 Electron 或第三方模型。
 
-当前状态：按用户要求仅保留本地，尚未启用或发布 GitHub Pages。构建后也可直接双击 `.local/website/index.html` 查看，不需要启动服务。
+项目网站：[SpinePet / ARKS](https://xjunrao-ux.github.io/spine-pet-workshop/)。通过 GitHub Actions 构建和部署到 GitHub Pages。构建后也可直接双击 `.local/website/index.html` 查看，不需要启动服务。
 
 ## 本地预览
 
