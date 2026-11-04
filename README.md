@@ -1,12 +1,14 @@
-# SpinePet
+# SpinePet · 明日方舟桌宠
 
-把喜欢的角色放到 Windows 桌面上。导入本地 Spine 3.8 模型与语音，让角色陪伴工作、走动、坐在窗口边缘，也可以使用音乐控制、系统通知、待办和选装插件。
+**SpinePet 是一款面向 Windows 的明日方舟桌宠（Arknights Desktop Pet）**，把干员基建小人的日常动画、游戏原声语音和中文字幕带到桌面。首次启动自带阿米娅，可在应用内检索、下载并导入其他干员与语音，也支持兼容的动态立绘、敌方战斗模型和本地 Spine 3.8 素材。
+
+下载 EXE 即可使用。左键拖动桌宠调整位置，**右键桌宠 → 角色管理器**切换角色、设置大小和语音；音乐控制、系统通知、待办与选装插件可按需开启。这是非官方同人项目，角色与语音素材的权利归各自权利人。
 
 **正式版 v5.3.1 · Windows x64 · 2026-10-31**
 
 [下载正式版](https://github.com/xjunrao-ux/spine-pet-workshop/releases/tag/v5.3.1) · [完整使用说明](docs/versions/v5.3.1.md) · [插件目录](community/README.md) · [插件开发](docs/PLUGIN_QUICKSTART.md) · [文档索引](docs/README.md)
 
-[访问项目网站](https://xjunrao-ux.github.io/spine-pet-workshop/)：新手教程、插件社区与开发者窗口。见 [本地预览与 GitHub Pages 发布说明](website/README.md)。
+[明日方舟桌宠下载与新手教程](https://xjunrao-ux.github.io/spine-pet-workshop/)：角色与原声语音导入、插件社区与开发者窗口。见 [本地预览与 GitHub Pages 发布说明](website/README.md)。
 
 ![SpinePet 角色库：卡片网格、固定红色导入按钮和当前桌宠状态](docs/images/v512-library.png)
 

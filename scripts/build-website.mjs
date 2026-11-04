@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 const root = fileURLToPath(new URL('../', import.meta.url));
 export const siteDirectory = path.join(root, '.local', 'website');
 const repository = 'https://github.com/xjunrao-ux/spine-pet-workshop';
+const siteUrl = 'https://xjunrao-ux.github.io/spine-pet-workshop/';
 const { version } = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
 const catalog = JSON.parse(await readFile(path.join(root, 'community/catalog.json'), 'utf8'));
 const details = {
@@ -44,6 +45,7 @@ const cards = plugins.map(plugin => `<article class="plugin-card" data-plugin="$
 
 let html = await readFile(path.join(root, 'website/index.html'), 'utf8');
 const replacements = {
+  '__SITE_URL__': siteUrl,
   '__REPO__': repository,
   '__VERSION__': version,
   '__SETUP__': `${repository}/releases/download/v${version}/SpinePet-Setup-v${version}-x64.exe`,
@@ -57,6 +59,7 @@ for (const [token, replacement] of Object.entries(replacements)) html = html.rep
 if (/__[A-Z_]+__/.test(html)) throw new Error('Unresolved website template token');
 await mkdir(path.join(siteDirectory, 'assets'), { recursive: true });
 await writeFile(path.join(siteDirectory, 'index.html'), html);
+await writeFile(path.join(siteDirectory, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${siteUrl}</loc></url></urlset>\n`);
 for (const name of ['styles.css', 'app.js']) await cp(path.join(root, 'website', name), path.join(siteDirectory, name));
 await cp(path.join(root, 'website/fonts'), path.join(siteDirectory, 'assets/fonts'), {recursive: true});
 await cp(path.join(root, 'website/images'), path.join(siteDirectory, 'assets/images'), {recursive: true});

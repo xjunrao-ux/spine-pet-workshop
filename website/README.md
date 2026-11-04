@@ -22,6 +22,14 @@ node scripts/preview-website.mjs
 
 工作流只上传 `.local/website/`，不会上传本地模型、用户资料或发布包。PR 只构建，不发布；正式部署限 `main`。
 
+## 搜索与项目简介
+
+网页以「明日方舟桌宠 SpinePet」为标题，正文说明干员基建小人、阿米娅、游戏原声语音、Windows 下载和使用教程。GitHub 项目简介与 README 使用同一项目名称，并链接到网站。
+
+构建包含规范网址（canonical）、页面摘要、分享预览、SoftwareApplication 结构化数据和 [站点地图](https://xjunrao-ux.github.io/spine-pet-workshop/sitemap.xml)。正文与下载入口直接输出到 HTML，搜索引擎无需运行 JavaScript 即可读取。
+
+站点维护者可在 Google Search Console、Bing Webmaster Tools 或百度搜索资源平台验证网站后提交站点地图及首页。页面允许收录；搜索引擎是否收录、何时更新及关键词排名由搜索引擎决定，配置这些信息不保证特定排名。
+
 ## 更新内容
 
 - 文案与布局：`website/index.html`、`styles.css`；交互：`app.js`。

@@ -3,12 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="SpinePet，把基建小人的日常动画与游戏原声语音带到桌面。支持检索并导入兼容的动态立绘、敌方战斗模型，提供新手指南与插件社区。">
+  <meta name="description" content="SpinePet 明日方舟桌宠（Arknights Desktop Pet）：把阿米娅与干员基建小人的日常动画、游戏原声语音和中文字幕带到 Windows 桌面。提供安装版与免安装版下载、新手教程、角色与语音导入指南、插件社区。">
+  <meta name="robots" content="index, follow, max-image-preview:large">
   <meta name="theme-color" content="#f4f6f0">
-  <meta property="og:title" content="SpinePet / ARKS · 喜欢的干员，就在你的桌面">
-  <meta property="og:description" content="基建小人、游戏原声与中文字幕。兼容的动态立绘、敌方模型也可以成为桌面角色。">
+  <meta property="og:title" content="明日方舟桌宠 SpinePet｜Windows 下载、新手教程与插件社区">
+  <meta property="og:description" content="把明日方舟干员带到桌面：基建小人动画、游戏原声语音与中文字幕。下载 SpinePet，按教程添加角色与插件。">
   <meta property="og:type" content="website">
-  <title>SpinePet / ARKS · 喜欢的干员，就在你的桌面</title>
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:site_name" content="SpinePet 明日方舟桌宠">
+  <meta property="og:url" content="__SITE_URL__">
+  <meta property="og:image" content="__SITE_URL__assets/models.png">
+  <meta property="og:image:alt" content="SpinePet 明日方舟桌宠：干员模型与原声语音检索界面">
+  <meta name="twitter:card" content="summary_large_image">
+  <title>明日方舟桌宠 SpinePet｜Windows 下载、新手教程与插件社区</title>
+  <link rel="canonical" href="__SITE_URL__">
+  <link rel="sitemap" type="application/xml" href="__SITE_URL__sitemap.xml">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","@id":"__SITE_URL__#software","name":"SpinePet 明日方舟桌宠","alternateName":["SpinePet","Arknights Desktop Pet"],"url":"__SITE_URL__","description":"面向 Windows 的明日方舟同人桌宠：干员基建小人动画、游戏原声语音、中文字幕、角色导入与插件扩展。","operatingSystem":"Windows x64","applicationCategory":"UtilitiesApplication","softwareVersion":"__VERSION__","downloadUrl":"__SETUP__","image":"__SITE_URL__assets/models.png","sameAs":"__REPO__","inLanguage":"zh-CN"}</script>
   <link rel="icon" href="assets/spinepet-icon.png" type="image/png">
   <link rel="stylesheet" href="styles.css">
   <script defer src="app.js"></script>
@@ -16,7 +26,7 @@
 <body>
   <a class="skip-link" href="#main">跳到正文</a>
   <header class="site-header">
-    <a class="brand" href="#home" aria-label="SpinePet 首页"><img class="brand-icon" src="assets/spinepet-icon.png" width="48" height="48" alt=""><span class="brand-type"><span class="brand-word">SpinePet</span><span class="brand-note">DESKTOP COMPANION</span></span></a>
+    <a class="brand" href="#home" aria-label="SpinePet 明日方舟桌宠首页"><img class="brand-icon" src="assets/spinepet-icon.png" width="48" height="48" alt=""><span class="brand-type"><span class="brand-word">SpinePet</span><span class="brand-note">ARKNIGHTS DESKTOP PET</span></span></a>
     <nav aria-label="主导航"><a href="#guide" data-en="GUIDE">新手教程</a><a href="#community" data-en="PLUGINS">插件社区</a><a href="#contribute" data-en="COMMUNITY">参与共创</a><a href="#developer" data-en="DEVELOPERS">开发者窗口</a></nav>
     <a class="repo-link" href="__REPO__"><svg aria-hidden="true"><use href="#i-github"/></svg><span>GitHub</span><span aria-hidden="true">↗</span></a>
   </header>
@@ -25,8 +35,8 @@
     <section class="snap-panel hero-panel" id="home" aria-labelledby="hero-title"><div class="wrap"><div class="hero">
       <div class="hero-copy">
         <p class="eyebrow"><span class="signal-label">ARKS</span> LIFE ON DESKTOP / 01</p>
-        <h1 id="hero-title">喜欢的干员，<br>就在你的<span class="accent-word">桌面</span>。</h1>
-        <p class="hero-description">把<span>基建小人的日常动画</span>和<span>游戏原声语音</span>带到桌面。工作、学习时，也能看见喜欢的干员，听到熟悉的台词。<br>不止小人——兼容的动态立绘、敌方战斗模型也可以导入。</p>
+        <h1 id="hero-title">明日方舟桌宠，<br>把干员带到<span class="accent-word">桌面</span>。</h1>
+        <p class="hero-description">SpinePet 是一款 Windows 明日方舟桌宠。把<span>干员基建小人的日常动画</span>和<span>游戏原声语音</span>带到桌面，工作、学习时也能看到熟悉的干员，听到角色台词。<br>支持检索并导入兼容的动态立绘、敌方战斗模型。</p>
         <div class="hero-actions"><a class="button primary download-button" href="__SETUP__"><svg aria-hidden="true"><use href="#i-download"/></svg>下载 Windows 版<span aria-hidden="true">↗</span></a><a class="text-link" href="#guide">新手教程 <span aria-hidden="true">→</span></a></div>
         <p class="download-note">v__VERSION__ · Windows x64 <span>／</span> <a href="__PORTABLE__">免安装版</a> · <a href="__REPO__/releases/latest">全部下载</a></p>
         <p class="hero-footnote">首次启动自带阿米娅；其他角色与语音可在应用内检索、下载后导入。</p>
@@ -41,7 +51,7 @@
     </div><div class="facts"><p><span class="model-number">01</span><span>干员基建小人<small>站立、走动、坐下等动作随模型而定</small></span></p><p><span class="model-number">02</span><span>动态立绘<small>可检索、预览并导入兼容的动态立绘</small></span></p><p><span class="model-number">03</span><span>敌方角色与首领<small>敌人战斗模型也可预览、导入</small></span></p></div></div></section>
 
     <section class="snap-panel section wrap" id="guide" aria-labelledby="guide-title">
-      <div class="section-heading"><div><p class="eyebrow">02 / USER GUIDE</p><h2 id="guide-title">新手教程</h2></div><p>从下载安装，到导入角色和语音，按步骤操作即可。</p></div>
+      <div class="section-heading"><div><p class="eyebrow">02 / USER GUIDE</p><h2 id="guide-title">新手教程</h2></div><p>从下载安装明日方舟桌宠，到导入干员与原声语音，按步骤操作即可。</p></div>
       <div class="guide-layout">
         <div class="guide-controls"><div class="guide-tabs" role="tablist" aria-label="使用步骤"><button id="tab-start" class="guide-tab" role="tab" aria-selected="true" aria-controls="guide-panel" data-guide="start"><span>01</span>初次使用<span aria-hidden="true">↗</span></button><button id="tab-character" class="guide-tab" role="tab" aria-selected="false" aria-controls="guide-panel" tabindex="-1" data-guide="character"><span>02</span>导入角色与语音<span aria-hidden="true">↗</span></button><button id="tab-plugin" class="guide-tab" role="tab" aria-selected="false" aria-controls="guide-panel" tabindex="-1" data-guide="plugin"><span>03</span>安装插件<span aria-hidden="true">↗</span></button></div>
           <p class="guide-aside">普通使用下载 EXE 即可，<br>无需安装开发工具。</p><a class="text-link" href="__REPO__/blob/main/docs/versions/v__VERSION__.md">完整使用手册 <span aria-hidden="true">↗</span></a>
